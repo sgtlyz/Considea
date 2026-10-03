@@ -2,6 +2,8 @@
 
 本文档是实现设计，不代表功能已经完成。产品范围以根目录 [README](../README.md) 为准；本目录将职责固定为 **Interview Agent、Negotiate Agent、Evaluator Agent**。Workflow 是应用程序中的状态与调度逻辑，不是第四个 Agent。
 
+开发接线先读 [框架与 Pi Base 设计](framework-design.md)，再运行 [Pi Base v0.1](pi-base/README.md) 的离线 demo。共用运行层已提供，三个完整业务 Agent 仍由各负责人实现。
+
 ## 每个人从哪里开始
 
 | 负责人 | 主文档 | 交付接口 | 负责的结果 |
@@ -11,7 +13,7 @@
 | 成员 3 | [Evaluator Agent](evaluator-agent.md) | `evaluator.evaluate`、`evaluator.investigate` | 带来源的竞品比较、技术可行性检查 |
 | 成员 4 | [Workflow](workflow.md) | 房间、共享权限、调用适配器、任务与状态、前端事件 | 接通三 Agent、私人访谈与团队工作台 |
 
-所有人首先阅读 [共享契约](contracts.md)。以上名称是应用层 operation 标识，既可映射为函数，也可映射为框架消息；不是指定某个 SDK 或 HTTP 路由。模型、数据库、搜索服务与 Fetch.ai 接入方式仍待团队选定。
+所有人首先阅读 [共享契约](contracts.md)。以上名称是应用层 operation 标识，既可映射为函数，也可映射为框架消息；不是指定某个 SDK 或 HTTP 路由。共用执行基座已采用 Pi Core；具体模型、数据库、搜索服务与 Fetch.ai 端到端接入仍待实现和验证。
 
 ## 分工原则
 
