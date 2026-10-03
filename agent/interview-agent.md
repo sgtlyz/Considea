@@ -1,5 +1,7 @@
 # Interview Agent 设计
 
+开发入口：[agent/interview](interview/README.md)。`agent/interview` 分支提供 Pi + DeepSeek 适配、离线访谈流程与测试；真实模型质量待配置 key 后验证。
+
 负责人：成员 1。目标：让没有现成 idea 的成员也能表达真实经历、资源和参与条件，并给协商过程补充缺失信息。
 
 共享字段以 [contracts.md](contracts.md) 为准；状态与共享动作由 [workflow.md](workflow.md) 实现。本文中的问题是示例，不能机械地给所有人同一套题。
@@ -31,6 +33,8 @@
 输出 data：`InterviewTurnResult`，包括最多 3 个问题、已知/未知主题、是否可以总结、停止原因。由 workflow 分配题目 ID 并计数，避免模型自由增长轮数。
 
 调用方式：进入会话时生成第一组问题；成员提交这一组回答之后，生成下一组或返回总结条件。一个组回答可以包含三问的答案，不要求拆成三次模型调用。未提交回答前不连续自动追问。
+
+实现约定：输入 `private_interview.round_index` 表示已经回答的批次数，首次为 0；生成下一批时输出 `round_index + 1`，停止时输出当前计数。因此可以正常提出第 7 批问题，答完后不再提出第 8 批。coverage 包含 pain、idea、skill、resource、preference、objection、participation_condition 七项。
 
 ### interview.summarize
 

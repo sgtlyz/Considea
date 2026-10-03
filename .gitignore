@@ -1,0 +1,8 @@
+node_modules/
+.env
+.env.*
+!.env.example
+*.log
+.interview-local/
+__pycache__/
+*.pyc
