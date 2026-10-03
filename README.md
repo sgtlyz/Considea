@@ -6,6 +6,8 @@
 
 团队分工已确定为：三人分别负责 **Interview Agent、Negotiate Agent、Evaluator Agent**，第四人负责整体 workflow 搭建。各模块职责、输入输出和验收见 [agent/ 设计文档](agent/README.md)。
 
+本 `agent/interview` 分支已提供单个 Interview Agent 的本地体验。运行步骤、架构图，以及 harness / skill / MCP / plugin 的实际接入情况见 [Interview README](agent/interview/README.md)。目前 46 项离线测试和 2 次真实模型调用通过；完整团队流程仍按下文设计开发。
+
 ## 1. 要解决的问题
 
 四个人组队后，通常还不了解彼此真正想做什么。一个人提出方案，其他人马上从实用性、技术难度、赛道适配、是否有人做过等角度反对。几轮之后，大家越来越不愿意提出新想法，却仍然没有明确的共同标准。
