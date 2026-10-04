@@ -1,6 +1,6 @@
 # Considea Interview — standalone Agentverse adapter
 
-**Status (2026-10-03): implemented and tested offline. Not yet verified as registered, discoverable, or usable in ASI:One. No hackathon submission has been confirmed.** The project is Considea, with a four-person team; this entry exposes only the Interview Agent.
+**Status (2026-10-04): 66 Node tests and four Python transport/bridge tests passed offline. The local HTTP service starts and rejects unsigned requests. Not yet verified as registered, discoverable, or usable in ASI:One. No hackathon submission has been confirmed.** Considea is one multi-agent project with Interview, Negotiate and Evaluator agents and a four-person team. This is the first component being registered, not a separate single-agent project or team submission.
 
 This adapter reuses `runInterview` and the v2.1 contract. It adds a persistent individual workflow and the official Agent Chat Protocol (ACP 0.3.0) transport. Existing legacy CLI behavior is unchanged.
 
@@ -89,7 +89,7 @@ python agent/interview/agentverse/register.py --config .interview-local/agentver
 ```
 
 4. Confirm the returned Agentverse profile, test discovery and the entire interview/review/export inside ASI:One, then record the address/profile URL and shared ASI chat link here and in the root README. Registration success alone does not prove discovery or chat operation. Endpoint reachability and platform registration expiry may require renewal; unattended operation is not implemented.
-5. Submit the four-person Considea project through Devpost and the MHacks Submission Agent. Reuse an existing Submission Team ID if available. `Considea` is the project name, not a verified platform Team ID. Lead name/email and teammates' joins are still required; do not create a solo team for a single-agent entry.
+5. Register Negotiate and Evaluator as additional components as they become ready. Keep all three under the same four-person **Considea MAS project**. Collect their individual addresses, Agentverse profile URLs and ASI demo links in one project submission through Devpost and the MHacks Submission Agent. If a Considea submission already exists, update it using its existing Submission Team ID; do not create a second project for Interview. `Considea` is the project name, not a verified platform Team ID. Lead name/email and teammates' joins are still required for the team submission.
 
 Public listing text and required badges are in [AGENT_README.md](AGENT_README.md). Agent address, Agentverse URL, shared ASI chat URL, Submission Team ID and Devpost URL: **not confirmed yet**.
 

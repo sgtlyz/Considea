@@ -6,6 +6,8 @@
 
 团队分工已确定为：三人分别负责 **Interview Agent、Negotiate Agent、Evaluator Agent**，第四人负责整体 workflow 搭建。各模块职责、输入输出和验收见 [agent/ 设计文档](agent/README.md)。
 
+**发布计划：Considea 作为同一个 MAS 项目参赛，三个 Agent 分别注册到 Agentverse；目前先接入 Interview，随后接入 Negotiate 与 Evaluator，并汇总到同一份团队项目提交。** Interview 的独立调用入口用于分阶段联调，不改变三 Agent 架构。
+
 本 `agent/interview` 分支已提供单个 Interview Agent 的本地体验。运行步骤、架构图，以及 harness / skill / MCP / plugin 的实际接入情况见 [Interview README](agent/interview/README.md)。新增 [Considea Interview 独立 Agentverse 接入](agent/interview/agentverse/README.md)，包含持久档案、人工审核导出与 ACP 服务；已做离线验证，尚未确认 Agentverse 注册、ASI:One 端到端测试或比赛提交。既有 2 次真实模型调用属于旧接口；完整团队流程仍按下文设计开发。
 
 ## 1. 要解决的问题

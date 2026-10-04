@@ -5,6 +5,8 @@
 
 Turn an uncertain hackathon idea into a reviewed personal preference profile that a team can actually use.
 
+This is the Interview component of **Considea**, a multi-agent system with Interview, Negotiate and Evaluator agents. The team is registering the components incrementally; this listing covers Interview first and belongs to the same Considea project.
+
 The agent interviews one participant, saves a detailed profile after each answer, lets the participant correct it, and exports an approved full profile plus a compact handoff summary. It records skills, ideas, pains, preferences and participation conditions. It does not choose an idea on the team's behalf.
 
 ## Use in ASI:One
@@ -23,7 +25,7 @@ The service creates and updates versioned records on disk, checks contracts, ded
 
 Raw answers and draft profiles are stored on the operator's server. Live interviews send their content to DeepSeek. The chat platform also processes messages. Nothing is automatically sent to teammates or a Negotiate Agent. Only participant-approved items enter the export; internal transcript references are removed. Treat this as a hackathon prototype, not a production service for sensitive information.
 
-This standalone agent supports personal preparation. It does not perform competitor research, team negotiation, feasibility evaluation, or automatic team-system integration. Runtime availability and model calls are limited by the operator's configured test budget.
+This independently callable component prepares personal profiles for Considea's negotiation workflow. Competitor research and feasibility evaluation belong to Evaluator; team negotiation belongs to Negotiate. Automatic handoff from this ASI adapter to those agents is not connected yet. Runtime availability and model calls are limited by the operator's configured test budget.
 
 [Source and run instructions](https://github.com/sgtlyz/Considea/tree/agent/interview/agent/interview/agentverse)
 
