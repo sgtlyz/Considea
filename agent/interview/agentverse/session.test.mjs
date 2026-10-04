@@ -14,6 +14,88 @@ function setup() {
 const message = (text, id, overrides = {}) => ({ sender: 'sender-a', session_id: 'session-a', msg_id: id, text, ...overrides });
 const key = JSON.stringify(['sender-a', 'session-a']);
 
+test('default three-batch session stops without asking a fourth batch', async () => {
+  const { store, runtimeFor } = setup();
+  const app = new InterviewSession({ store, runtimeFor });
+  assert.match((await app.handle(message('start', 'start'))).text, /1\/3/);
+  for (let i = 1; i <= 3; i++) {
+    assert.equal((await app.handle(message(`OFFLINE SAMPLE: answer ${i}`, `answer-${i}`))).ok, true);
+  }
+  const saved = store.read(key);
+  assert.equal(saved.answered_batches, 3);
+  assert.equal(saved.phase, 'review');
+  assert.equal(saved.messages.filter(m => m.role === 'assistant').length, 3);
+});
+
+test('per-session rounds persist across restart, isolate senders, and configure without model work', async () => {
+  const { store, runtimeFor } = setup();
+  let calls = 0;
+  const app = new InterviewSession({ store, runtimeFor: () => { calls++; throw new Error('No model calls expected'); } });
+  const request = message('/rounds 7', 'configure');
+  const result = await app.handle(request);
+  assert.equal(result.ok, true);
+  assert.deepEqual(await app.handle(request), result);
+  assert.equal(calls, 0);
+  assert.equal(store.read(key).answered_batches, 0);
+  const restarted = new InterviewSession({ store, runtimeFor, maxBatches: 1 });
+  assert.match((await restarted.handle(message('/rounds', 'show'))).text, /7 轮/);
+  assert.match((await restarted.handle(message('/rounds', 'other', { sender: 'sender-b' }))).text, /1 轮/);
+  assert.match((await restarted.handle(message('start', 'start'))).text, /1\/7/);
+});
+
+test('custom limit bounds, outstanding batch floor and finished sessions are enforced', async () => {
+  const { app, store } = setup();
+  for (const [i, value] of ['0', '8', '2.5', 'NaN', '1 extra'].entries()) {
+    assert.equal((await app.handle(message(`/rounds ${value}`, `invalid-${i}`))).ok, false);
+    assert.equal(store.read(key).max_batches, 2);
+  }
+  await app.handle(message('/rounds 7', 'increase'));
+  await app.handle(message('start', 'start'));
+  await app.handle(message('OFFLINE SAMPLE: I can code.', 'answer'));
+  assert.match((await app.handle(message('/rounds 1', 'too-low'))).text, /不能少于 2/);
+  assert.equal(store.read(key).max_batches, 7);
+  assert.equal((await app.handle(message('/rounds 2', 'lower'))).ok, true);
+  await app.handle(message('OFFLINE SAMPLE: I prefer text.', 'final'));
+  assert.equal(store.read(key).phase, 'review');
+  assert.equal((await app.handle(message('/rounds 3', 'closed'))).ok, false);
+  const s = store.read(key);
+  await app.handle(message(`/approve ${s.revision} ${s.approval_token}`, 'approve'));
+  assert.equal((await app.handle(message('/rounds 3', 'approved-closed'))).ok, false);
+});
+
+test('legacy session retains five-batch ceiling when restarted with the new default', async () => {
+  const { store, runtimeFor } = setup();
+  const app = new InterviewSession({ store, runtimeFor });
+  const legacy = app.initial(key);
+  delete legacy.max_batches;
+  store.write(key, legacy);
+  assert.match((await app.handle(message('start', 'start'))).text, /1\/5/);
+  assert.equal(store.read(key).max_batches, 5);
+});
+
+test('one-batch choice reaches review after one answer', async () => {
+  const { app, store } = setup();
+  await app.handle(message('/rounds 1', 'configure'));
+  await app.handle(message('start', 'start'));
+  await app.handle(message('OFFLINE SAMPLE: I can code.', 'answer'));
+  assert.equal(store.read(key).phase, 'review');
+  assert.equal(store.read(key).messages.filter(m => m.role === 'assistant').length, 1);
+});
+
+test('legacy migration preserves explicit operator override and outstanding questions', async () => {
+  for (const [override, answered, phase, expected] of [[1, 0, 'new', 1], [7, 0, 'new', 7], [undefined, 5, 'answering', 6], [1, 5, 'answering', 6]]) {
+    const { store, runtimeFor } = setup();
+    const app = new InterviewSession({ store, runtimeFor, maxBatches: override });
+    const legacy = app.initial(key);
+    delete legacy.max_batches;
+    legacy.answered_batches = answered;
+    legacy.phase = phase;
+    store.write(key, legacy);
+    await app.handle(message('/rounds', 'show'));
+    assert.equal(store.read(key).max_batches, expected);
+  }
+});
+
 test('exhausted budget explains the limit while profile commands remain available', async () => {
   const { store } = setup();
   const app = new InterviewSession({ store, runtimeFor: () => {

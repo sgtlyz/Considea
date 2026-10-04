@@ -48,7 +48,7 @@ Translation reads only the caller's current RoomView, rechecks access before ret
 
 | Field | Engine default | Accepted values |
 | --- | --- | --- |
-| question_batches_per_round | 1 | 1–7 |
+| question_batches_per_round | 3 | Integer 1–7; maximum private interview batches per member in each discussion round |
 | max_questions | 3 | 1–3 |
 | candidate_count | 3 | 1–5 |
 | max_agent_calls | 200 | 1–10000; public live API caps at deployment limit, default 80 |
@@ -57,6 +57,8 @@ Translation reads only the caller's current RoomView, rechecks access before ret
 | max_search_queries | 0 | Engine 0–50; public live API caps at 2 |
 | project_time_limit | null | `{kind:"none"}`, `{kind:"duration",hours:24}`, or `{kind:"deadline",deadline_at:"..."}` |
 | decision_policy | unanimous | Only supported policy |
+
+The room creator can choose the interview limit in the web form or send `config.question_batches_per_round` to `POST /api/rooms`. An interview can finish early when enough information is available. Existing rooms retain their saved limit. This setting does not change the separate team discussion rounds or the convergence gate from round 4.
 
 A missing time limit holds evaluation for administrator input; it does not mean unlimited time. Time constraints cannot silently change after evaluation.
 

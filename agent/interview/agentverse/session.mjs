@@ -27,17 +27,19 @@ export function buildBrief(profile) {
     blocking_item_ids: missing.map(i => i.item_id), unknowns: profile.unknowns };
 }
 
-const help = 'Considea Interview：我会提问、保存偏好档案，再由你审核导出。\n命令：/profile 查看详细档案；/finish 结束提问并审核；/edit 序号 新文字；/drop 序号；/short 序号 短句（最多80字）；/export 导出已批准结果。\n访谈与草稿保存在运行此 Agent 的服务端，不会自动发送给队友。真实模式会将访谈内容交给 DeepSeek。';
+const help = 'Considea Interview：我会提问、保存偏好档案，再由你审核导出。\n命令：/rounds 查看轮数；/rounds N 设置本次访谈轮数（1–7）；/profile 查看详细档案；/finish 结束提问并审核；/edit 序号 新文字；/drop 序号；/short 序号 短句（最多80字）；/export 导出已批准结果。\n访谈与草稿保存在运行此 Agent 的服务端，不会自动发送给队友。真实模式会将访谈内容交给 DeepSeek。';
 
 /** Single-process controller. ACP transport serializes calls; no model-generated approval commands. */
 export class InterviewSession {
-  constructor({ store, runtimeFor, runner = runInterview, maxBatches = 5 }) {
+  constructor({ store, runtimeFor, runner = runInterview, maxBatches }) {
+    this.legacyMaxBatches = maxBatches ?? 5;
+    maxBatches ??= 3;
     if (!Number.isInteger(maxBatches) || maxBatches < 1 || maxBatches > 7) throw new Error('Invalid batch limit');
     Object.assign(this, { store, runtimeFor, runner, maxBatches });
   }
   initial(key) {
     return { profile_id: randomUUID(), member_id: `member-${digest(key).slice(0, 24)}`, version: 0,
-      messages: [], items: [], unknowns: [], answered_batches: 0, phase: 'new', revision: 0,
+      messages: [], items: [], unknowns: [], answered_batches: 0, max_batches: this.maxBatches, phase: 'new', revision: 0,
       approved: null, brief: null, events: {}, history: [], approval_token: null };
   }
   payload(s, operation) {
@@ -52,7 +54,7 @@ export class InterviewSession {
       source_id: `${s.profile_id}:${s.approved.version}:${i.item_id}`, kind: 'profile_item', object_ref: sharedProfile.profile_ref,
       member_id: s.member_id, discussion_round: 1, text: i.text })) }, followup_context: null,
     ...(operation === 'interview.turn' ? { interview_turn: s.answered_batches + 1,
-      limits: { max_questions: 3, remaining_question_batches: Math.max(0, this.maxBatches - s.answered_batches) } } : { stop_reason: 'member_requested' }) };
+      limits: { max_questions: 3, remaining_question_batches: Math.max(0, s.max_batches - s.answered_batches) } } : { stop_reason: 'member_requested' }) };
   }
   async call(s, operation) {
     const request = { schema_version: '1.0', request_id: randomUUID(), room_id: `private-${s.member_id}`, operation,
@@ -78,7 +80,7 @@ export class InterviewSession {
     s.phase = 'answering';
     const text = data.questions.map((q, i) => `${i + 1}. ${q.text}`).join('\n');
     s.messages.push({ message_id: randomUUID(), role: 'assistant', content: text });
-    return `第 ${s.answered_batches + 1}/${this.maxBatches} 批问题（可一次回答，也可 /finish）：\n${text}`;
+    return `第 ${s.answered_batches + 1}/${s.max_batches} 批问题（可一次回答，也可 /finish）：\n${text}`;
   }
   review(s) {
     s.approval_token ??= randomUUID().slice(0, 8);
@@ -96,6 +98,10 @@ export class InterviewSession {
     }
     const key = JSON.stringify([sender, session_id]), fingerprint = digest(text);
     let stored = this.store.read(key) ?? this.initial(key);
+    // Legacy records used the operator's limit or the old five-batch default.
+    // Never abandon a question already issued under a higher historical limit.
+    stored.max_batches ??= Math.min(7, Math.max(this.legacyMaxBatches,
+      stored.answered_batches + (stored.phase === 'answering' ? 1 : 0)));
     const old = stored.events[msg_id];
     if (old) return old.fingerprint !== fingerprint ? { ok: false, text: '重复消息ID对应不同内容，已拒绝。', end_session: false }
       : old.result ?? { ok: false, text: '该请求处理结果尚不明确，没有自动重试。请查看 /profile 后重新提交。', end_session: false };
@@ -106,6 +112,18 @@ export class InterviewSession {
     try {
       const command = text.trim();
       if (command === '/help') reply = help;
+      else if (/^\/rounds\b/.test(command)) {
+        if (command === '/rounds') reply = `本次访谈最多 ${s.max_batches} 轮，已回答 ${s.answered_batches} 轮。用 /rounds N 设置（1–7）。`;
+        else {
+          const match = command.match(/^\/rounds\s+([1-7])$/);
+          const minimum = s.answered_batches + (s.phase === 'answering' ? 1 : 0);
+          if (!match) throw Object.assign(new Error('Invalid rounds'), { code: 'INVALID_ROUNDS' });
+          if (!['new', 'answering'].includes(s.phase)) throw Object.assign(new Error('Interview finished'), { code: 'ROUNDS_CLOSED' });
+          if (Number(match[1]) < minimum) throw Object.assign(new Error('Outstanding batch'), { code: 'ROUNDS_TOO_LOW', minimum });
+          s.max_batches = Number(match[1]);
+          reply = `本次访谈已设为最多 ${s.max_batches} 轮，已回答 ${s.answered_batches} 轮。${s.phase === 'new' ? '发送 start 开始。' : '请继续回答当前问题，也可 /finish 提前结束。'}`;
+        }
+      }
       else if (command === '/profile') reply = `当前详细档案 v${s.version}（${s.phase}）：\n${JSON.stringify({ profile_id: s.profile_id, items: s.items, unknowns: s.unknowns }, null, 2)}`;
       else if (command === '/export') reply = this.export(s);
       else if (command.startsWith('/approve ')) {
@@ -136,13 +154,16 @@ export class InterviewSession {
       } else if (s.phase === 'answering') {
         s.messages.push({ message_id: randomUUID(), role: 'user', content: text }); s.answered_batches++;
         await this.updateProfile(s);
-        if (s.answered_batches >= this.maxBatches) { s.phase = 'review'; reply = this.review(s); }
+        if (s.answered_batches >= s.max_batches) { s.phase = 'review'; reply = this.review(s); }
         else reply = `已更新详细档案 v${s.version}（${s.items.length} 条，尚未批准）。\n${await this.ask(s)}`;
       } else reply = s.phase === 'review' ? this.review(s) : '结果已保存。/export 取回；/edit、/drop、/short 修改后需重新批准。';
       const result = { ok: true, text: reply, end_session: false };
       s.events[msg_id] = { fingerprint, status: 'done', result }; this.store.write(key, s); return result;
     } catch (error) {
-      const result = { ok: false, text: error?.code === 'MODEL_BUDGET_EXHAUSTED'
+      const result = { ok: false, text: error?.code === 'INVALID_ROUNDS' ? '请输入 /rounds N，N 必须是 1–7 的整数。此次设置未应用。'
+        : error?.code === 'ROUNDS_CLOSED' ? '本次访谈已结束，无法修改轮数。请开启新会话设置轮数。'
+        : error?.code === 'ROUNDS_TOO_LOW' ? `已有已回答或待回答的问题，轮数不能少于 ${error.minimum}。可用 /finish 提前结束。此次设置未应用。`
+        : error?.code === 'MODEL_BUDGET_EXHAUSTED'
         ? '测试模型额度已用完，访谈暂时停止。此前档案仍保留，可用 /profile 查看；已保存的档案仍可审核、编辑和导出。请联系运营者增加授权额度。此次操作未应用，没有自动重试。'
         : error?.code === 'INVALID_OUTPUT' ? '模型返回的档案或问题未通过格式或来源校验，本轮未保存；不是你的操作错误。此前档案仍保留，可用 /profile 查看。没有自动重试或共享。'
         : '此次操作未应用。请检查命令或先前版本；若命令正确，请联系运营者检查服务。/profile 可查看仍保存的内容。没有自动重试或共享。', end_session: false };

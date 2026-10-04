@@ -135,6 +135,43 @@ class WorkflowTests(unittest.TestCase):
         self.assertNotIn("PRIVATE-", json.dumps(public))
         self.assertIsNone(public["private"])
 
+    def test_interview_default_and_custom_caps_stop_at_summary_and_survive_restart(self):
+        for cap in (None, 1, 5, 7):
+            with self.subTest(cap=cap):
+                config = {} if cap is None else {"question_batches_per_round": cap}
+                created = self.engine.create_room(self.context, config)
+                self.room = created["room_id"]
+                self.tokens = {m: self.engine.join(self.room, invite)["token"]
+                               for m, invite in created["invitations"].items()}
+                expected = 3 if cap is None else cap
+                for batch in range(1, expected + 1):
+                    self.drain()
+                    private = self.view()["private"]
+                    self.assertEqual(private["stage"], "awaiting_answers")
+                    self.assertEqual(private["batches_asked"], batch)
+                    result, _ = self.send("alice", "interview.answer", {
+                        "session_ref": private["session_ref"],
+                        "question_batch_ref": private["question_batch"]["question_batch_ref"],
+                        "answers": [{"question_key": q["question_key"], "text": "A real member answer",
+                                     "declined": False} for q in private["question_batch"]["questions"]],
+                    })
+                    self.assertEqual(result["status"], "accepted")
+                self.drain()
+                private = self.view()["private"]
+                self.assertEqual(private["stage"], "awaiting_profile_approval")
+                self.assertEqual(private["batches_asked"], expected)
+                self.assertIsNotNone(private["draft"])
+                self.assertEqual(self.view()["discussion_round"], 1)
+                self.engine = Workflow(Store(self.path), MockRunner())
+                self.assertEqual(self.view()["config"]["question_batches_per_round"], expected)
+                self.assertEqual(self.view()["private"], private)
+                self.assertFalse(self.engine.run_once(self.room))
+
+    def test_interview_cap_rejects_out_of_range_and_noninteger_values(self):
+        for value in (0, 8, -1, 3.5, "3", True, None):
+            with self.subTest(value=value), self.assertRaisesRegex(WorkflowError, "Invalid question_batches_per_round"):
+                self.engine.create_room(self.context, {"question_batches_per_round": value})
+
     def test_any_diverge_at_four_reopens_interview_without_generation(self):
         self.reach_convergence_gate()
         self.vote("alice", "converge")
@@ -292,6 +329,17 @@ class WorkflowTests(unittest.TestCase):
         try:
             with urlopen(base + "/api/health") as response:
                 self.assertEqual(json.load(response)["agent_mode"], "mock")
+            for config, expected in (({}, 3), ({"question_batches_per_round": 5}, 5)):
+                request = Request(base + "/api/rooms",
+                                  data=json.dumps({"room_context": self.context, "config": config}).encode(),
+                                  headers={"Content-Type": "application/json"}, method="POST")
+                with urlopen(request) as response:
+                    self.assertEqual(response.status, 201)
+                    created = json.load(response)
+                request = Request(base + "/api/rooms/" + created["room_id"],
+                                  headers={"Authorization": "Bearer " + created["admin_token"]})
+                with urlopen(request) as response:
+                    self.assertEqual(json.load(response)["config"]["question_batches_per_round"], expected)
             with urlopen(base + "/") as response:
                 self.assertIn(b"considea", response.read())
             for path, mime in [("/app.js", "text/javascript"), ("/atmosphere.js", "text/javascript"), ("/style.css", "text/css")]:

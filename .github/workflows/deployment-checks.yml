@@ -70,6 +70,7 @@ jobs:
           PLAYWRIGHT_MODULE: ${{ runner.temp }}/interface-browser/node_modules/playwright
         run: |
           node workflow/node/interface-smoke.mjs
+          node workflow/node/interview-rounds-smoke.mjs
           node workflow/node/privacy-smoke.mjs
 
   postgres:

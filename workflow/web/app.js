@@ -745,6 +745,11 @@
     }
   }
   bind("create", async () => {
+    const interviewRounds = Number($("interviewRounds").value);
+    if (!Number.isInteger(interviewRounds) || interviewRounds < 1 || interviewRounds > 7) {
+      $("interviewRounds").focus();
+      throw Error(tr("Choose a whole number of interview rounds from 1 to 7.", "访谈轮数请填写 1–7 之间的整数。"));
+    }
     const member_ids = $("memberIds")
       .value.split(",")
       .map((s) => s.trim())
@@ -760,6 +765,7 @@
           constraints: [],
         },
         config: {
+          question_batches_per_round: interviewRounds,
           project_time_limit: createTimeLimit(),
           search_enabled: $("searchEnabled").checked,
           max_search_queries: $("searchEnabled").checked ? 2 : 0,
@@ -954,6 +960,10 @@
       out,
     );
     el("p", tr("Room ", "房间 ") + v.room_id, out);
+    el("p", tr(
+      "Private interviews: up to " + v.config.question_batches_per_round + " rounds per person in each discussion.",
+      "每次讨论的私人访谈：每人最多 " + v.config.question_batches_per_round + " 轮。",
+    ), out, "muted");
     const steps = el("ol",undefined,out,"workflow-steps");
     const phaseIndex = v.phase === "completed" ? 4 : ["idea_generating","evaluating","awaiting_review","revising"].includes(v.phase) ? 3 : v.phase === "awaiting_convergence_decision" ? 2 : v.phase === "interviewing" ? 0 : 1;
     for (const [i,name] of [tr("Private interview","私人访谈"),tr("Answer differences","回答分歧"),tr("Choose together","共同决定"),tr("Review directions","审阅方案"),tr("Shared brief","项目简报")].entries()) {
@@ -1100,6 +1110,11 @@
     }
     const p = v.private;
     if (v.phase === "interviewing" && p.stage === "awaiting_answers") {
+      const progress = el("p", tr(
+        "Interview round " + p.batches_asked + " of " + v.config.question_batches_per_round,
+        "访谈第 " + p.batches_asked + " / " + v.config.question_batches_per_round + " 轮",
+      ), out, "muted");
+      progress.id = "interview-progress";
       const batch = p.question_batch,
         prefix = group("answer", batch.question_batch_ref);
       const fields = batch.questions.map((q) => ({

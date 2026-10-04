@@ -26,7 +26,7 @@ const workflow = new InterviewSession({ store, runtimeFor: op => {
   }
   return runtime ?? createProtocolFixtureRuntime(op);
 },
-  maxBatches: Number(process.env.CONSIDEA_MAX_BATCHES ?? '5') });
+  maxBatches: process.env.CONSIDEA_MAX_BATCHES === undefined ? undefined : Number(process.env.CONSIDEA_MAX_BATCHES) });
 for await (const line of createInterface({ input: process.stdin, crlfDelay: Infinity })) {
   if (!line.trim()) continue;
   let result;

@@ -12,7 +12,7 @@ The agent interviews one participant, saves a detailed profile after each answer
 ## Use in ASI:One
 
 1. Ask: **Start a hackathon preference interview.**
-2. Answer the questions. Default: up to five answered batches, at most three questions per batch. Send `/finish` to end early.
+2. Answer the questions. Default: up to three answered batches, at most three questions per batch. Send `/rounds N` to choose 1–7 batches for this session, `/rounds` to check, or `/finish` to end early. Change the limit before starting or while answering; it cannot be lower than the batches already answered plus the current unanswered batch.
 3. Inspect `/profile`. During review, use `/edit 1 replacement text`, `/drop 1`, or `/short 1 concise wording`.
 4. Copy the exact `/approve <revision> <token>` command from the review message after checking the profile.
 5. Use `/export` to retrieve the approved JSON handoff in the same conversation.

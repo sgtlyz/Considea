@@ -30,7 +30,7 @@ class RecoveryTests(unittest.TestCase):
         self.runner = MockRunner()
         self.engine = Workflow(Store(self.path), self.runner)
         self.created = self.engine.create_room({"member_ids": ["alice"], "hackathon_context": "Synthetic recovery test",
-            "deadline_at": None, "constraints": []})
+            "deadline_at": None, "constraints": []}, {"question_batches_per_round": 1})
         self.room = self.created["room_id"]
         self.token = self.engine.join(self.room, self.created["invitations"]["alice"])["token"]
 

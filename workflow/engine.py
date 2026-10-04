@@ -56,7 +56,7 @@ class Workflow:
     def create_room(self, room_context, config=None, *, provision=None):
         protocol.ROOM_CONTEXT.validate(room_context)
         need(len(room_context["member_ids"]) <= 12, "At most 12 members")
-        settings = {"question_batches_per_round": 1, "max_questions": 3, "candidate_count": 3,
+        settings = {"question_batches_per_round": 3, "max_questions": 3, "candidate_count": 3,
                     "max_agent_calls": 200, "search_enabled": False, "max_search_queries": 0,
                     "decision_policy": "unanimous", "max_task_retries": 2, "project_time_limit": None}
         config = {} if config is None else config

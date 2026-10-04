@@ -97,6 +97,9 @@ try {
   await admin.locator("#show-start").click();
   await admin.locator("#memberIds").fill("alice,bob");
   await admin.locator("#context").fill("Synthetic interface regression");
+  // This broad workflow test exercises one interview batch per discussion round.
+  // Dedicated interview-rounds-smoke.mjs covers the default and configurable cap.
+  await admin.locator("#interviewRounds").fill("1");
   await until(async()=>!(await admin.locator("#connection-status").innerText()).includes("Connecting"));
   const created=admin.waitForResponse(r=>r.url().endsWith("/api/rooms") && r.request().method()==="POST");
   await admin.locator("#create").click();
@@ -125,6 +128,7 @@ try {
   }
   const view = (member) =>
     api("/rooms/" + room.room_id, undefined, tokens[member]);
+  assert.equal((await api("/rooms/" + room.room_id, undefined, room.admin_token)).config.question_batches_per_round, 1);
   async function sync(p) {
     await p.locator("#refresh").click();
     await until(() => p.locator("#refresh").isEnabled());

@@ -8,7 +8,7 @@ remain standalone historical prototypes with sample content. They are not the de
 ## Entry and identity
 
 1. **Open workspace** opens the room forms. No account, OAuth or password login is implemented.
-2. Create a room with member IDs, context, optional project time limit and search preference.
+2. Create a room with member IDs, context, private interview limit (1–7 rounds, default 3), optional project time limit and search preference. The limit applies to each member in each discussion; the interviewer may finish early when enough information is available.
 3. Save the returned administrator token and invitations. Distribute only each person's invitation to them.
 4. Each person joins in their own tab with a room ID and invitation. Invitations are single use.
 5. Download your private recovery card. Restore with the room ID, identity and recovery code; existing-token restore is also retained.
@@ -71,6 +71,10 @@ It tests the browser-to-HTTP-to-SQLite flow: room creation, invitation join, adm
 drafts across refresh/language/theme, four human discussion rounds, candidate tabs, mobile
 layout, escaped user content, revision/re-evaluation, unanimous acceptance, export and logout.
 No live model/search API is called. GitHub Actions runs this test with a pinned browser.
+
+`node workflow/node/interview-rounds-smoke.mjs` checks the default three-round limit,
+custom one- and seven-round limits, input validation, language switching, saved progress,
+and the transition to summary review at the configured limit, using the same mock setup.
 
 `workflow/node/browser-smoke.mjs` remains the companion test for integrated teammate
 agents, native evaluator reports, explicit project time and SpacetimeDB SSE (or the

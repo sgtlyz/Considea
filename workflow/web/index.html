@@ -167,6 +167,14 @@
                 ><textarea id="context" rows="3"></textarea>
               </label>
               <div id="projectTime"></div>
+              <label for="interviewRounds">
+                <span data-en="Interview rounds" data-zh="访谈轮数">Interview rounds</span>
+                <input id="interviewRounds" type="number" min="1" max="7" step="1" value="3" required aria-describedby="interview-rounds-help" />
+              </label>
+              <p id="interview-rounds-help" class="muted"
+                data-en="Choose 1–7 rounds, default 3, for each person's private interview in every team discussion. Each round has up to 3 questions; the interviewer may finish early when enough information is available."
+                data-zh="可选 1–7 轮，默认 3 轮，适用于每次团队讨论中每位成员的私人访谈。每轮最多 3 个问题，信息足够时可提前结束。"
+              >Choose 1–7 rounds, default 3, for each person's private interview in every team discussion. Each round has up to 3 questions; the interviewer may finish early when enough information is available.</p>
               <label class="check"
                 ><input id="searchEnabled" type="checkbox" checked /><span
                   data-en="Allow public web research during evaluation (up to 2 searches)"
