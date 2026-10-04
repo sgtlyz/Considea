@@ -5,6 +5,7 @@ Considea helps a small team choose a project together. Each person talks private
 ## Try it
 
 - [Development workspace](https://considea-dev-api.onrender.com): real model and web-research calls, separate from production. Use a team demo code or your own DeepSeek and Tavily keys.
+- [83-second walkthrough and saved results](https://considea-dev-api.onrender.com/demo.html): no account, keys or live calls required. [Download the video](workflow/web/demo.mp4).
 - [Production website](https://considea.vercel.app): the existing master deployment. Its backend is currently a labelled mock demo.
 - [Setup and deployment](DEPLOYMENT.md), [workflow and HTTP API](workflow/README.md), [agent integration](workflow/INTEGRATION.md).
 
