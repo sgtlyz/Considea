@@ -24,7 +24,7 @@ const worker = spawn(
     "--db",
     join(folder, "test.sqlite3"),
   ],
-  { cwd: root, stdio: ["ignore", "pipe", "pipe"] },
+  { cwd: root, env:{...process.env, CONCLAVE_SECRET_KEY:Buffer.alloc(32,1).toString("base64")}, stdio: ["ignore", "pipe", "pipe"] },
 );
 const delay = (ms) => new Promise((r) => setTimeout(r, ms));
 let browser,
@@ -83,18 +83,18 @@ try {
     return p;
   }
   const admin = await page();
-  await admin.getByRole("button", { name: "Enter test workspace" }).click();
+  await admin.locator(".cover-login").click();
   assert.equal(await admin.locator("#app").isVisible(), false);
   // The test login grants no room access.
   const unauthorized = await fetch(base + "/api/rooms/not-a-room");
   assert.equal(unauthorized.status, 401);
   await admin.locator("#memberIds").fill("alice,bob");
   await admin.locator("#context").fill("Synthetic interface regression");
+  await until(async()=>!(await admin.locator("#connection-status").innerText()).includes("Connecting"));
+  const created=admin.waitForResponse(r=>r.url().endsWith("/api/rooms") && r.request().method()==="POST");
   await admin.locator("#create").click();
-  await admin.locator("#credentials textarea").waitFor();
-  const room = JSON.parse(
-    await admin.locator("#credentials textarea").inputValue(),
-  );
+  const room=await (await created).json();
+  await admin.locator("#credentials").waitFor();
   await admin
     .getByRole("button", { name: "Open administrator view", exact: true })
     .click();
@@ -123,9 +123,10 @@ try {
   for (const member of ["alice", "bob"]) {
     const p = await page();
     pages[member] = p;
-    await p.getByRole("button", { name: "Enter test workspace" }).click();
-    await p.locator("#roomId").fill(room.room_id);
-    await p.locator("#invitation").fill(room.invitations[member]);
+    await p.locator(".cover-login").click();
+    await p.goto(base+"/#"+new URLSearchParams({room:room.room_id,invitation:room.invitations[member]}));
+    await until(async()=>new URL(p.url()).hash === "");
+    assert.equal(await p.locator("#roomId").inputValue(),room.room_id);
     await p.locator("#join").click();
     await p.locator("#app").waitFor({ state: "visible" });
     tokens[member] = JSON.parse(
@@ -134,6 +135,32 @@ try {
   }
   const a = pages.alice,
     b = pages.bob;
+  await admin.locator("#account-panel > summary").click();
+  await admin.locator("#room-deepseek").fill("test-browser-private-deepseek");
+  await admin.locator("#room-tavily").fill("test-browser-private-tavily");
+  await admin.getByRole("button",{name:"Save room keys",exact:true}).click();
+  await until(()=>admin.locator("#key-status").innerText().then(t=>t.includes("Using your room keys")));
+  assert.equal(await admin.locator("#room-deepseek").inputValue(),"");
+  assert.equal(await admin.evaluate(()=>JSON.stringify({...sessionStorage,...localStorage}).includes("test-browser-private")),false);
+  await a.getByRole("button",{name:"Mark myself away",exact:true}).click();
+  await until(async()=>!(await view("alice")).members.alice.available);
+  await a.getByRole("button",{name:"I'm back",exact:true}).click();
+  await until(async()=>(await view("alice")).members.alice.available);
+  const oldAuth=JSON.parse(await a.evaluate(()=>sessionStorage.getItem("conclave-auth")));
+  await a.locator("#logout").click();
+  await a.locator("#entry").waitFor({state:"visible"});
+  await a.locator("#roomId").fill(room.room_id);
+  await a.locator("#recover-panel > summary").click();
+  await a.locator("#recover-member").fill("alice");
+  await a.locator("#recover-code").fill(oldAuth.recovery_code);
+  const [recoveryDownload]=await Promise.all([a.waitForEvent("download"),a.locator("#recover").click()]);
+  await recoveryDownload.saveAs(join(folder,"recovery.json"));
+  const recovered=JSON.parse(await readFile(join(folder,"recovery.json"),"utf8"));
+  assert.equal(recovered.role,"member");assert.notEqual(recovered.recovery_code,oldAuth.recovery_code);
+  await a.locator("#app").waitFor({state:"visible"});
+  tokens.alice=JSON.parse(await a.evaluate(()=>sessionStorage.getItem("conclave-auth"))).token;
+  const revoked=await fetch(base+"/api/rooms/"+room.room_id,{headers:{Authorization:"Bearer "+oldAuth.token}});
+  assert.equal(revoked.status,403);
   await until(
     async () => (await view("alice")).private.stage === "awaiting_answers",
   );

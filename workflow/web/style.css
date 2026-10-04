@@ -1875,3 +1875,16 @@ html[lang="zh-CN"] .entry-grid h2 {
     padding: 12px 18px;
   }
 }
+
+/* Readable progress and access controls at desktop and phone widths. */
+.workflow-steps{display:flex;flex-wrap:wrap;gap:8px 18px;padding:0;list-style:none;font-size:12px;opacity:.75}
+.workflow-steps li{padding:6px 0;border-bottom:2px solid transparent}
+.workflow-steps [aria-current="step"]{border-color:currentColor;font-weight:600;opacity:1}
+.next-step{font-size:16px;max-width:72ch;line-height:1.6}
+#room-access,#create-access{max-width:640px}
+#room-access input,#create-access input,#create-access select{width:100%;box-sizing:border-box}
+.invite-row{display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin:12px 0}
+#credentials .quiet-button{margin:4px 8px 4px 0}
+#connection-status{margin:0 0 24px}
+#connection-status .quiet-button{margin-left:12px}
+@media(max-width:600px){.workflow-steps{font-size:11px;gap:6px 12px}.next-step{font-size:15px}}

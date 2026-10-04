@@ -331,6 +331,118 @@
         translate();
       }),
   );
+  let capabilities = null;
+  function passwordInput(parent, title, id) {
+    const wrapper = el("label", title, parent);
+    const input = el("input", undefined, wrapper);
+    input.type = "password";
+    input.autocomplete = "off";
+    input.id = id;
+    return input;
+  }
+  function downloadText(name, value, type = "application/json") {
+    const url = URL.createObjectURL(new Blob([typeof value === "string" ? value : JSON.stringify(value, null, 2)], {type}));
+    const a = el("a"); a.href = url; a.download = name; a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+  function invitationUrl(room, invitation) {
+    const url = new URL(location.origin + location.pathname);
+    url.hash = new URLSearchParams({room, invitation}).toString();
+    return url.href;
+  }
+  async function copyText(text, parent) {
+    try { await navigator.clipboard.writeText(text); note(tr("Copied. Share privately.", "已复制，请私下分享。"), parent); }
+    catch { const input = el("textarea", text, parent); input.readOnly = true; input.select(); }
+  }
+  function renderCreateAccess() {
+    const out = $("create-access"); out.replaceChildren();
+    if (!capabilities?.live) return;
+    const select = el("select", undefined, el("label", tr("How will this room use AI?", "房间如何使用 AI？"), out));
+    select.id = "funding";
+    el("option", tr("Team demo access code", "团队演示访问码"), select).value = "team";
+    const own = el("option", tr("My API keys", "使用我的 API key"), select); own.value = "own";
+    own.disabled = !capabilities.own_keys_supported;
+    const code = passwordInput(out, tr("Demo access code", "演示访问码"), "demo-code");
+    const keys = el("div", undefined, out); keys.id = "create-key-fields";
+    passwordInput(keys,"DeepSeek API key","create-deepseek");
+    passwordInput(keys,"Tavily API key (required for web research)","create-tavily");
+    note(tr("Your keys pay for this room. They are encrypted on the server and are not saved in browser storage. You can replace or remove them later.","你的 key 为此房间付费，在服务器加密保存，不写入浏览器存储，可随时替换或删除。"),keys);
+    select.onchange = () => { keys.hidden = select.value !== "own"; code.parentElement.hidden = select.value !== "team"; };
+    if (!capabilities.shared_demo_available && capabilities.own_keys_supported) select.value = "own";
+    select.onchange();
+  }
+  function creationAccess() {
+    if (!capabilities) throw Error(tr("The workspace is connecting. Wait a moment and try again.","工作区正在连接，请稍后重试。"));
+    if (!capabilities.live) return {};
+    return $("funding").value === "own"
+      ? {credentials:{deepseek_api_key:$("create-deepseek").value.trim(),tavily_api_key:$("create-tavily").value.trim()}}
+      : {access_code:$("demo-code").value.trim()};
+  }
+  async function loadCapabilities() {
+    try {
+      capabilities = await api("/capabilities",undefined,null);
+      $("connection-status").textContent = capabilities.live
+        ? tr("Live workspace · AI responses use real API calls. Start with a demo access code or your own keys.","真实运行 · 将调用真实 API。使用演示访问码或自己的 key 开始。")
+        : tr("Practice workspace · Responses are simulated; no API usage.","练习模式 · 回答为模拟数据，不消耗 API。");
+      renderCreateAccess();
+    } catch {
+      const out = $("connection-status"); out.textContent = tr("The server is waking up or unavailable. Your saved session is kept.","服务器正在唤醒或暂时不可用，已保存的会话仍然保留。");
+      action(tr("Try connecting again","重新连接"),out,loadCapabilities,"quiet-button");
+    }
+  }
+  function saveRecovery() {
+    downloadText("considea-private-recovery.json",{room_id:auth.room_id,role:snapshot.actor.role,
+      member_id:snapshot.actor.member_id,recovery_code:auth.recovery_code,
+      instructions:"Keep private. Recovering rotates both the session and this code."});
+  }
+  function renderRoomAccess(v) {
+    const out = $("room-access"), identity = v.room_id + ":" + v.actor.role + ":" + (v.actor.member_id || "");
+    if (out.dataset.identity !== identity) {
+      out.dataset.identity = identity; out.replaceChildren();
+      el("p",tr("Your access","你的访问权限"),out,"tag");
+      note(tr("Download a recovery card before leaving. It restores your identity without exposing anyone else's interview.","离开前下载恢复卡，用于恢复本人身份。"),out);
+      action(tr("Download private recovery card","下载私人恢复卡"),out,async()=>{
+        if (!auth.recovery_code) {
+          const r=await api("/rooms/"+auth.room_id+"/recovery-code",{});
+          auth.recovery_code=r.recovery_code; storage.set("conclave-auth",JSON.stringify(auth));
+        }
+        saveRecovery();
+      },"quiet-button");
+      if (v.actor.role === "admin") {
+        el("h3",tr("Invite your team","邀请团队"),out);
+        const invites=el("div",undefined,out);invites.id="invite-members";
+        el("h3",tr("Room API keys","房间 API key"),out);
+        el("p","",out).id="key-status";
+        if (v.access?.own_keys_supported) {
+          const deepseek=passwordInput(out,"DeepSeek API key","room-deepseek");
+          const tavily=passwordInput(out,"Tavily API key","room-tavily");
+          note(tr("Saved keys are never shown again. These keys fund the whole room.","已保存的 key 不再显示，将用于整个房间。"),out);
+          action(tr("Save room keys","保存房间 key"),out,async()=>{
+            await api("/rooms/"+auth.room_id+"/keys",{credentials:{deepseek_api_key:deepseek.value.trim(),tavily_api_key:tavily.value.trim()}});
+            deepseek.value="";tavily.value="";await refresh(true);
+          });
+          action(tr("Remove room keys and pause","删除房间 key 并暂停"),out,async()=>{
+            if (!confirm(tr("Remove the saved keys? New AI calls will pause until replacement keys are entered.","删除已保存的 key？新的调用会暂停，直到输入替换 key。"))) return;
+            await api("/rooms/"+auth.room_id+"/keys",{credentials:null});deepseek.value="";tavily.value="";await refresh(true);
+          },"quiet-button");
+        }
+      }
+    }
+    if (v.actor.role === "admin") {
+      $("key-status").textContent = v.access?.funding === "own"
+        ? (v.access.keys_configured ? "Using your room keys · encrypted" : "Room keys removed · add keys to continue")
+        : "Team demo · " + (v.access?.shared_calls_remaining ?? "—") + " shared tasks remaining today";
+      const invites=$("invite-members");invites.replaceChildren();
+      for (const [id,m] of Object.entries(v.members)) {
+        const row=el("div",undefined,invites,"invite-row");el("span",id + (m.joined ? " · Joined" : " · Not joined"),row);
+        if (!m.joined) action("Create a new invitation link",row,async()=>{
+          const r=await api("/rooms/"+auth.room_id+"/invitation",{member_id:id});
+          await copyText(invitationUrl(r.room_id,r.invitation),row);
+        },"quiet-button");
+      }
+      note("New links replace older unused invitations. Joined participants use their own recovery card.",invites);
+    }
+  }
   let createdRoom = null;
   function renderCredentials(room) {
     const out = $("credentials");
@@ -343,16 +455,19 @@
       ),
       out,
     );
-    const data = el("textarea", undefined, out);
+    action(tr("Download private room card", "下载私人房间卡"),out,async()=>downloadText("considea-private-room.json",room),"quiet-button");
+    const advanced=el("details",undefined,out);el("summary",tr("Private backup details","私人备份详情"),advanced);
+    const data = el("textarea", undefined, advanced);
     data.readOnly = true;
     data.value = JSON.stringify(room, null, 2);
     data.setAttribute("aria-label", tr("Room credentials", "房间凭据"));
     action(tr("Open administrator view", "打开管理员视图"), out, () =>
-      establish({ room_id: room.room_id, token: room.admin_token }),
+      establish({ room_id: room.room_id, token: room.admin_token, recovery_code:room.admin_recovery_code }),
     );
     for (const [member, invitation] of Object.entries(room.invitations)) {
       const row = el("p", undefined, out);
       el("span", member + " · ", row);
+      action(tr("Copy private invitation link","复制私人邀请链接"),row,()=>copyText(invitationUrl(room.room_id,invitation),row),"quiet-button");
       action(
         tr("Use this invitation", "用此邀请码加入"),
         row,
@@ -362,7 +477,7 @@
             { invitation },
             null,
           );
-          await establish({ room_id: joined.room_id, token: joined.token });
+          await establish({ room_id: joined.room_id, token: joined.token, recovery_code:joined.recovery_code });
         },
         "quiet-button",
       );
@@ -376,6 +491,7 @@
     createdRoom = await api(
       "/rooms",
       {
+        ...creationAccess(),
         room_context: {
           member_ids,
           hackathon_context: $("context").value,
@@ -390,6 +506,7 @@
       },
       null,
     );
+    for (const id of ["demo-code","create-deepseek","create-tavily"]) if ($(id)) $(id).value="";
     renderCredentials(createdRoom);
     $("roomId").value = createdRoom.room_id;
   });
@@ -400,7 +517,13 @@
       { invitation: $("invitation").value.trim() },
       null,
     );
-    await establish({ room_id: joined.room_id, token: joined.token });
+    await establish({ room_id: joined.room_id, token: joined.token, recovery_code:joined.recovery_code });
+  });
+  bind("recover",async()=>{
+    const r=await api("/rooms/"+encodeURIComponent($("roomId").value.trim())+"/recover",{
+      role:$("recover-role").value,member_id:$("recover-member").value.trim(),recovery_code:$("recover-code").value.trim()
+    },null);
+    $("recover-code").value="";await establish(r);saveRecovery();
   });
   bind("resume", () =>
     establish({
@@ -534,6 +657,7 @@
           ? tr("Offline agent test", "Agent 离线测试")
           : tr("Connected workflow", "已连接 workflow");
     renderStatus(v);
+    renderRoomAccess(v);
     renderPrivate(v);
     renderStudio(v);
     renderCandidates(v);
@@ -563,15 +687,32 @@
       out,
     );
     el("p", tr("Room ", "房间 ") + v.room_id, out);
-    detail(
-      tr(
-        "Save your recovery credentials privately",
-        "保存本人的恢复凭据（请私下保管）",
-      ),
-      { room_id: auth.room_id, token: auth.token },
-      out,
-      "recovery",
-    );
+    const steps = el("ol",undefined,out,"workflow-steps");
+    const phaseIndex = v.phase === "completed" ? 4 : ["idea_generating","evaluating","awaiting_review","revising"].includes(v.phase) ? 3 : v.phase === "awaiting_convergence_decision" ? 2 : v.phase === "interviewing" ? 0 : 1;
+    for (const [i,name] of ["Private interview","Answer differences","Choose together","Review directions","Shared brief"].entries()) {
+      const item=el("li",name,steps); if(i===phaseIndex)item.setAttribute("aria-current","step");
+    }
+    const next = v.private?.stage === "awaiting_answers" ? "Your next step: answer your private questions."
+      : v.private?.stage === "awaiting_profile_approval" ? "Your next step: review what you want to share with the team."
+      : v.phase === "awaiting_difference_answers" ? "Your next step: answer the shared difference. Every affected person must reply."
+      : v.phase === "awaiting_convergence_decision" ? "Your next step: choose whether to generate ideas or keep discussing."
+      : v.phase === "awaiting_review" ? "Your next step: review a direction and its evidence with your team."
+      : v.phase === "completed" ? "Your accepted project brief is ready to download."
+      : v.actor.role === "admin" ? "Share each invitation privately. Participants complete their own interview and decisions."
+      : "Your progress is saved. Waiting for the team or the next AI response.";
+    el("p",next,out,"next-step");
+    if (v.actor.member_id) {
+      const available = v.members[v.actor.member_id].available !== false;
+      action(available ? "Mark myself away" : "I'm back",out,async()=>{
+        await api("/rooms/"+auth.room_id+"/presence",{available:!available});await refresh(true);
+      },"quiet-button");
+    }
+    if (Object.values(v.members).some(m=>m.available===false)) note("A participant is away. Their answers and approvals are still required. Resume when everyone returns; if the team changes, end this room and create another.",out);
+    if (v.discussion_round < 4) el("p","Discussion " + v.discussion_round + " of at least 4. Each round includes human answers before the team decides to generate.",out,"muted");
+    if (v.tasks.some(t=>t.status==="failed")) {
+      note("A step needs attention. Your answers are saved. Open Activity & recovery to retry it.",out);
+      document.querySelector(".activity-panel:has(#tasks)").open=true;
+    }
     if (v.mode === "mock")
       note(
         tr(
@@ -630,14 +771,10 @@
         );
       }
     }
-    if (v.paused_reason)
-      note(
-        tr(
-          "Agent budget reached. Ask the administrator to raise the limit or end the room.",
-          "调用额度已用完，请管理员提高额度或结束房间。",
-        ),
-        out,
-      );
+    if (v.paused_reason) note(v.paused_reason === "credentials"
+      ? "AI work is paused. The administrator can add replacement keys under Access, invitations & API keys."
+      : v.paused_reason === "daily_limit" ? "The shared demo allowance is used for today. Wait until UTC midnight or let the administrator add room keys."
+      : "This room reached its AI task allowance. Saved answers and results are still available.",out);
     if (v.actor.role === "admin") {
       const d = el("details", undefined, out);
       d.dataset.detail = "admin-controls";
@@ -647,10 +784,11 @@
         tr("Agent call limit", "Agent 调用上限"),
         d,
         "budget",
-        v.config.max_agent_calls + 100,
+        Math.min(v.config.max_agent_calls + 10, v.access?.room_call_limit || 10000),
         "number",
       );
       budget.min = v.config.max_agent_calls + 1;
+      budget.max = v.access?.room_call_limit || 10000;
       action(tr("Increase call limit", "提高调用额度"), d, async () => {
         await api("/rooms/" + auth.room_id + "/budget", {
           max_agent_calls: Number(budget.value),
@@ -864,7 +1002,7 @@
         id + (id === v.actor.member_id ? tr(" (you)", "（你）") : ""),
         name,
       );
-      el("span", label(m.stage), name, "member-state");
+      el("span", m.available===false ? "Away" : m.joined===false ? "Not joined" : label(m.stage), name, "member-state");
       if (v.answers[id]) el("p", tr("Difference answered", "已回答分歧"), body);
       if (v.votes[id])
         el(
@@ -1056,6 +1194,17 @@
       "shared-history",
     );
   }
+  function renderSources(evidence, parent) {
+    const sources=(evidence||[]).filter(item=>{try{return ["https:","http:"].includes(new URL(item.url).protocol);}catch{return false;}});
+    if (!sources.length) return;
+    el("h3",tr("Sources checked","已查阅来源"),parent);
+    const list=el("ul",undefined,parent,"evidence-links");
+    for (const source of sources) {
+      const item=el("li",undefined,list),link=el("a",source.title||new URL(source.url).hostname,item);
+      link.href=source.url;link.target="_blank";link.rel="noopener noreferrer";
+      if (source.limitation) el("small",source.limitation,item);
+    }
+  }
   function renderCandidates(v) {
     const out = $("candidates"),
       reviews = $("reviews"),
@@ -1175,6 +1324,7 @@
         panel,
         "muted",
       );
+    renderSources(full?.evidence || report?.content?.evidence,panel);
     if (full) {
       const verdict = {
         pass: tr("Pass", "通过"),
@@ -1343,6 +1493,13 @@
         for (const item of candidate.mvp_scope) el("li", item, ul);
       }
     }
+    const acceptedReport=v.final_output.evaluation?.content;
+    if (acceptedReport) {
+      el("h3",tr("Evidence & feasibility","证据与可行性"),out);
+      el("p",acceptedReport.summary,out);
+      const risks=el("ul",undefined,out);for(const risk of acceptedReport.risks||[])el("li",risk,risks);
+      renderSources(acceptedReport.evidence,out);
+    }
     detail(
       tr(
         "Accepted project, evaluation & decisions",
@@ -1351,15 +1508,13 @@
       v.final_output,
       out,
       "final-output",
-    ).open = true;
+    );
     action(tr("Export accepted brief", "导出已接受的简报"), out, async () => {
-      const text =
-        "considea / " +
-        tr("Accepted project brief", "已接受的项目简报") +
-        "\nRoom: " +
-        v.room_id +
-        "\n\n" +
-        JSON.stringify(v.final_output, null, 2);
+      const text = "# " + candidate.title + "\n\n" + candidate.problem + "\n\n" + candidate.solution
+        + "\n\n## Who it helps\n" + (candidate.target_users||[]).join(", ")
+        + "\n\n## First demo\n" + (candidate.mvp_scope||[]).map(x=>"- "+x).join("\n")
+        + "\n\n## Evaluation\n" + (v.final_output.evaluation?.content?.summary||"")
+        + "\n\n## Accepted record\n" + JSON.stringify(v.final_output,null,2);
       const url = URL.createObjectURL(
         new Blob([text], { type: "text/plain;charset=utf-8" }),
       );
@@ -1441,11 +1596,23 @@
       }
     })();
   }
+  function readInvitation() {
+    const invitationParams=new URLSearchParams(location.hash.slice(1));
+    if (invitationParams.has("room") && invitationParams.has("invitation")) {
+      $("roomId").value=invitationParams.get("room");$("invitation").value=invitationParams.get("invitation");
+      openWorkspace();$("entry").hidden=false;$("app").hidden=true;$("join").focus();
+      return true;
+    }
+    return false;
+  }
+  const invitationPending=readInvitation();
+  window.addEventListener("hashchange",readInvitation);
+  void loadCapabilities();
   translate();
   theme(preference.get("considea-study-theme") === "light" ? "light" : "dark");
   setView("studio");
   if (storage.get("considea-test-login") || auth) openWorkspace();
-  if (auth) {
+  if (auth && !invitationPending) {
     const saved = { ...auth };
     establish(saved).catch((e) => {
       showError(e);
