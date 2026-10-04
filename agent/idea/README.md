@@ -93,7 +93,7 @@ Copy `.env.example` to a local `.env` or configure the server environment. Set a
 node --env-file=agent/idea/.env agent/idea/cli.mjs --live --input authorized-request.json --max-model-requests 6 --max-output-tokens 4096
 ```
 
-This command can incur provider charges. It is a stateless developer invocation with explicitly authorized input, not a public server endpoint. The CLI default is offline. No live call was made during implementation. Request/token/search caps bound work, not a precise USD charge; SDK zero-price fields are placeholders and must not be reported as actual cost.
+This command can incur provider charges. It is a stateless developer invocation with explicitly authorized input, not a public server endpoint. The CLI default is offline. The package implementation originally used offline tests; current integrated live acceptance is tracked separately. Request/token/search caps bound work, not a precise USD charge; SDK zero-price fields are placeholders and must not be reported as actual cost.
 
 Defaults: six model turns, ten tool calls, 90 seconds overall, 100 KB request-size admission limit, at most eight searches allowed by the schema and two memory recalls. The byte cap is an application admission limit, not a token count. Oversized history is rejected rather than silently truncated. The application must choose a model/context budget compatible with its full snapshot.
 
@@ -104,10 +104,10 @@ Offline tests cover contract compatibility, human gate consistency, source/room/
 Official references: [Tavily Search](https://docs.tavily.com/documentation/api-reference/endpoint/search), [Mem0 search](https://docs.mem0.ai/api-reference/memory/search-memories), [Mem0 add](https://docs.mem0.ai/api-reference/memory/add-memories), [SpacetimeDB permissions](https://spacetimedb.com/docs/tables/access-permissions/), [DeepSeek JSON output](https://api-docs.deepseek.com/guides/json_mode/).
 
 
-## 集成分支的输出 harness
+## Integrated output harness
 
-输出格式从现有协议 Schema 生成，并按当前请求约束候选槽位、base_candidate_ref 和可用共享 source_id，并与校验器共用 member_input 来源白名单（当前成员陈述或真实分歧回答）；最终仍由原有结构、来源归属和证据校验决定能否发布。
+Output instructions come from the protocol schema and the current candidate slots, base candidate reference and authorized source IDs. The same member-input source allowlist is used by the prompt and validator. Structural, ownership and evidence checks still determine whether the result can be published.
 
-仅 contract 2.0 且未注入 memoryClient 的无工具模式，在 JSON/输出协议失败时最多让模型纠正一次。纠正与初次调用共用原超时（默认 90 秒）和总模型轮次限制；不是重跑整个 Idea 任务。provider 错误不自动重试，二次失败不发布部分结果。contract 2.1 研究扩展与 Mem0 工具模式不启用纠正，避免重放工具或检索。
+Only the no-tool contract 2.0 path without a memory client enables one model correction for JSON/output protocol failures. It shares the original deadline (90 seconds by default) and model-turn limit. Provider errors are not retried by this correction path, and a second invalid result publishes nothing. The contract 2.1 research extension and Mem0 tool mode do not enable it, avoiding repeated tools/searches.
 
-跨调用重试、SpacetimeDB 缓存/租约和提交版本校验仍按原流程执行。测试及真实闭环状态见 [整合验收记录](../../workflow/INTEGRATION.md)。
+Workflow retries, SpacetimeDB leases/cache and commit-time version checks remain separate. Current integrated live evidence is recorded in [DEV-ACCEPTANCE.md](../../docs/DEV-ACCEPTANCE.md).
