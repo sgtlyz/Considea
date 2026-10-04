@@ -21,7 +21,10 @@ const investigationShape = { issue_id: 'COPY_INPUT_ISSUE', candidate_id: 'COPY_I
   evidence_ids: [], limitations: [], recommended_next_step: 'Next step' };
 
 export function createDefinition(request, session) {
-  const shape = request.payload.question ? investigationShape : evaluationShape;
+  const shape = { ...(request.payload.question ? investigationShape : evaluationShape),
+    candidate_id: request.payload.candidate.candidate_id,
+    candidate_version: request.payload.candidate.version,
+    ...(request.payload.question ? { issue_id: request.payload.question.issue_id } : {}) };
   const feedback = (result, p) => {
       const ledger = session.snapshot(), d = result?.data, issues = [];
       if (!Array.isArray(result?.warnings)) issues.push('The TOP-LEVEL warnings field is required: use warnings: [] when empty. It must be a sibling of status and data, never inside data.');
@@ -36,6 +39,21 @@ export function createDefinition(request, session) {
       }
       if (!object(d)) issues.push('Return one JSON object with status, data and warnings, without prose or Markdown fences.');
       else {
+        const missing = Object.keys(shape).filter(key => !Object.hasOwn(d, key));
+        if (missing.length) issues.push(`Missing required data fields: ${missing.map(key => 'data.' + key).join(', ')}. Put these fields directly inside data, alongside tests; do not nest them inside tests.novelty or tests.feasibility.`);
+        if (!p.question && object(d.tests)) {
+          for (const key of Object.keys(d.tests).filter(key => !['novelty', 'feasibility'].includes(key))) {
+            issues.push(`Unexpected field data.tests.${key}. data.tests may contain only novelty and feasibility.${Object.hasOwn(shape, key) ? ` Move ${key} to data.${key}, preserving its content.` : ' Remove the unsupported field.'}`);
+          }
+          for (const name of ['novelty', 'feasibility']) {
+            const check = d.tests[name];
+            if (!object(check)) continue;
+            const fields = ['result', 'reason', 'evidence_ids', 'required_changes', 'missing_information'];
+            for (const key of fields.filter(key => !Object.hasOwn(check,key))) issues.push(`Missing required field data.tests.${name}.${key}.`);
+            for (const key of Object.keys(check).filter(key => !fields.includes(key)))
+              issues.push(`Unexpected field data.tests.${name}.${key}.${Object.hasOwn(shape,key) ? ` Put ${key} at data.${key}, preserving its content.` : ' Remove the unsupported field.'}`);
+          }
+        }
         if (!p.question) for (const name of ['novelty', 'feasibility'])
           if (!['pass', 'fail', 'insufficient_evidence'].includes(d.tests?.[name]?.result))
             issues.push(`tests.${name}.result is required. Choose exactly pass, fail, or insufficient_evidence; keep this field when correcting other fields.`);
@@ -80,6 +98,7 @@ Keep generated reasons and findings concise (one to three sentences each); put r
 Do not generate server-owned data fields: passed, report_id, report_schema_version, status, evidence, search_log, novelty_coverage, version, feasibility, similar_projects, unknowns, sources.
 Member sources: ${JSON.stringify(session.snapshot().evidence)}
 ${request.payload.question ? 'Perform ONLY the supplied topic investigation. Use search/read_source for authoritative documentation about the question. Do not search for competitors or evaluate the candidate MVP. conclusion describes whether the REQUESTED CAPABILITY is available, not whether the answer has a citation. For example, a sourced answer "No, the API rejects this" MUST use documented_blocker; a sourced answer "Yes, the API allows this" uses documented_support. Both become supported_by_source, with different outcome values.' : 'First call search separately for scope=github and scope=devpost with descriptive candidate keywords. The runtime prioritizes these domains within the same budget. Then read_source for close project bodies and required official technical documentation BEFORE composing a final evaluation. Use scope=web for additional searches only after both platform attempts.'} Do not output a final JSON on the first turn while tools are available.
+${request.payload.question ? '' : 'The data.tests object has exactly two children: novelty and feasibility. technical_checks, competitors, risks, unverified_assumptions and recommended_changes are siblings of tests directly under data. Preserve this nesting in submit_report arguments.'}
 Only actual read_source records may be cited. previous_report is historical context, not current evidence. ${request.payload.question ? 'If the question remains unverified, use conclusion=unknown and explain missing evidence in limitations.' : 'If evidence is insufficient, use insufficient_evidence with missing_information; unknown for unverified technical checks. Cover all input critical_dependencies and preserve IDs. Identify omitted necessary API, data, device and implementation dependencies from the MVP; add distinct technical_checks IDs. An empty dependency input does not establish feasibility. Necessary unknown dependencies forbid a feasibility pass.'}
 time_limit describes the user's project constraint: none explicitly means no time limit. tool_budget.timeout_ms limits the assessment runtime, never the project delivery window.
 Use internal conclusion enums above. The server maps them to workflow fields and marks next checks needs_test; this assessment does not execute the proposed product and cannot claim verified.
