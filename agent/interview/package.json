@@ -9,7 +9,7 @@
   "packageManager": "pnpm@11.19.0",
   "scripts": {
     "setup": "pnpm install --frozen-lockfile && pnpm --dir ../pi-base install --frozen-lockfile",
-    "test": "node --test *.test.mjs ../pi-base/*.test.mjs",
+    "test": "node --test *.test.mjs agentverse/*.test.mjs ../pi-base/*.test.mjs",
     "demo": "node demo.mjs",
     "chat": "node cli.mjs",
     "smoke:live": "node live-smoke.mjs --live",

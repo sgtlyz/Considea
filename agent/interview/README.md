@@ -4,9 +4,9 @@
 
 **最新团队接口：** 已依据 master `644c750` 实现分歧决策后的 followup，以及人工审阅评估后追加的 reopened 入口。字段、版本兼容和配对 JSON 见 [新追访接线说明](followup-integration.md)。新 `definition.mjs` / `runInterview` 使用 v2；完整人工结论和候选/评估上下文使用本分支扩展 v2.1。团队状态机、认证与持久化仍由 Workflow 实现。
 
-此前 [PreferenceProfile / NegotiationBrief 对齐草案](workflow-alignment.md) 保留作历史参考，其中 3–5 轮、角色分工与字段提案已被新版 master 和上述接线说明替代。time=0 详细画像、持续更新、短摘要与按成员查询尚未完成。
+此前 [PreferenceProfile / NegotiationBrief 对齐草案](workflow-alignment.md) 保留作历史参考，其中 3–5 轮、角色分工与字段提案已被新版 master 和上述接线说明替代。新增的 [Agentverse 独立适配器](agentverse/README.md) 已实现个人会话 time=0 详细画像、持久化更新、审核与短摘要；团队按成员授权查询仍待整体 Workflow 接线。
 
-**当前状态：58 项离线测试通过；新追访路径尚未做 DeepSeek 实测。** 既有 DeepSeek 测试属于旧接口，不能证明新流程的效果。本地 workflow 只保存进程内状态，退出后清空。下文的 CLI、本地流程图和 payload 示例描述保留的旧个人体验流程；其业务定义已移到 `legacy-definition.mjs`，新团队接线请使用上面的说明。
+**当前状态：新团队接口与独立 ACP 适配器已做离线测试；新路径尚未做 DeepSeek 实测。** 既有 DeepSeek 测试属于旧接口，不能证明新流程的效果。旧本地 workflow 只保存进程内状态，退出后清空；独立适配器使用磁盘存储。下文的 CLI、本地流程图和 payload 示例描述保留的旧个人体验流程；其业务定义已移到 `legacy-definition.mjs`，新团队接线请使用上面的说明。
 
 ## 自己体验真实访谈
 
