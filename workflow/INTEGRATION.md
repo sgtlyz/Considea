@@ -1,6 +1,6 @@
 # Agent integration
 
-The integrated path uses all four teammate implementations: Interview, the Python rule-based Negotiator, Idea Generator and Evaluator. Mem0 is disabled. Model calls and web retrieval can run live or through explicit offline fixtures.
+The integrated path uses all four teammate implementations: Interview, the LLM-based Negotiator, Idea Generator and Evaluator. Mem0 is disabled. Model calls and web retrieval can run live or through explicit offline fixtures.
 
 ## Install and run
 
@@ -10,6 +10,7 @@ From the repository root, with Python 3.10+, Node 24 and pnpm 11.19.0:
 python -m pip install -r workflow/requirements.txt
 pnpm --dir agent/pi-base install --frozen-lockfile
 pnpm --dir agent/interview install --frozen-lockfile
+pnpm --dir agent/negotiate install --frozen-lockfile
 pnpm --dir agent/idea install --frozen-lockfile
 pnpm --dir agent/evaluator install --frozen-lockfile
 pnpm --dir agent/idea/spacetime install --frozen-lockfile
@@ -18,7 +19,7 @@ pnpm --dir workflow/node build
 python -m workflow --mode integrated --model offline --evaluator agent
 ```
 
-Offline mode exercises real services and validators with simulated model/retrieval responses. It does not call paid APIs. Negotiation uses the Python rules in both modes.
+Offline mode exercises real services and validators with simulated model/retrieval responses. It does not call paid APIs. The legacy Python Negotiator generates the explicit offline fixture, which passes through the same Node/Pi service and validators as live inference. Live negotiation always calls the LLM; runtime errors and rejected output never silently fall back to the rule baseline.
 
 For live mode, create a root `.env` from `.env.example`, fill DeepSeek and Tavily keys, and set a demo access code. Generate `CONCLAVE_SECRET_KEY` once using the command in the template; retain it across deployments. Run:
 
@@ -35,13 +36,13 @@ Use fresh rooms for each runtime mode. Create the room with a project time limit
 | Operation | Implementation | Integration contract |
 | --- | --- | --- |
 | interview.turn / interview.summarize | `agent/interview/service.mjs` | Interview 2.1 with full follow-up context |
-| negotiate.detect | `agent/negotiate` Python package | Shared v2.0 |
+| negotiate.detect | `agent/negotiate/service.mjs` | Shared v2.0; cited human evidence and member checks |
 | idea.generate / idea.revise | `agent/idea/service.mjs` | Shared v2.0; optional Spacetime job adapter |
 | evaluator.evaluate | `agent/evaluator/workflow.mjs` | Shared v2.0 adapter to the evaluator's native contract |
 
 The Python workflow owns authentication, state transitions and task leases. Node receives an authorized request and returns structured data. User-supplied keys travel through the private per-call transport, not the stored request or shared context. Each call constructs its own model environment.
 
-Interview and the no-tool Idea path have strict output validation and at most one model correction within their original deadline. The harness permits only narrow syntactic repairs; it does not invent missing facts, sources or approval. Invalid output remains a failed task. The UI retains answers and exposes retry controls.
+Interview, Negotiator and the no-tool Idea path have strict output validation and at most one model correction within their original deadline. Negotiator permits at most two model turns within 60 seconds, receives only authorized shared context and uses the room's isolated credentials. Its difference evidence must cite human statements from at least two affected members; one-person contradictions remain clarifications. The harness permits only narrow syntactic repairs; it does not invent missing facts, sources or approval. Invalid output remains a failed task. The UI retains answers and exposes retry controls.
 
 Evaluator uses real Pi tool calls with a source ledger, finite searches/reads and validated report submission. The integrated HTTP retrieval adapter uses Tavily. Reports may honestly return `partial` or `insufficient_evidence`. This is distinct from a failed API call.
 
@@ -71,6 +72,7 @@ SpacetimeDB stores approved shared projections and Idea jobs. Private interviews
 python -m unittest discover -s workflow/tests -v
 python agent/interfaces/validate_contracts.py
 pnpm --dir agent/interview test
+pnpm --dir agent/negotiate test
 pnpm --dir agent/idea test
 pnpm --dir agent/evaluator test
 python -m unittest agent.negotiate.test_negotiator -v

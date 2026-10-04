@@ -35,6 +35,7 @@ jobs:
       - name: Verify all teammate agents and SpacetimeDB reducers
         run: |
           docker run --rm considea-ci python -m unittest agent.negotiate.test_negotiator -v
+          docker run --rm --workdir /app/agent/negotiate considea-ci node --test '*.test.mjs'
           docker run --rm considea-ci python -m unittest discover -s agent/evaluator/test -p '*_test.py' -v
           docker run --rm --workdir /app/agent/interview considea-ci node --test '*.test.mjs' 'agentverse/*.test.mjs' '../pi-base/*.test.mjs'
           docker run --rm --workdir /app/agent/idea considea-ci node --test '*.test.mjs'

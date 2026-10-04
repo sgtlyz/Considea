@@ -1,0 +1,9 @@
+{
+  "name": "considea-negotiator",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=22.19.0" },
+  "packageManager": "pnpm@11.19.0",
+  "scripts": { "test": "node --test *.test.mjs" },
+  "dependencies": { "ajv": "8.17.1", "ajv-formats": "3.0.1" }
+}
