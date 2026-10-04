@@ -1,0 +1,46 @@
+# Separate dev service. Reuse the existing database via DATABASE_URL.
+# Do not apply the root mock blueprint to this live service.
+services:
+  - type: web
+    name: considea-dev-api
+    branch: dev
+    runtime: docker
+    plan: free
+    region: ohio
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/health
+    autoDeployTrigger: off
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: CONCLAVE_SECRET_KEY
+        sync: false
+      - key: CONCLAVE_DEMO_ACCESS_CODE
+        sync: false
+      - key: DEEPSEEK_API_KEY
+        sync: false
+      - key: TAVILY_API_KEY
+        sync: false
+      - key: CONCLAVE_MODE
+        value: integrated
+      - key: CONCLAVE_MODEL
+        value: live
+      - key: CONCLAVE_EVALUATOR
+        value: agent
+      - key: CONCLAVE_WORKERS
+        value: "2"
+      - key: PI_PROVIDER
+        value: deepseek
+      - key: EVALUATOR_PROVIDER
+        value: deepseek
+      - key: DEEPSEEK_MODEL
+        value: deepseek-flash
+      - key: EVALUATOR_RETRIEVAL
+        value: api
+      - key: CONCLAVE_SHARED_DAILY_CALLS
+        value: "120"
+      - key: CONCLAVE_ROOM_CALL_LIMIT
+        value: "80"
+      - key: CONCLAVE_TRUST_PROXY
+        value: "1"

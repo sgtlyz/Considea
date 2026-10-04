@@ -1,264 +1,39 @@
-# Workflow 设计：人工引导的讨论与候选迭代
-
-> 本文是白板及后续问答确认后的流程说明，是 README 和 agent/workflow.md 的流程依据。Workflow 已实现于 [workflow/](workflow/README.md)，支持离线 mock 联调和 Pi 适配。下文区分已确认规则、当前实现默认值和未来需求；业务 Agent 的真实质量仍需联合验收。
+# Workflow design
 
-![Conclave 系统图](docs/assets/conclave-workflow.png)
+This is the current four-role architecture. Earlier three-agent sketches are superseded.
 
-## 1. 组件与职责
+## Human decisions
 
-| 组件 | 输入与职责 | 输出 |
-| --- | --- | --- |
-| Participants / Human | 私人访谈、分歧回答、收敛判断、候选审阅 | 真实成员输入与决策事件 |
-| Interview Agent（Ai） | 对应成员的私人上下文、获准共享的分歧与人工回答 | 深入问题、Preference Profile 草稿 |
-| Negotiator Agent（An） | 获准共享的 Profiles 和讨论轨迹 | 当前最重要的 difference、证据与可回答的问题 |
-| Idea Generator（Ag） | 获准共享的完整讨论历史；修订时包括人工修改意见 | 有讨论来源与取舍的候选或修订版本 |
-| Evaluator Agent（Ae） | 当前候选版本、必要约束与检索来源 | 可行性、技术条件、相似项目、风险和未知项 |
-| Workflow / 应用层 | 校验角色输出与真实用户事件 | 权威状态、任务、权限、轮次和版本 |
-
-Workflow 使用普通应用代码实现，负责调度四个业务 Agent。图中的 Agent 连线表示业务信息流，实际调用与权限检查均经过 Workflow。LLM 不直接修改批准记录、成员回答、收敛决定或最终确认。
-
-## 2. 已确认的主流程
+1. Interview each member privately. Produce an editable summary; only the member-approved projection is shared.
+2. Compare the approved profiles and shared history. Select one important difference, or a clarification when the evidence does not establish disagreement.
+3. Ask every affected member to answer. Members may reject the question's framing.
+4. In rounds 1–3, use those answers to start another interview round. From round 4, ask all members whether to generate or continue discussing.
+5. Generate only after all members choose `converge`. Any `diverge` starts another round immediately.
+6. Evaluate every candidate before opening review. Incomplete evidence remains visible as a partial report.
+7. Accept only when all members accept the same candidate and evaluation version. An agreed small revision returns to Idea generation, followed by evaluation and new review. An agreed request for further discussion returns to Interview.
 
-```mermaid
-flowchart TD
-    P["成员"] --> I["Ai：私人 Interview"]
-    I --> PR["Preference Profiles：本人确认共享"]
-    PR --> N["An：提取最大 difference"]
-    N --> H["Human：回答 difference"]
-    H --> R{"当前讨论轮次 n"}
-    R -->|"n ≤ 3：使用人工回答继续深挖"| I
-    R -->|"n ≥ 4"| C{"Human：diverge / converge"}
-    C -->|"diverge"| I
-    C -->|"converge"| G["Ag：Idea Generator"]
-    G --> E["Ae：Evaluator"]
-    E --> V{"Human Review"}
-    V -->|"接受"| O["Final Output"]
-    V -->|"小改：修改意见"| G
-    V -->|"加一轮：新问题与反馈"| I
-```
+Small-revision instructions must match after trimming surrounding whitespace. Conflicting actions or instructions leave the room waiting; each person can update their choice. An administrator cannot cast a member's vote. An absent participant remains required; a permanently changed team should start a new room.
 
-### 讨论阶段
+## Counters and versions
 
-1. 成员分别接受 Interview，形成个人偏好画像。
-2. 本人确认共享后，Negotiator 比较 Profiles，提出当前最大 difference。
-3. 相关成员亲自回答该 difference；回答可以是二元选择或开放文本。
-4. 当 `n ≤ 3`，把人工回答交回 Interview，深入访谈并更新 Profiles，再进入下一轮分歧识别与人工回答。
-5. 当 `n ≥ 4`，在人工回答后，由 Human 决定 `diverge` 或 `converge`。
-6. `diverge` 返回 Interview，继续上述讨论循环；`converge` 才进入 Idea Generator。
+`discussion_round` starts at 1 and increases only when a new team discussion starts. It is separate from an individual's question batch, a Pi model/tool turn, an agent task attempt and a candidate version. Revision and retry do not advance the discussion round.
 
-**任何一轮都不允许 Negotiator 绕过 Human 直接返回 Interview。** 前三轮用于充分澄清分歧；达到第 4 轮只开放人工收敛选择，不自动生成，也不自动结束。之后继续讨论仍须有人回答新的 difference。
+Workflow creates entity IDs, versions, source IDs, event records and timestamps. Agents return local keys and references to authorized input. They cannot invent an approval, assign a final candidate version or directly move the room to another phase.
 
-### 生成与审阅阶段
+## What counts as a difference
 
-1. Idea Generator 基于获准共享的讨论历史生成候选。
-2. Evaluator 对当前候选进行评估。
-3. Human 查看候选与评估，然后选择：
+A difference materially affects the final project direction: target users, problem priority, product shape, technical approach, novelty versus usefulness, complexity or acceptable risk. Priority depends on impact and missing information, not a head count. A disagreement between two people can matter more than a minor preference held by many.
 
-| Human Review 动作 | 路径 | 需要带回的内容 |
-| --- | --- | --- |
-| 接受 | 输出 Final Output | 被接受的候选及版本、对应评估、真实确认 |
-| 小改 | Idea Generator → Evaluator → Human Review | 修改意见、当前候选版本及相关评估 |
-| 加一轮 | Interview → Profile → Negotiator → Human → 轮次与收敛节点 | 未解决问题、人工反馈、候选与评估中相关的新信息 |
+Binary questions have exactly two options; open questions have none. Clarifications also require human answers and never imply convergence.
 
-小改不启动完整访谈，修订后仍需重新评估和审阅。加一轮重新进入讨论路径，不能直接从访谈跳到生成。这里没有“生成后先人工微调再首次评估”的独立阶段。
+## Context and memory
 
-## 3. Preference Profile 与共享边界
+Each Interview call receives only that member's private history plus authorized shared context. Other roles receive approved shared profiles and a resolvable source catalogue covering prior discussions, answers, decisions and reviews. A complete discussion history does not authorize access to raw private interviews.
 
-Interview 的初访覆盖真实问题、目标用户、兴趣、已有想法、技能与资源、期望体验、限制和比赛目标。成员没有现成 idea 也可以提供信息。
+The workflow database stores authoritative room state, credentials, events, tasks, attempts and recovery. PostgreSQL is used in the dev cloud; SQLite supports local use. SpacetimeDB is an optional shared-board/Idea-job integration. Mem0 is an optional search index in the Idea package, not the source of truth, and is disabled in the integrated path.
 
-画像包含以下内容维度。实际 JSON 使用契约中的 items/category 结构；下表用于解释内容，不另定义一套并行字段：
+## Output and evidence
 
-| 字段 | 含义 |
-| --- | --- |
-| `problems` | 想解决的问题与痛点 |
-| `target_users` | 倾向关注的用户群体 |
-| `interests` | 兴趣与偏好 |
-| `skills` | 技术、领域知识与资源 |
-| `desired_experience` | 希望产品提供的体验 |
-| `constraints` | 不能接受的条件 |
-| `tradeoffs` | 可以交换或妥协的部分 |
-| `goals` | 比赛与项目目标 |
-| `confidence` | 对总结的置信描述，不等于真实成员认可 |
-| `evidence` | 支持条目的对应回答引用 |
+The default is three candidates; the API allows one to five. Each candidate explains its users, problem, solution, scope, team contributions, tradeoffs, dependencies and source trace. The evaluator distinguishes documented support, member claims, blockers and unknowns. A search with no results does not establish global novelty, and documentation does not establish a working prototype.
 
-画像草稿由本人修改、删除和确认。成员可以区分“我的陈述”和“AI 的推断”；Agent 不能自行写入共享批准。
-
-原始回答的引用保留私人访问边界。公共来源只能指向获准共享的内容，不能通过 evidence、候选理由或“为什么追问”间接公开原文。当前实现把每次批准记录为一个新的共享版本，并保留已批准历史供后续讨论使用；编辑新画像不会自动撤销旧版本授权。独立的撤回授权及依赖刷新接口尚未实现，新增该接口时必须同时清除历史来源的失效授权。
-
-## 4. difference 的定义
-
-沿用此前 workflow 的含义：**当前团队最值得优先解决、会实质影响最终方向的偏好或约束分歧。**
-
-比较维度包括：
-
-- 用户群体与痛点优先级；
-- 产品形态和已有 idea 的方向；
-- 技术路线；
-- 对创新与实用性的重视程度；
-- 可接受的开发复杂度；
-- 风险容忍与成员参与条件。
-
-“最大”综合考虑对最终方向的影响、受影响成员、信息是否不足、不解决是否阻碍方案形成，以及不同选择是否导向不同产品路径。不单纯按意见不同的人数排序。
-
-二元问题可以是“我们是否愿意将主要用户限定为大学生”；开放问题可以是“AI 应该替用户做什么，哪些决定必须由用户保留”。二元选项也不能阻止成员说明“这个问题没有准确表达我的分歧”。
-
-建议输出：
-
-```json
-{
-  "type": "binary",
-  "question": "我们是否愿意将主要目标用户限定为大学生？",
-  "why_it_matters": "用户选择会改变后续产品方向。",
-  "affected_members": ["member_1", "member_2"],
-  "supporting_preferences": [],
-  "conflicting_preferences": [],
-  "decision_options": ["是", "否"]
-}
-```
-
-开放问题使用 `type: "open"`，保留问题、重要性、受影响成员和来源。条目必须引用真实获准共享的内容，不能为了凑讨论轮数捏造分歧。
-
-## 5. Human 回答与收敛判断
-
-这是两个分别记录的人工事件：
-
-| 人工事件 | 发生时机 | 含义 |
-| --- | --- | --- |
-| Answer Difference | 每轮 Negotiator 提出 difference 后 | 成员说明自身选择、原因、条件或对问题的纠正 |
-| Diverge / Converge | `n ≥ 4` 且本轮所需人工回答已收到后 | 人决定继续讨论或进入候选生成 |
-
-Workflow 保存真实答案、成员身份、关联分歧及时间戳。未回复、超时、模型推测均不能替代回答。不同人的相反答案应原样保留，不自动合成一个虚构的“共同决定”。
-
-Agent 可以解释差异是否减少，但 `stable`、分歧评分或任何模型标签都不能触发进入生成。Human 作出 converge 决定才可放行。已确认：全员 converge 才进入生成；任何成员 diverge 立即进入下一轮 Interview。未回复始终保持等待。
-
-供人参考的收敛迹象沿用原设计：关键用户和核心问题基本明确，价值主张不再大幅漂移，剩余差异主要是实现细节或可以用候选取舍表达。这里不要求所有偏好完全相同，也不以“分歧必须清零”作为已确认规则。
-
-## 6. 轮数与深挖
-
-`n` 在图中表示团队讨论轮次，采用 `n ≤ 3` 和 `n ≥ 4` 两个分支。前三轮必须包含 Human 对 difference 的回答；从第 4 轮起由 Human 选择是否收敛。
-
-需要分别维护的计数是：
-
-| 计数 | 用途 |
-| --- | --- |
-| 团队讨论轮次 `n` | 决定是否开放人工 diverge/converge 选择 |
-| 私人访谈问答次数 | 限制单次讨论内的问题量 |
-| Pi 模型 / tool turns | 限制一次 Agent 调用的执行预算 |
-| 候选版本 | 追踪生成、人工修改与重新评估 |
-
-现有初访示例中的“最多 7 轮”和 Base 的模型 turn 限额均不能直接解释成团队讨论轮数。实现从 n=1 开始。前三轮所需 difference 回答收齐、n≥4 有人 diverge、或生成后全员要求加一轮时，在事务中递增 n 并排入新访谈。失败重试、重复提交和小改候选均不增加 n；加一轮沿用原编号。
-
-回到 Interview 时，传入当前画像、本轮 difference、人工回答、已问过的问题和仍未解释清楚的原因。问题逐步从“你想解决什么”走向“为什么”“什么条件会改变判断”“在约束下愿意牺牲什么”。本人继续确认新增共享信息。
-
-团队讨论没有自动收敛的硬上限。当前调用预算默认 200 次，耗尽只暂停派发；管理员可以增加预算或结束房间。失败任务需显式重试，不能以预算耗尽或超时为由伪造 converge 或接受。
-
-## 7. Idea Generator、Evaluator 与最终结果
-
-### Idea Generator
-
-读取获准共享的完整讨论轨迹：历轮画像、difference、真实回答、新增解释、保留和放弃的偏好、人工收敛选择、比赛背景与约束。
-
-当前实现默认生成 **3 个候选**，通过 candidate_count 配置为 1–5 个，全部送评估后再开启审阅。候选字段建议包括 `title`、`target_user`、`problem`、`solution`、`why_team`、`discussion_trace`、`key_tradeoffs`、`mvp` 和 `open_questions`。各候选应有真实不同的取舍。
-
-小改时输入人工意见、当前候选与评估，输出新版本；保留旧版本和修改理由。修改不自动继承旧确认。
-
-### Evaluator
-
-候选生成或修订后，先评估再交给 Human Review。检查技术 API、数据、设备、时间内完成 MVP 的条件、相似公开项目、重合点与具体差异。
-
-结论区分：
-
-- `supported_by_source`：有实际来源支持；
-- `team_claim`：成员自述；
-- `needs_test`：仍需实际测试；
-- `unknown`：信息不足；
-- `verified`：仅在存在可追溯的实际验证记录时使用，不能只凭文档或模型判断。
-
-首版仍以只读检索和文档核查为主，不承诺自动运行原型。每条结论保留来源、支持范围和限制。搜索失败可输出 `partial`，明确未知项后交给人审阅；Evaluator 不替人选小改、加一轮或接受。
-
-### Final Output
-
-Human 接受当前候选后，输出方案、候选演化、关键偏好、人工决定、技术与相似项目来源、已知风险及未解决问题。
-
-进入生成时的 converge 和最终方案的接受是不同事件。最终确认绑定当前候选版本及实际展示的评估；后续修改需要重新评估、重新确认。当前实现默认要求全员对同一候选当前版本及报告选择接受，才产生最终输出。小改及加一轮也等待全员相同动作；小改文字不一致时等待成员协商并重新提交，不让 Agent 代判。
-
-## 8. 已实现状态机
-
-权威转换位于 [workflow/engine.py](workflow/engine.py)。`awaiting_profile_approval` 是成员子状态，房间仍处于 interviewing；轮次路由是同一事务中的判断，没有单独持久化 routing_round 状态。
-
-| 状态 | 下一步与条件 |
-| --- | --- |
-| `setup` | 建立成员身份、比赛背景和约束 |
-| `interviewing` | 私人回答与画像草稿 |
-| `awaiting_profile_approval` | 等待本人批准共享 |
-| `detecting_difference` | Negotiator 使用获准共享的输入 |
-| `awaiting_difference_answers` | 等待所需真实人工回答，未齐时保持等待 |
-| `awaiting_convergence_decision` | diverge 回访；converge 生成 |
-| `idea_generating` / `revising` | 首次生成 / 根据全员人工意见小改 |
-| `evaluating` | 评估当前版本，成功或明确 partial 后进入审阅 |
-| `awaiting_review` | 接受则输出；小改回生成；加一轮回访 |
-| `completed` | 保存人工接受的方案、评估与剩余风险 |
-| `ended` | 管理员停止，取消未完成任务；不生成虚构的最终结果 |
-
-等待人工回答、等待共享批准和等待收敛选择必须能够区分。失败不触发成功转移。人工停止进入 ended；预算中断记录 paused_reason 并保留当前阶段，增加预算后恢复派发；均不能自动转换成 completed。
-
-## 9. 数据、权限与任务
-
-六个 Agent operation、精确字段和人工事件接口已统一到 [contracts.md](agent/contracts.md)，机器可读定义见 [JSON Schema](agent/interfaces/protocol.schema.json)，配对请求/返回见 [fixtures](agent/interfaces/fixtures)。下表说明概念对象，不作为另一套字段定义。
-
-| 对象 | 建议保存的内容 |
-| --- | --- |
-| Room | 成员、比赛背景、约束、当前阶段和团队讨论轮次 |
-| PrivateInterview | 成员、私人问题与答案、会话 revision、画像草稿 |
-| ApprovedProfile | 成员批准的条目、版本、批准事件及来源 |
-| Difference | 所属讨论、问题类型、重要性、相关成员与获准共享的证据 |
-| DifferenceAnswer | 成员、分歧、原始人工回答与时间戳 |
-| ConvergenceDecision | 所属讨论、真实人工 diverge/converge 记录 |
-| DiscussionRound | 输入画像版本、分歧、人工回答、追问与共享更新 |
-| IdeaCandidate | ID、版本、内容、讨论来源与修改轨迹 |
-| Evaluation | 候选版本、证据、发现、风险、未知项与 complete/partial |
-| HumanReview | 候选和报告版本、接受/小改/加一轮、人工意见与身份 |
-| Task | request_id、operation、输入 revision、依赖、可见性、状态与结果 |
-
-Agent 调用的上下文由 Workflow 按权限构造。Interview 只能看到对应成员的私人信息；其他角色使用获准共享的必要信息。
-
-`approved_at`、真实回答、收敛选择、审阅动作和最终确认来自用户事件；轮次、候选版本和任务状态由程序校验后写入。模型不生成权威批准事件。
-
-保留原有工程约束：持久化请求去重；同 ID 不同输入拒绝；回包提交前检查 revision；旧结果不覆盖新回答或新版；不同成员的私人会话分别检查版本；公共进度仅展示允许共享的信息。
-
-## 10. 页面与失败恢复
-
-目标页面为 Room、Private Interview、Team Workbench 和 Final Idea。Team Workbench 展示共享偏好、当前 difference、人工回答、收敛选择与讨论历史。Final Idea 展示当前候选、评估和三种 Human Review 动作。
-
-模型输出不合法、搜索失败、成员未回答、共享未批准、服务重启和并发更新均需有明确等待或错误状态。部分评估可以交给人审阅；任务失败不得增加讨论轮数、补全人工答案或跳过必需节点。模拟来源和示例数据必须标明。
-
-实现采用 Python 标准库 HTTP 服务、SQLite 和浏览器工作台；通过现有 Pi Base 的 Python bridge 接入真实 Agent。默认关闭搜索，搜索服务及工具由 Evaluator 负责人提供。启动、配置和失败恢复见 [开发说明](workflow/README.md)。
-
-## 11. 验收
-
-[自动化测试](workflow/tests/test_workflow.py) 覆盖轮次路由、真实人工门控、共享隔离、版本、幂等、失败重试、租约恢复和 HTTP 权限。使用确定性 mock 验证应用逻辑；访谈深度、difference 质量、方案质量与搜索准确性仍需真实 Agent 联合验收。
-
-1. 私人访谈隔离；未批准内容不进入 Profiles 的共享投影、候选、来源或进度。
-2. Negotiator 支持二元和开放 difference，并引用获准共享的证据。
-3. 每轮先收到所需真实人工回答，才允许后续路由；没有 An → Ai 的跳过 Human 路径。
-4. 分别验证 `n = 1、2、3` 的回访路径，不进入生成。
-5. `n = 4` 时停在人工收敛选择；diverge 回 Interview，converge 进入 Idea Generator。
-6. `n > 4` 继续遵守相同人工门槛，不按固定最大轮次自动生成。
-7. 下一轮问题使用前轮人工回答，不重复浅层问卷，不编造成员选择。
-8. 生成后严格进入 Evaluator，再进入 Human Review。
-9. 小改回 Idea Generator，产生新版本、重新评估、重新审阅。
-10. 加一轮回 Interview，保留相关人工反馈与证据，并重新经过 An 和 Human。
-11. 接受只输出被人工接受的当前候选版本；旧确认与旧报告不能覆盖新版本。
-12. partial 评估展示未知项；重复请求、旧回包和重启不跳过人工节点。
-
-## 12. 当前默认值与未实现边界
-
-- 已确认收敛政策：全员 converge 才生成，任何人 diverge 回访；房主不能代成员投票。
-- 实现默认每轮所有成员重新 Interview 并批准画像；difference 等待 affected_member_ids 中所有成员的真实回答。
-- 每人每轮默认 1 组问题，每组最多 3 个；可配置 1–7 组。模型可提前进入总结，但必须等待本人批准共享。
-- kind=clarification 仍须人工回答。成员可选择“问题没有准确表达分歧”并填写解释，后续按正常轮次路由携带反馈。
-- 审阅默认全员同一动作；小改还需相同修改文字。候选默认 3 个，全部先评估。这些是应用当前默认值，不声称白板已规定所有细节。
-- 搜索默认关闭；四个 Agent definition 及搜索工具仍由角色负责人交付。生产登录、授权撤回、邀请补发和公网部署未实现。本服务面向本地开发联调。
-- operation/schema 保持 v2.0；字段变更应同时更新契约、schema 和样例。
-
-旧文档里的“3–5 轮自动结束”“Negotiate 生成候选”“候选先微调再评估”和“n 表示候选展示上限”已被本文流程替代。
+See [HTTP workflow](workflow/README.md), [agent contracts](agent/contracts.md) and [integration](workflow/INTEGRATION.md) for executable interfaces and verification.

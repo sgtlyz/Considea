@@ -32,7 +32,7 @@ try{
    await page.goto(base);await page.locator('#app').waitFor({state:'visible'});
  }
  const admin=await browser.newPage();admin.on('pageerror',error=>errors.push(error.message));await admin.goto(base);
- await admin.getByRole('button',{name:'Enter test workspace'}).click();await admin.getByRole('button',{name:'中文',exact:true}).click();
+ await admin.locator('.cover-login').click();await admin.getByRole('button',{name:'中文',exact:true}).click();
  await admin.getByText('恢复已有会话',{exact:true}).click();
  await admin.locator('#roomId').fill(created.room_id);await admin.locator('#token').fill(created.admin_token);
  await admin.locator('#resume').click();await admin.locator('#app').waitFor({state:'visible'});

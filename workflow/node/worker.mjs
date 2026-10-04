@@ -18,6 +18,7 @@ if (process.env.CONCLAVE_SPACETIME_CONFIG) {
 async function handle(message) {
   const { id, action, request, offline_response, attempt } = message;
   try {
+    const env = { ...process.env, ...(message.credentials ?? {}) };
     if (action === 'connect') { await space.open(); return send({ id, result: { connected: true } }); }
     if (action === 'publish') {
       if (!space) throw Object.assign(new Error(), { code: 'SPACETIME_CONFIG_ERROR' });
@@ -25,11 +26,11 @@ async function handle(message) {
     }
     if (action === 'evaluate') {
       const { runWorkflowEvaluation } = await import('../../agent/evaluator/workflow.mjs');
-      return send({ id, result: await runWorkflowEvaluation(message) });
+      return send({ id, result: await runWorkflowEvaluation(message, {env}) });
     }
     const runtime = offline_response
       ? createOfflineRuntime(() => ({ status: offline_response.status, data: offline_response.data,
-          warnings: ['OFFLINE INTEGRATION: real agent code, simulated model output'] })) : liveRuntime();
+          warnings: ['OFFLINE INTEGRATION: real agent code, simulated model output'] })) : liveRuntime({env});
     let result;
     if (request.operation.startsWith('interview.')) result = await runInterview({ request, runtime });
     else if (request.operation.startsWith('idea.')) result = space

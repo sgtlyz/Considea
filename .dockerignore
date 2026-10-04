@@ -18,3 +18,5 @@ outputs
 agent/idea/spacetime/dist
 agent/evaluator/live-results
 workflow/node/bindings.mjs
+
+.venv-dev/

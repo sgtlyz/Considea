@@ -7,13 +7,13 @@ remain standalone historical prototypes with sample content. They are not the de
 
 ## Entry and identity
 
-1. **Enter test workspace** opens the room forms. No account, OAuth or password login is implemented.
+1. **Open workspace** opens the room forms. No account, OAuth or password login is implemented.
 2. Create a room with member IDs, context, optional project time limit and search preference.
 3. Save the returned administrator token and invitations. Distribute only each person's invitation to them.
 4. Each person joins in their own tab with a room ID and invitation. Invitations are single use.
-5. Save your own recovery token privately. Restore with the room ID and token after leaving.
+5. Download your private recovery card. Restore with the room ID, identity and recovery code; existing-token restore is also retained.
 
-The test login never supplies an identity or permission to the API. Administrator access
+Opening the workspace never supplies an identity or permission to the API. Administrator access
 is separate from member access and cannot read private interviews or vote for a member.
 Room tokens and unsent form drafts live in sessionStorage, scoped to this tab and identity.
 Draft keys include the question batch, profile draft, difference or candidate/evaluation
@@ -25,7 +25,7 @@ and drafts. Local storage holds only appearance and language preferences.
 
 All workspace content comes from the authenticated `GET /api/rooms/{room_id}` RoomView.
 The frontend has no fixed people, candidate ideas, evaluation scores or simulated votes.
-Mock/offline/live mode is controlled by the backend and labelled separately from test login.
+Mock/offline/live mode is controlled by the backend and labelled in the workspace.
 Agent-produced text is displayed as text, not executable HTML, and remains in its original
 language when interface chrome switches between English and Chinese.
 
@@ -50,6 +50,14 @@ SSE progress stream. Updates restore active fields without freezing other member
 The workflow's human gates and unanimous decision policy are unchanged. Small revisions
 create a new candidate and report version and require fresh human reviews. The prototype's
 sample stance buttons are replaced by the existing workflow decisions.
+
+## Access and next actions
+
+The workspace shows live/practice mode, current discussion steps and a next action. Live rooms can use a team access code or room-specific DeepSeek/Tavily keys. Keys are masked, cleared on success and never copied into browser storage.
+
+Invite links use a URL fragment and are cleared from the address bar when read. A new unused invitation replaces its predecessor. Joined people recover with a private card; recovery rotates the session token and code. Administrators cannot take over a joined identity. Away status is visible and never replaces the person's required consent.
+
+Accepted briefs show readable scope and evaluation text, source links and an optional structured record. API keys and recovery controls are separate from discussion content. The browser test also checks invitation links, recovery/revocation, availability and key-field handling.
 
 ## Serving and verification
 

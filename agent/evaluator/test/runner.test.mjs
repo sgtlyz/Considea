@@ -223,3 +223,33 @@ test('a rejected textual output can use its one correction to submit through the
   const out = await run(request(), [...researchOnly(), fauxAssistantMessage('not JSON'), submit(draft())]);
   assert.equal(out.status, 'ok'); assert.equal(out.data.passed, true);
 });
+
+
+test('submission feedback identifies misplaced root fields inside tests and recovers once', async () => {
+  const invalid = draft();
+  for (const field of ['technical_checks','risks','unverified_assumptions']) {
+    invalid.tests[field] = invalid[field]; delete invalid[field];
+  }
+  const messages = [...researchOnly(), submit(invalid), context => {
+    const feedback = context.messages.filter(m => m.role === 'toolResult' && m.toolName === 'submit_report').map(m => JSON.stringify(m.content)).join(' ');
+    assert.ok(feedback.includes('data.tests.technical_checks'));
+    assert.ok(feedback.includes('data.technical_checks'));
+    assert.ok(feedback.includes('data.tests.risks'));
+    assert.ok(feedback.includes('preserving its content'));
+    return submit(draft());
+  }];
+  assert.equal((await run(request(),messages)).status,'ok');
+  assert.equal((await run(request(),[...researchOnly(),submit(invalid),submit(invalid)])).error.code,'INVALID_OUTPUT');
+});
+
+test('revision output instructions use the current candidate version', async () => {
+  const req = request(); req.payload.candidate.version = 2;
+  const valid = draft(); valid.candidate_version = 2;
+  const { createDefinition } = await import('../definition.mjs');
+  const definition = createDefinition(req, { snapshot: () => ({evidence:[]}), tools:[] });
+  assert.match(definition.operations['evaluator.evaluate'].outputInstructions, /"candidate_version"\s*:\s*2/);
+  const messages = [...researchOnly(), submit(valid)];
+  const out = await run(req,messages);
+  assert.equal(out.status,'ok',JSON.stringify(out));
+  assert.equal(out.data.candidate_version,2);
+});

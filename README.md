@@ -1,137 +1,77 @@
-# Considea - Reach consensus, create better ideas and move faster
+# Considea
 
-面向 Hackathon 团队：先分别理解成员，通过访谈、分歧识别和真实人工回答逐步澄清方向；由成员决定何时收敛，再生成候选、评估并审阅。
+Considea helps a small team choose a project together. Each person talks privately with an interview agent, approves what to share, and answers the differences that matter. The team decides when to generate ideas and which evaluated version to accept.
 
-> **当前状态：四个 Agent 与 Vercel / Render 部署配置已整合到 `master`。** Interview、Negotiator、Idea、Evaluator 使用队友实现；Mem0 暂不启用。Evaluator 通过兼容层接入，完整报告随流程持久化；已通过真实 DeepSeek / Tavily 与本地 SpacetimeDB 的四轮讨论、生成、评估、小改重评和模拟人审闭环；Idea 曾需一次手动重试恢复，模型格式仍有波动。评估可诚实返回证据不足，不代表方案已经验证可行。完整安装、运行和测试见 [整合说明](workflow/INTEGRATION.md)。
+## Try it
 
-## 团队界面
+- [Development workspace](https://considea-dev-api.onrender.com): real model and web-research calls, separate from production. Use a team demo code or your own DeepSeek and Tavily keys.
+- [83-second walkthrough and saved results](https://considea-dev-api.onrender.com/demo.html): no account, keys or live calls required. [Download the video](workflow/web/demo.mp4).
+- [Production website](https://considea.vercel.app): the existing master deployment. Its backend is currently a labelled mock demo.
+- [Setup and deployment](DEPLOYMENT.md), [workflow and HTTP API](workflow/README.md), [agent integration](workflow/INTEGRATION.md).
 
-`feature/interface` 的视觉设计已接入真实 workflow：首页保留测试 login，工作台支持中英文、深浅主题、私人访谈与共享批准、团队分歧与收敛选择、候选评估与人审、最终简报导出。
+The free development server can take a moment to wake up. The development database is a 30-day Render PostgreSQL instance that expires on **November 3, 2026**. Export accepted briefs and migrate the database before expiry if you need to keep using it.
 
-**Test login 仅打开入口，不提供账号认证。** 创建房间后仍需分别保存管理员令牌、分发成员邀请码；后端继续隔离成员的私人回答。界面数据来自房间 API，模型是否真实运行由后端模式决定；默认部署仍为明确标记的 mock。前端接线与验证见 [界面说明](workflow/INTERFACE.md)。
-
-## 本地运行
-
-先按 [整合说明](workflow/INTEGRATION.md) 安装 Node 依赖，然后在仓库根目录执行：
-
-```powershell
-python -m pip install -r workflow/requirements.txt
-python -m workflow --mode integrated --model offline --evaluator agent --db workflow/data/integrated.sqlite3
-```
-
-打开 http://127.0.0.1:8765 ，点击 **Enter test workspace** 后创建房间、保存管理员令牌，将每个成员的邀请码分别交给本人。每个成员在独立浏览器标签页加入并完成私人访谈。启动参数、HTTP 输入输出、Agent 接入和恢复规则见 [Workflow 开发说明](workflow/README.md)。
-
-真实模型配置：编辑根目录 `.env`，填写 `DEEPSEEK_API_KEY` 和 `TAVILY_API_KEY`，再以 `--model live` 启动。创建房间时填写项目时限，并保留“允许评估时检索公开网页”选项；未填写时限会等待管理员补充。程序会自动读取该文件；模板见 [.env.example](.env.example)，已有终端环境变量优先。
-
-## 网页部署
-
-Vercel 前端 + Render 后端从 `master` 部署，配置与验收见 [部署说明](DEPLOYMENT.md)。默认保留标记清楚的 mock 模式；真实四 Agent 使用 `CONCLAVE_MODE=integrated`、`CONCLAVE_MODEL=live`、`CONCLAVE_EVALUATOR=agent`，密钥仅配置在 Render。SpacetimeDB 可选，SQLite 仍需单独持久化。
-
-## 系统图
-
-![Conclave 系统架构：访谈、人工回答分歧、人工决定收敛、生成与评估、人工审阅及两条回路](docs/assets/conclave-workflow.png)
-
-完整的流程、difference 定义、状态转换和待确认项见 [Workflow 设计](workflow_updated.md)。[Agent 目录](agent/README.md) 说明当前角色与现有代码的关系。
-
-## 核心流程
+## The conversation
 
 ```mermaid
 flowchart TD
-    P["成员"] --> I["Interview Agent：私人访谈"]
-    I --> PR["本人确认共享 Preference Profiles"]
-    PR --> N["Negotiator：提取最大 difference"]
-    N --> H["Human：回答 difference"]
-    H --> R{"当前讨论轮次 n"}
-    R -->|"n ≤ 3：带着人工回答继续深挖"| I
-    R -->|"n ≥ 4"| C{"Human：diverge / converge"}
-    C -->|"diverge：继续讨论"| I
-    C -->|"converge：进入生成"| G["Idea Generator：生成候选"]
-    G --> E["Evaluator：可行性与相似项目"]
-    E --> V{"Human Review：审阅"}
-    V -->|"接受"| O["Final Output"]
-    V -->|"小改：附修改意见"| G
-    V -->|"加一轮：附新问题与反馈"| I
+    I[Private interviews] --> P[Each member approves their shared summary]
+    P --> D[Find a difference or clarification]
+    D --> A[Members answer the difference]
+    A --> R{Discussion round}
+    R -->|1 to 3| I
+    R -->|4 or later| C{Team decision}
+    C -->|Anyone wants more discussion| I
+    C -->|Everyone agrees to generate| G[Generate candidates]
+    G --> E[Evaluate evidence and feasibility]
+    E --> H{Human review}
+    H -->|Everyone accepts the same version| F[Export the accepted brief]
+    H -->|Agreed small revision| G
+    H -->|Another discussion round| I
 ```
 
-每轮先由 Interview 形成偏好画像，再由 Negotiator 找出对最终方向影响最大的分歧，相关成员亲自回答。下一轮访谈使用这些回答继续追问原因、改变判断的条件和可接受的取舍。
+Every round requires human answers. Round 4 opens a choice; it does not automatically start generation. A revised candidate gets a new evaluation and fresh approvals. Silence, model advice and exhausted budgets never count as agreement.
 
-- **当 `n ≤ 3`：** Human 回答 difference 后返回 Interview，充分澄清分歧。
-- **当 `n ≥ 4`：** Human 回答 difference 后，人工决定 `diverge` 或 `converge`；前者返回 Interview，后者进入 Idea Generator。
-- 每轮都必须经过 Human 回答。Negotiator 没有绕过 Human 直接回访的路径。
-- 轮数达到门槛不自动生成候选；模型的收敛建议不能替代人工决定。本架构没有规定“最多 5 轮自动生成”或“第 4 轮自动停止”。
-- 生成后的顺序是 **Idea Generator → Evaluator → Human Review**。
-- Human Review 可以接受并输出；小改交回 Idea Generator，修订后重新评估和审阅；加一轮则回到 Interview，重新经过分歧识别和人工节点。
+## Run locally
 
-这里的 `n` 表示团队讨论轮次。个人访谈的一组问答、Pi 内部一次模型/tool turn、候选版本都有各自的计数，不能混用。实现从 n=1 开始，每次回到新一轮 Interview 时递增；生成后加一轮继续原编号，小改和失败重试不加轮。
+Use Python 3.10+, Node 24 and pnpm 11.19.0. From the repository root:
 
-## 角色与责任
+```sh
+python -m pip install -r workflow/requirements.txt
+python -m workflow
+```
 
-| 角色 | 职责 |
+Open `http://127.0.0.1:8765` for a labelled mock workspace. For the actual teammate agents, install the packages listed in [INTEGRATION.md](workflow/INTEGRATION.md), then run:
+
+```sh
+python -m workflow --mode integrated --model offline --evaluator agent
+```
+
+For real calls, copy `.env.example` to `.env` without overwriting existing keys. Set the provider keys, a demo access code and a persistent encryption key, then use `--model live`. The application reads only the repository-root `.env`; existing process variables take precedence. No model or search key is published to the frontend.
+
+## Components
+
+| Component | Responsibility |
 | --- | --- |
-| Interview Agent（Ai） | 私人访谈、偏好画像草稿，以及结合人工回答的深入追问 |
-| Negotiator Agent（An） | 比较获准共享的画像，提出当前最重要的 difference 及其原因 |
-| Idea Generator（Ag） | 使用获准共享的完整讨论轨迹生成候选，并处理人工提出的小改 |
-| Evaluator Agent（Ae） | 检查可行性、技术条件和相似项目，给出来源、风险及未知项 |
-| Human | 回答 difference；从 `n ≥ 4` 起判断 diverge/converge；评估后决定接受、小改或加一轮 |
-| Workflow / 应用层 | 管理身份、权限、真实人工事件、任务、状态、轮数和版本 |
+| Interview | Private questions, follow-up and a summary the member can edit |
+| Negotiator | Rank differences in approved shared information; currently Python rules |
+| Idea Generator | Generate or revise candidates from the authorized discussion history |
+| Evaluator | Research similar projects and technical feasibility with a source ledger |
+| Workflow | Authentication, human decisions, versions, task leases, limits and persistence |
+| Web workspace | Invitations, private interviews, shared decisions, recovery and brief export |
 
-这是四个业务 Agent 角色，加上普通应用代码实现的 Workflow。角色数量不等于开发者人数；四个角色的实现均已接入。
+The workflow uses PostgreSQL when `DATABASE_URL` is set and SQLite otherwise. Private history remains in the workflow database. Optional SpacetimeDB integration publishes the approved shared board and stores Idea jobs. Mem0 support exists in the Idea package but is disabled in the integrated workflow.
 
-## 什么是 difference
+Room access uses invitations and bearer credentials, not a full account service. Members can download private recovery cards. User-supplied room keys are encrypted, isolated per call, replaceable and removable. See [access and key handling](docs/ACCESS-AND-KEYS.md).
 
-沿用 workflow 中的定义：对团队最终方向有实质影响、值得优先解决的偏好或约束分歧，包括目标用户、问题优先级、产品形态、技术路线、创新与实用性、复杂度和风险容忍。
+## Tests and development
 
-“最大”看方向影响、信息缺口和阻碍程度，不只统计持不同意见的人数。两人之间的关键路线分歧可能比四人对次要功能的分歧更重要。问题支持二元选择和开放回答；成员可以纠正 AI 对分歧的解释。
+```sh
+python -m unittest discover -s workflow/tests -v
+python agent/interfaces/validate_contracts.py
+node --test deploy/tests/*.test.mjs
+```
 
-## 数据与人工决定
+CI checks the deployment image, all agent packages, PostgreSQL transactions and a complete browser flow with simulated responses. Real API acceptance is separate and uses synthetic participants. Passing a technical test does not prove interview quality or project novelty. Evidence for this development release is collected in [DEV-ACCEPTANCE.md](docs/DEV-ACCEPTANCE.md).
 
-- 原始访谈和画像草稿保持私有；本人批准的内容才能进入共享上下文。
-- Idea Generator 使用获准共享的历轮画像、分歧、人工回答、取舍和共同方向；“完整历史”不授权读取私人原文。
-- 人工回答、共享批准、收敛选择和最终接受必须来自真实用户事件。未回复不等于同意。
-- 小改产生新候选版本，随后重新评估、重新审阅；旧版确认和旧报告不能直接代表新版。
-- `converge` 表示人决定进入候选生成；最终接受发生在评估后的 Human Review。两种决定分别记录。
-- 已确认收敛规则：`n ≥ 4` 且所需 difference 回答收齐后，全员 `converge` 才生成；任何人 `diverge` 立即回访。
-- 当前审阅默认采用全员对同一候选、版本及报告作出相同动作。小改意见需先协商为相同文字；意见冲突保持等待，可修改自己的审阅。
-
-## 候选、评估与输出
-
-实现默认生成 **3 个候选**，房间配置允许 1–5 个，全部先评估再审阅。候选应包含目标用户、问题、核心机制、团队适配、讨论来源、取舍、MVP 和未决问题，并有实质不同的取舍。
-
-Evaluator 检查官方技术文档、API、数据、设备、开发时间约束和类似公开项目。区分有来源支持、成员自述、待测试和未知；没有检索结果不能称全球首创，文档支持也不等于原型已验证。搜索失败可以显示 `partial` 并进入人工审阅。
-
-最终输出包含被接受的当前方案、讨论和修改轨迹、人工决定、评估来源、风险及未解决问题。
-
-## 页面与实现状态
-
-目标界面包括 Room、Private Interview、Team Workbench 和 Final Idea。工作台展示获准共享的偏好、当前分歧、人工问题、历史与真实进度；结果页展示候选、评估和三种审阅动作。
-
-[Workflow](workflow/README.md) 已实现房间、成员邀请、私人访谈、共享批准、分歧回答、收敛、生成与评估调度、审阅及两条回路，并提供本地工作台。现有 [Pi Base](agent/pi-base/README.md) 负责单次模型调用；`--mode integrated` 通过专用桥接调用队友 service 和原生 Python Negotiator。旧 roles.mjs 仍是旧三角色示例，不作为本工作流的业务 Agent。
-
-实现以 [workflow_updated.md](workflow_updated.md) 为流程依据，以 [接口契约 v2.0](agent/contracts.md) 为基础；Interview 使用其明确的 v2.1 跟进扩展，其他角色和人工事件仍为 v2.0，详见 [整合说明](workflow/INTEGRATION.md)。六个 Agent operation 已明确，配套 [离线样例](agent/interfaces/fixtures) 可供 Workflow 与 Agent 并行开发。当前 Pi Base 示例仍是旧业务格式，接入新 Agent 时使用契约指定的 definition。
-
-## 验收重点
-
-- 每轮 difference 都有真实人工回答，且回访使用该回答。
-- `n ≤ 3` 持续深入访谈；`n ≥ 4` 等待人工选择，分别验证 diverge 与 converge。
-- 生成后先评估再审阅，小改和加一轮分别返回正确角色。
-- 私人内容不泄露，候选能追溯到获准共享的输入。
-- 新版本重新评估和确认；重复请求及旧结果不能错误推进流程。
-- 模型不能把沉默、轮数或多数意见写成全员共识。
-
-当前默认配置、决策政策和未实现边界在 [Workflow 开发说明](workflow/README.md) 集中维护。
-## 并行开发接口
-
-| 负责方 | operation |
-| --- | --- |
-| Interview | `interview.turn`、`interview.summarize` |
-| Negotiator | `negotiate.detect` |
-| Idea Generator | `idea.generate`、`idea.revise` |
-| Evaluator | `evaluator.evaluate` |
-
-Workflow 已使用相同契约接线，Agent 负责人按相同字段独立实现。人工回答、批准、收敛投票和审阅有单独事件格式，不混入模型输出。详见 [开发入口](agent/README.md)。
-
-在仓库根目录运行 `python -m unittest discover -s workflow/tests -v` 验证工作流；运行 `python agent/interfaces/validate_contracts.py` 验证协议样例。测试使用 mock，不代表真实 Agent 的问题质量、候选质量或检索效果。
-
-## Interview integration
-
-The Interview implementation and its independent Agentverse entry point are now included. See [Interview](agent/interview/README.md), [Agentverse](agent/interview/agentverse/README.md), and the [v2.1 follow-up contract](agent/interview/followup-integration.md). The standalone Agentverse session is separate from the team workflow.
+New features are committed on feature branches and integrated into `dev`. `master` is left unchanged until the team accepts the development release.

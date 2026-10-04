@@ -24,7 +24,7 @@ const worker = spawn(
     "--db",
     join(folder, "test.sqlite3"),
   ],
-  { cwd: root, stdio: ["ignore", "pipe", "pipe"] },
+  { cwd: root, env:{...process.env, CONCLAVE_SECRET_KEY:Buffer.alloc(32,1).toString("base64")}, stdio: ["ignore", "pipe", "pipe"] },
 );
 const delay = (ms) => new Promise((r) => setTimeout(r, ms));
 let browser,
@@ -83,18 +83,18 @@ try {
     return p;
   }
   const admin = await page();
-  await admin.getByRole("button", { name: "Enter test workspace" }).click();
+  await admin.locator(".cover-login").click();
   assert.equal(await admin.locator("#app").isVisible(), false);
   // The test login grants no room access.
   const unauthorized = await fetch(base + "/api/rooms/not-a-room");
   assert.equal(unauthorized.status, 401);
   await admin.locator("#memberIds").fill("alice,bob");
   await admin.locator("#context").fill("Synthetic interface regression");
+  await until(async()=>!(await admin.locator("#connection-status").innerText()).includes("Connecting"));
+  const created=admin.waitForResponse(r=>r.url().endsWith("/api/rooms") && r.request().method()==="POST");
   await admin.locator("#create").click();
-  await admin.locator("#credentials textarea").waitFor();
-  const room = JSON.parse(
-    await admin.locator("#credentials textarea").inputValue(),
-  );
+  const room=await (await created).json();
+  await admin.locator("#credentials").waitFor();
   await admin
     .getByRole("button", { name: "Open administrator view", exact: true })
     .click();
@@ -123,9 +123,10 @@ try {
   for (const member of ["alice", "bob"]) {
     const p = await page();
     pages[member] = p;
-    await p.getByRole("button", { name: "Enter test workspace" }).click();
-    await p.locator("#roomId").fill(room.room_id);
-    await p.locator("#invitation").fill(room.invitations[member]);
+    await p.locator(".cover-login").click();
+    await p.goto(base+"/#"+new URLSearchParams({room:room.room_id,invitation:room.invitations[member]}));
+    await until(async()=>new URL(p.url()).hash === "");
+    assert.equal(await p.locator("#roomId").inputValue(),room.room_id);
     await p.locator("#join").click();
     await p.locator("#app").waitFor({ state: "visible" });
     tokens[member] = JSON.parse(
@@ -134,6 +135,32 @@ try {
   }
   const a = pages.alice,
     b = pages.bob;
+  await admin.locator("#account-panel > summary").click();
+  await admin.locator("#room-deepseek").fill("test-browser-private-deepseek");
+  await admin.locator("#room-tavily").fill("test-browser-private-tavily");
+  await admin.getByRole("button",{name:"Save room keys",exact:true}).click();
+  await until(()=>admin.locator("#key-status").innerText().then(t=>t.includes("Using your room keys")));
+  assert.equal(await admin.locator("#room-deepseek").inputValue(),"");
+  assert.equal(await admin.evaluate(()=>JSON.stringify({...sessionStorage,...localStorage}).includes("test-browser-private")),false);
+  await a.getByRole("button",{name:"Mark myself away",exact:true}).click();
+  await until(async()=>!(await view("alice")).members.alice.available);
+  await a.getByRole("button",{name:"I'm back",exact:true}).click();
+  await until(async()=>(await view("alice")).members.alice.available);
+  const oldAuth=JSON.parse(await a.evaluate(()=>sessionStorage.getItem("conclave-auth")));
+  await a.locator("#logout").click();
+  await a.locator("#entry").waitFor({state:"visible"});
+  await a.locator("#roomId").fill(room.room_id);
+  await a.locator("#recover-panel > summary").click();
+  await a.locator("#recover-member").fill("alice");
+  await a.locator("#recover-code").fill(oldAuth.recovery_code);
+  const [recoveryDownload]=await Promise.all([a.waitForEvent("download"),a.locator("#recover").click()]);
+  await recoveryDownload.saveAs(join(folder,"recovery.json"));
+  const recovered=JSON.parse(await readFile(join(folder,"recovery.json"),"utf8"));
+  assert.equal(recovered.role,"member");assert.notEqual(recovered.recovery_code,oldAuth.recovery_code);
+  await a.locator("#app").waitFor({state:"visible"});
+  tokens.alice=JSON.parse(await a.evaluate(()=>sessionStorage.getItem("conclave-auth"))).token;
+  const revoked=await fetch(base+"/api/rooms/"+room.room_id,{headers:{Authorization:"Bearer "+oldAuth.token}});
+  assert.equal(revoked.status,403);
   await until(
     async () => (await view("alice")).private.stage === "awaiting_answers",
   );
@@ -344,9 +371,37 @@ try {
     ),
     false,
   );
+  // The saved replay must work without a room, credentials or API requests.
+  const replayContext = await browser.newContext({viewport:{width:1440,height:1000}});
+  contexts.push(replayContext);
+  const replay = await replayContext.newPage();
+  const replayErrors=[],apiRequests=[];
+  replay.on("pageerror",e=>replayErrors.push(e.message));
+  replay.on("request",r=>{if(new URL(r.url()).pathname.startsWith("/api/"))apiRequests.push(r.url());});
+  await replay.goto(base+"/demo.html");
+  await until(async()=> (await replay.locator("#demo-status").innerText()).startsWith("Recorded "));
+  await until(()=>replay.locator("video").evaluate(v=>Number.isFinite(v.duration)&&v.duration>70&&v.duration<100));
+  await replay.locator("video").evaluate(v=>{v.muted=true;return v.play();});
+  await until(()=>replay.locator("video").evaluate(v=>v.currentTime>0.2));
+  await replay.locator("video").evaluate(v=>{v.pause();v.currentTime=71;});
+  await until(()=>replay.locator("video").evaluate(v=>!v.seeking&&v.readyState>=2));
+  for (const width of [1440,375]) {
+    await replay.setViewportSize({width,height:900});
+    while(await replay.locator("#previous").isEnabled())await replay.locator("#previous").click();
+    for(let step=1;step<=8;step++) {
+      assert.equal(await replay.locator("#step-position").innerText(),`${step} / 8`);
+      assert.ok((await replay.locator("#step-body").innerText()).length>30);
+      assert.ok(await replay.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),"Replay must fit the viewport");
+      if(step<8){await replay.locator("#next").focus();await replay.keyboard.press("Enter");}
+    }
+    assert.ok(await replay.locator("#next").isDisabled());
+  }
+  assert.deepEqual(apiRequests,[]);
+  assert.deepEqual(replayErrors,[]);
+  await replay.screenshot({path:join(screenshots,"replay-mobile.png"),fullPage:true});
   assert.deepEqual(errors, []);
   console.log(
-    "PASS: test login, room creation/join/admin, drafts/reload/languages/themes, four UI rounds, human gates, private data isolation, safe text rendering, real candidate tabs, mobile layout, small revision/re-evaluation, unanimous acceptance, accepted brief export, logout; no page errors.",
+    "PASS: workspace entry, room creation/join/admin, drafts/reload/languages/themes, four UI rounds, human gates, private data isolation, safe text rendering, real candidate tabs, mobile layout, small revision/re-evaluation, unanimous acceptance, accepted brief export, logout; public replay and video, keyboard navigation, no API calls or page errors.",
   );
 } finally {
   if (browser) await browser.close();
