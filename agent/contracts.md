@@ -126,11 +126,18 @@ Evidence 必须是实际获取的来源记录：`evidence_id`、`url`（成员�
 
 `source_kind`：`official_documentation`、`project_self_report`、`member_report`。官方文档支持某能力也不等于团队已经测试成功；项目方声明不等于独立验证。
 
-EvaluationReport：`report_id`、`candidate_id`、`candidate_version`、`status`（`complete` / `partial`）、`competitors`、`technical_checks`、`risks`、`unverified_assumptions`、`recommended_changes`、`evidence`、`search_log`。
+EvaluationReport 1.1：`report_schema_version`（`1.1`）、`report_id`、`candidate_id`、`candidate_version`、`status`（`complete` / `partial`）、`passed`（bool）、`tests`、`competitors`、`technical_checks`、`risks`、`unverified_assumptions`、`recommended_changes`、`evidence`、`search_log`。这是报告字段的增补，外层 envelope 仍为 schema_version=1.0；workflow 应按报告版本读取通过判定。
+
+- `tests`：`{novelty, feasibility}`，每项 `{result, reason, evidence_ids, required_changes, missing_information}`；result 为 `pass` / `fail` / `insufficient_evidence`。两项都 pass 时 passed=true，否则 false。证据不足表示尚未核实，不能称已证明不可行。
+- 查重失败标准：已有项目的目标用户、核心问题、核心方案高度相同，并且 idea 没有明确差异。仅有同类产品仍可通过。
+- 可行性评估最小 demo 的核心实现路径、关键依赖访问条件、团队资源、时间与预算；首版不运行项目原型。Evaluator 的通过判定不是团队共识或成员批准。
+- `evaluator.evaluate` 支持 payload.idea 或 payload.candidate，恰好一个。idea 是细化想法，规范化到 Candidate；基础字段及默认元数据见 [实现接口](evaluator/README.md)。其他共享上下文不变。
+- `tool_budget`：`{max_searches,max_reads,timeout_ms,per_call_timeout_ms}`，可省略或部分覆盖；默认 2/3/60000/10000，每请求独立。`shared_resources` 是已获准共享的 `{profile_id,profile_version,item_id,member_id,category,text}`[]，category 为 skill/resource。
 
 - competitor：`{name, url, overlap, differences, maturity, evidence_ids}`；maturity 为 `self_reported_implemented` / `planned` / `unknown`。
 - technical_check：`{dependency_id, finding, conclusion, evidence_ids, next_check}`；conclusion 为 `documented_support` / `documented_blocker` / `member_reported` / `unknown`。
 - search_log：`{query, result_status}`；result_status 为 `results` / `no_results` / `failed`。失败和无结果不可混为一谈。
+- 代码生成的 Evidence 可附带实际正文 excerpt 和成员来源 source_ref；模型不能生成或修改这些身份字段。失败的 search_log 可以附 error_code。
 - 首版不输出“全网重复率”“全球首创”“成功概率”，也不使用未经校准的综合分数代替证据。
 
 ### MemberFeedback：成员对当前候选版本的实际态度

@@ -1,0 +1,6 @@
+{
+  "name": "mhacks-evaluator", "version": "0.1.0", "private": true, "type": "module",
+  "engines": { "node": ">=22.19.0" }, "packageManager": "pnpm@11.19.0",
+  "scripts": { "test": "node --test test/*.test.mjs", "demo": "node demo.mjs", "run": "node cli.mjs" },
+  "dependencies": { "@earendil-works/pi-agent-core": "1.0.1", "@earendil-works/pi-ai": "1.0.1" }
+}

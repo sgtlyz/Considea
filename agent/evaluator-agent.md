@@ -1,6 +1,6 @@
 # Evaluator Agent 设计
 
-负责人：成员 3。目标：为每个候选提供有来源的竞品比较和关键技术条件检查，让团队看清依据、风险和未知。
+负责人：成员 3。目标：接收细化好的 idea，测评查重和可行性，输出是否通过、两项理由、真实来源和必要修改。可运行代码、样例和配置见 [Evaluator 实现](evaluator/README.md)。
 
 字段以 [contracts.md](contracts.md) 为准。该 Agent 包含检索与分析两个步骤，不再拆成 Research Agent。首版的验证范围是公开来源与官方文档检查。
 
@@ -23,7 +23,9 @@
 
 shared_resources 仅包含评估必需且成员已批准共享的技能/资源条目，不传全队原始对话。tool_budget 是 workflow 配置的工具次数与时间上限，不是 Agent 自己无限申请的预算。
 
-输出 data：EvaluationReport，必须关联 candidate_id 与 candidate_version。报告覆盖 competitors、technical_checks、risks、unverified_assumptions、recommended_changes、实际 evidence 和 search_log。
+输出 data：EvaluationReport 1.1，必须关联 candidate_id 与 candidate_version。报告包含 passed、tests.novelty、tests.feasibility，以及 competitors、technical_checks、risks、unverified_assumptions、recommended_changes、实际 evidence 和 search_log。两项都 pass 才通过；高度相同且无明确差异才查重失败。运行完整性与业务判定分开，不能把缺少证据当成已证明不可行。
+
+输入也支持 payload.idea，不能同时提供 candidate；基础字段和默认值见实现 README。通过测试不代表成员接受方案。
 
 ### evaluator.investigate
 
@@ -75,7 +77,7 @@ shared_resources 仅包含评估必需且成员已批准共享的技能/资源�
 
 来源 ID 和 URL 由工具层记录，模型只能引用已提供的 evidence_id，不能发明“看过”的页面。HTML/仓库内容是待分析数据，不能当作新的系统指令。
 
-工具预算建议：每候选最多 6 次搜索和 6 次来源读取，每次工具调用有可配置超时；专题检查最多 2 次搜索和 3 次读取。这些是工程默认建议，按实际额度调整，不能被用来声称检索穷尽。
+实现默认预算：每个请求最多 2 次搜索和 3 次来源读取，总时限 60 秒，单次 10 秒；workflow 可按额度在部署硬上限内提高。不能被用来声称检索穷尽。
 
 报告中的每条竞品能力和关键技术结论都链接 evidence_ids；没有来源就写 limitation 或 unknown。避免大段复制来源，保存支持结论所需的简短说明即可。
 

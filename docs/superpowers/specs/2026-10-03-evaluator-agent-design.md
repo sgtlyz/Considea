@@ -4,9 +4,19 @@
 
 ## 目标和成功条件
 
-为当前候选版本生成有真实来源的竞品比较与技术条件报告，并回答 Negotiate 派发的具体调查问题。Workflow 已有独立负责人；本模块不实现数据库、DAG 调度、成员认证、共享批准、反馈或最终共识。
+接收已经细化、足够发展为项目的 idea，对“查重”和“可行性”两项测试给出通过／不通过，并附上真实来源、判断理由和必要修改。竞品比较与技术条件报告是判定依据，不能代替最终测试结果。Workflow 已有独立负责人；本模块不实现数据库、DAG 调度、成员认证、共享批准、反馈或最终共识。
 
-交付两个 operation：`evaluator.evaluate` 和 `evaluator.investigate`，沿用 schema_version=1.0 的请求/响应 envelope。离线 demo 必须标为 fixture；真实检索必须实际经过 Tavily。没有实际模型调用时，不声称已验证研究质量。
+通过评估表示 idea 满足这两项评估标准；成员是否愿意推进仍由团队确认。
+
+主要接口为 `evaluator.evaluate`，接收一个 idea 并返回测试结果。原有 `evaluator.investigate` 可作为协商阶段补查问题的辅助接口，不能替代主要接口。沿用 schema_version=1.0 envelope，在报告上增加 report_schema_version=1.1 与判定字段，同步共享契约；旧消费者不应误读。离线 demo 必须标为 fixture；真实检索必须实际经过 Tavily。用户明确要求接口/API 调用代码全部实现，真实 API 暂不测试；离线验证不代表远程调用或研究质量已经验收。
+
+## 测试标准
+
+用户已明确两项主要测试：查重和可行性。用户已确认查重阈值：已有项目的目标用户、核心问题、核心方案都高度相同，并且 idea 缺少明确差异时不通过；仅有同类产品仍可通过。查重必须展示最接近项目、重合点、具体差异及来源，不能以名称相似或都使用 AI 判重复；“本次未发现高度重复”也不能称为全球首创。
+
+可行性按最小 demo 判断：核心流程是否有可行实现路径，必要 API／数据／设备是否可获得，团队共享的能力和资源能否支撑，是否能在房间的时间和预算约束内完成。首版依据检索、官方文档和共享资源进行评估，不运行 idea 的项目原型；模型与检索调用层全部写好，但按用户要求暂不测试真实 API。文档支持与实际测试成功必须区分。缺少团队或约束信息时标出必要补充，不能擅自假定资源充足。
+
+每项测试内部区分 `pass`、`fail`、`insufficient_evidence`。最终 `passed` 为布尔值：仅两项都为 pass 才为 true。若有明确失败，则写清失败原因；若因来源不可用或关键信息缺失未通过，则写“未完成核实”，不能写成“已证明不可行”。执行错误保留错误响应，不伪装成对 idea 的失败判断。
 
 ## 已确认的接入选择
 
@@ -20,7 +30,7 @@ CLI 实测限制：当前终端找不到短命令 tvly，但完整安装路径�
 
 ## 输入契约
 
-两个 operation 接收 `room_config`、`candidate`、`team_criteria`、`shared_resources`、`previous_report`（可 null）和 `tool_budget`；investigate 额外接收 `{issue_id, text, expected_information}`。
+业务输入是一个细化好的 idea：目标用户、要解决的问题、核心方案／体验、最小 demo、差异点、关键依赖。payload 接受 idea 或现有 candidate，恰好一个；idea 补默认元数据后规范化为 candidate，保留身份与版本，不复制两份内容。`room_config`、`team_criteria` 和 `shared_resources` 为可行性判断提供时间、预算、团队能力和可用资源；`previous_report`（可 null）和 `tool_budget` 为执行上下文。investigate 额外接收 `{issue_id, text, expected_information}`。
 
 验证完整候选字段、非空身份、正整数版本、依赖 ID 唯一性、枚举及字符串数组。RoomConfig 的 room_id 必须与 envelope 一致。拒绝额外原始访谈或私人消息字段；workflow 仍须负责授权和最小快照投影。
 
@@ -58,7 +68,7 @@ CLI 调用使用固定可执行程序和参数数组、关闭 shell。可执行�
 
 ## 输出校验
 
-evaluate 返回 contracts.md 定义的 EvaluationReport；investigate 返回规定的专题对象。report_id 由代码分配；候选与 issue 身份从原请求绑定。
+evaluate 在 EvaluationReport 的来源与检查明细之上增加 `passed` 和 `tests`；`tests.novelty` 与 `tests.feasibility` 各包含 `result`、`reason`、`evidence_ids`、`required_changes`、`missing_information`。两项测试只有都为 pass 才能输出 passed=true，这条组合规则由代码执行；模型负责有来源的各项分析。来源明细仍保留 competitors、technical_checks、risks、unverified_assumptions、recommended_changes、evidence 和 search_log。同步 agent/contracts.md 与 agent/evaluator-agent.md 的通过判定描述。investigate 返回规定的专题对象。report_id 由代码分配；候选与 issue 身份从原请求绑定。
 
 - 每个关键依赖都有且仅有一项 technical_check，不允许引用候选不存在的依赖。
 - 竞品最多 3 个，不足时不补造；URL 和 evidence_ids 必须对应实际来源。
@@ -74,7 +84,7 @@ evaluate 返回 contracts.md 定义的 EvaluationReport；investigate 返回规�
 
 软截止提前停止新外部调用，留出 Pi 最终生成报告的时间。提示词要求预算不足时明确 unknown；工具包装器在代码中强制停止。
 
-若搜索/读取失败、覆盖不足或软预算耗尽，响应 status=partial，evaluate 报告 status=partial，保留已有证据和未检查项。正常完成也可包含 unknown；complete 不代表所有依赖已验证。
+若搜索/读取失败、覆盖不足或软预算耗尽，响应 status=partial，evaluate 报告 status=partial，保留已有证据和未检查项。正常完成也可包含 unknown；complete 不代表所有依赖已验证。执行 status 与测试结果分开：完整评估可以判不通过，执行不完整不能默认判通过；关键测试证据不足时 result=insufficient_evidence，passed=false，理由明确为尚未核实。
 
 若 Pi 触发硬工具/轮次预算或模型超时，可由 Evaluator wrapper 生成确定性的 partial：保留真实来源和 search_log，所有未完成的判断为 unknown，不用代码伪造比较或技术结论。取消后冻结本次账本，晚返回的工具不能继续修改结果。
 
@@ -84,7 +94,7 @@ INVALID_INPUT、CONFIG_ERROR、INVALID_OUTPUT 保留结构化错误。provider �
 
 新增项目自己的 `candidate-research` 和 `technical-feasibility` SKILL.md，以仓库 evaluator 目录为边界，按 operation 固定加载。
 
-前者定义用户/场景/流程/交互/成熟度比较；后者定义必须依赖、官方能力、访问条件、限制与最小替代方式。两者均遵守证据、预算和输出契约。
+前者定义用户/场景/流程/交互/成熟度比较及查重判定；后者定义必须依赖、官方能力、访问条件、时间与团队资源约束，以及可行性判定与最小替代方式。两者均遵守证据、预算和输出契约。
 
 Tavily 官方 skills 可作为开发参考；不原样引入其 shell、登录、自由文件写入或不同报告格式。运行时不自动扫描个人 .agents/.codex 技能，不执行 skill 附带脚本，不添加通用技能市场或任意文件读取工具。
 
@@ -109,6 +119,9 @@ README 给出安装、离线测试/demo、真实 Tavily 检索、真实模型运
 7. 旧报告不能直接变成新版本的已验证证据。
 8. 运行原有 Pi Base 测试和 Evaluator 测试。
 9. 离线 demo 显示 fixture 标记；真实 Tavily smoke test 实际获取公开来源。
+10. 两项通过才得到 passed=true；查重失败、可行性失败分别给出依据和修改建议。
+11. 同类产品存在与高度重复区分；没有搜索结果不能变成“全球首创”。
+12. 缺少关键证据时不能通过，也不能声称已证实不可行；业务未通过与运行错误区分。
 
 真实模型 smoke test 在配置可用时执行，检查工具调用、最终 JSON 与来源；若缺少模型凭据，明确报告“离线运行和真实检索已验收，真实模型质量未验证”。
 

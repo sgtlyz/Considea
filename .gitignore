@@ -1,0 +1,6 @@
+node_modules/
+.pnpm-store/
+__pycache__/
+.env
+.env.*
+!.env.example
