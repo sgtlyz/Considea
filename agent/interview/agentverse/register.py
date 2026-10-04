@@ -18,7 +18,7 @@ def main():
     url = urlparse(args.endpoint)
     if url.scheme != "https" or not url.hostname or url.username or url.password or url.path != "/chat" or url.query or url.fragment:
         raise SystemExit("Use your tested public HTTPS /chat endpoint")
-    if not config.get("live") or not 1 <= config.get("max_calls", 0) <= 52 or not 0.025 <= config.get("max_usd", 0) <= 1.3:
+    if not config.get("live") or not 1 <= config.get("max_calls", 0) <= 92 or not 0.025 <= config.get("max_usd", 0) <= 2.3:
         raise SystemExit("Registration requires a tested live configuration and finite approved model budget")
     api_key = Path(args.key_file).read_text(encoding="utf-8-sig").strip() if args.key_file else os.environ.get("AGENTVERSE_API_KEY")
     if not api_key:

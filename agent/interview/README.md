@@ -6,7 +6,7 @@
 
 此前 [PreferenceProfile / NegotiationBrief 对齐草案](workflow-alignment.md) 保留作历史参考，其中 3–5 轮、角色分工与字段提案已被新版 master 和上述接线说明替代。新增的 [Agentverse 独立适配器](agentverse/README.md) 已实现个人会话 time=0 详细画像、持久化更新、审核与短摘要；团队按成员授权查询仍待整体 Workflow 接线。
 
-**当前状态：70 项 Node 测试与 5 项 Python 接线测试通过；独立 ACP Agent 已注册，ASI 内已完成两轮模拟回答、提前结束、审核删除和批准导出。** 测试失败及修复、剩余额度和内容质量限制见 [注册与实测记录](agentverse/README.md)。团队 followup/reopened 尚未实测。旧本地 workflow 只保存进程内状态，退出后清空；独立适配器使用磁盘存储。下文的 CLI、本地流程图和 payload 示例描述保留的旧个人体验流程；其业务定义已移到 `legacy-definition.mjs`，新团队接线请使用上面的说明。
+**Current verification:** 77 Node tests and 5 Python tests passed. Fresh local real-DeepSeek five-round interview and reviewed export completed; ASI end-to-end remains unverified due to connectivity. Agentverse inactive, application/tunnel stopped. See [latest report](agentverse/verification-final-2026-10-04.md). Team followup/reopened has not been live-tested. Legacy CLI uses in-memory state; standalone adapter uses disk state.
 
 ## 自己体验真实访谈
 

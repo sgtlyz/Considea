@@ -6,6 +6,7 @@ import { runInterview } from '../service.mjs';
 const digest = value => createHash('sha256').update(value).digest('hex');
 const length = value => [...value].length;
 const requiredCategories = new Set(['constraint', 'participation_condition']);
+const categories = new Set(['problem','target_user','interest','skill','resource','desired_experience','constraint','tradeoff','goal','idea','participation_condition']);
 export class JsonStore {
   constructor(directory) { this.directory = resolve(directory); mkdirSync(this.directory, { recursive: true }); }
   path(key) { return join(this.directory, `${digest(key)}.json`); }
@@ -27,7 +28,7 @@ export function buildBrief(profile) {
     blocking_item_ids: missing.map(i => i.item_id), unknowns: profile.unknowns };
 }
 
-const help = 'Considea Interview：我会提问、保存偏好档案，再由你审核导出。\n命令：/profile 查看详细档案；/finish 结束提问并审核；/edit 序号 新文字；/drop 序号；/short 序号 短句（最多80字）；/export 导出已批准结果。\n访谈与草稿保存在运行此 Agent 的服务端，不会自动发送给队友。真实模式会将访谈内容交给 DeepSeek。';
+const help = 'Considea Interview：我会提问、保存偏好档案，再由你审核导出。\n命令：/profile 查看档案；/finish 审核；/next 单独重试未生成的问题；/edit 序号 新文字；/drop 序号；/category 序号 类别；/unknown 序号 新文字（或 /dropunknown 序号 删除未知项）；/short 序号 短句（最多80字）；/export 导出已批准结果。\n访谈与草稿保存在运行此 Agent 的服务端，不会自动发送给队友。真实模式会将访谈内容交给 DeepSeek。';
 
 /** Single-process controller. ACP transport serializes calls; no model-generated approval commands. */
 export class InterviewSession {
@@ -82,7 +83,7 @@ export class InterviewSession {
   }
   review(s) {
     s.approval_token ??= randomUUID().slice(0, 8);
-    return `已保存详细档案 v${s.version}，尚未批准。\n${s.items.map((i, n) => `${n + 1}. [${i.category} · ${i.basis === 'agent_inference' ? 'AI推断，请核实' : '成员自述'}] ${i.text}`).join('\n')}\n未知：${s.unknowns.join('；') || '无已记录未知项'}\n请核对数字、限制及AI推断。可用 /edit、/drop、/short 修改。本人确认后发送 /approve ${s.revision} ${s.approval_token}；这会生成可交接档案与短摘要，不会自动发给队友。`;
+    return `已保存详细档案 v${s.version}，尚未批准。\n${s.items.map((i, n) => `${n + 1}. [${i.category} · ${i.basis === 'agent_inference' ? 'AI推断，请核实' : '成员自述'}] ${i.text}`).join('\n')}\n未知：${s.unknowns.map((text, n) => `${n + 1}. ${text}`).join('；') || '无已记录未知项'}\n请核对数字、限制及AI推断。可用 /edit、/drop、/short 修改条目，/category 修改类别，/unknown、/dropunknown 修改或删除编号未知项。本人确认后发送 /approve ${s.revision} ${s.approval_token}；这会生成可交接档案与短摘要，不会自动发给队友。`;
   }
   export(s) {
     if (!s.approved) return '尚未批准任何档案。请先 /finish 审核。';
@@ -115,13 +116,24 @@ export class InterviewSession {
           approved_at: new Date().toISOString(), items: s.items.map(({ private_message_ids, item_key, ...i }) => i), unknowns: s.unknowns };
         s.brief = buildBrief(s.approved); s.phase = 'approved'; s.approval_token = null;
         reply = this.export(s);
-      } else if (/^\/(edit|drop|short)\b/.test(command)) {
+      } else if (/^\/(unknown|dropunknown)\b/.test(command)) {
         if (!['review', 'approved'].includes(s.phase)) throw new Error('Finish interview before editing');
-        const m = command.match(/^\/(edit|drop|short) ([1-9]\d*)(?: ([\s\S]+))?$/);
+        const m = command.match(/^\/(unknown|dropunknown) ([1-9]\d*)(?: ([\s\S]+))?$/);
+        if (!m || Number(m[2]) > s.unknowns.length || (m[1] === 'unknown' && !m[3]?.trim())) throw new Error('Invalid unknown edit');
+        s.history.push({ version: s.version, items: structuredClone(s.items), unknowns: [...s.unknowns] });
+        if (m[1] === 'dropunknown') s.unknowns.splice(Number(m[2])-1, 1);
+        else s.unknowns[Number(m[2])-1] = m[3];
+        s.revision++; s.version++; s.phase='review'; s.brief=null; s.approval_token=null; s.approved=null;
+        reply=this.review(s);
+      } else if (/^\/(edit|drop|short|category)\b/.test(command)) {
+        if (!['review', 'approved'].includes(s.phase)) throw new Error('Finish interview before editing');
+        const m = command.match(/^\/(edit|drop|short|category) ([1-9]\d*)(?: ([\s\S]+))?$/);
         const item = m && s.items[Number(m[2]) - 1];
         if (!item || (m[1] !== 'drop' && !m[3]?.trim()) || (m[1] === 'short' && length(m[3]) > 80)) throw new Error('Invalid edit');
+        if (m[1] === 'category' && !categories.has(m[3])) throw new Error('Invalid category');
         s.history.push({ version: s.version, items: structuredClone(s.items), unknowns: s.unknowns });
         if (m[1] === 'drop') s.items.splice(Number(m[2]) - 1, 1);
+        else if (m[1] === 'category') item.category = m[3];
         else if (m[1] === 'short') item.brief_text = m[3];
         else { item.text = m[3]; item.basis = 'member_statement'; delete item.brief_text; item.private_message_ids = []; }
         s.revision++; s.version++; s.phase = 'review'; s.brief = null; s.approval_token = null;

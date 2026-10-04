@@ -13,6 +13,20 @@ function setup() {
 }
 const message = (text, id, overrides = {}) => ({ sender: 'sender-a', session_id: 'session-a', msg_id: id, text, ...overrides });
 const key = JSON.stringify(['sender-a', 'session-a']);
+test('category and unknown corrections revoke approval and preserve prior history', async () => {
+  const {app,store}=setup();
+  await app.handle(message('start','c1'));
+  await app.handle(message('OFFLINE SAMPLE: I build frontend.','c2'));
+  await app.handle(message('/finish','c3'));
+  let s=store.read(key); s.unknowns=['Resolved already']; store.write(key,s);
+  await app.handle(message(`/approve ${s.revision} ${s.approval_token}`,'c4'));
+  assert.equal((await app.handle(message('/category 1 invented','c5'))).ok,false);
+  assert.equal((await app.handle(message('/category 1 participation_condition','c6'))).ok,true);
+  s=store.read(key); assert.equal(s.approved,null); assert.equal(s.items[0].category,'participation_condition');
+  await app.handle(message('/dropunknown 1','c7'));
+  s=store.read(key); assert.deepEqual(s.unknowns,[]); assert.deepEqual(s.history.at(-1).unknowns,['Resolved already']);
+  assert.match((await app.handle(message('/export','c8'))).text,/尚未批准/);
+});
 test('question failure keeps validated answer across restart, dedup and explicit next', async () => {
   const { app, store, runtimeFor } = setup();
   await app.handle(message('start', 'p1'));

@@ -4,6 +4,17 @@ import { readFileSync } from 'node:fs';
 import { runInterview } from './service.mjs';
 import { createOfflineRuntime } from '../pi-base/offline.mjs';
 const pair = name => JSON.parse(readFileSync(new URL(`./examples/${name}.json`, import.meta.url), 'utf8'));
+test('unknown-category entries stay unknown and cannot smuggle foreign sources or approvals', async () => {
+  const x=pair('interview-summary-v2'), data=structuredClone(x.response.data);
+  const item={item_key:'u',category:'unknown',text:'Teammate availability unknown',basis:'agent_inference',confidence:'low',private_message_ids:[]};
+  data.profile_draft.items.push(item);
+  const run=()=>runInterview({request:x.request,runtime:createOfflineRuntime(()=>({status:'ok',data,warnings:[]}))});
+  const r=await run(); assert.equal(r.status,'ok');
+  assert.ok(r.data.profile_draft.unknowns.includes('[AI推断，待确认] Teammate availability unknown'));
+  assert.ok(r.data.profile_draft.items.every(i=>i.category!=='unknown'));
+  item.private_message_ids=['foreign']; assert.equal((await run()).error.code,'INVALID_OUTPUT');
+  item.private_message_ids=[]; item.approved=true; assert.equal((await run()).error.code,'INVALID_OUTPUT');
+});
 test('duplicate temporary item keys are unique without deleting facts or bypassing evidence', async () => {
   const x = pair('interview-summary-v2');
   const data = structuredClone(x.response.data);

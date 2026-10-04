@@ -43,6 +43,16 @@ export function normalizeInterviewOutput(raw, operation, validate, payload) {
     warnings.push(...data.profile_draft.notes); delete data.profile_draft.notes;
   }
   if (operation === 'interview.summarize' && Array.isArray(data.profile_draft?.unknowns)) {
+    if (Array.isArray(data.profile_draft.items)) {
+      const unknownItems = data.profile_draft.items.filter(i => i?.category === 'unknown');
+      if (unknownItems.length) {
+        // Unknowns belong to their own field, never the approved fact category enum.
+        // The same strict field/evidence checks below apply before moving their text.
+        data.profile_draft.unknowns.push(...unknownItems);
+        data.profile_draft.items = data.profile_draft.items.filter(i => i?.category !== 'unknown');
+        warnings.push('MODEL_FORMAT_NORMALIZED: explicitly unknown items moved to unknowns');
+      }
+    }
     const ownIds = new Set(payload.messages.filter(m => m.role === 'user').map(m => m.message_id));
     data.profile_draft.unknowns = data.profile_draft.unknowns.map(item => {
       if (typeof item === 'string') return item;
@@ -56,6 +66,7 @@ export function normalizeInterviewOutput(raw, operation, validate, payload) {
       warnings.push('MODEL_FORMAT_NORMALIZED: unknown object converted to text after checking source ownership');
       return item.basis === 'agent_inference' ? `[AI推断，待确认] ${item.text}` : item.text;
     });
+    data.profile_draft.unknowns = [...new Set(data.profile_draft.unknowns)];
   }
   // Strict schema, source ownership, evidence, member IDs and stop gates still apply.
   if (!validate(data, payload)) return invalid();
