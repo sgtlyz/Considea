@@ -11,7 +11,7 @@
   try { zh = localStorage.getItem('considea-study-lang') === 'zh'; } catch {}
   const tr = (en, cn) => zh ? cn : en;
   document.documentElement.lang = zh ? 'zh-CN' : 'en';
-  document.title = tr('Considea · Recorded walkthrough', 'Considea · 流程演示');
+  document.title = tr('Considea · Team walkthrough', 'Considea · 团队流程演示');
   for (const node of document.querySelectorAll('[data-en]')) node.textContent = zh ? node.dataset.zh : node.dataset.en;
   for (const node of document.querySelectorAll('[data-aria-en]')) node.setAttribute('aria-label', zh ? node.dataset.ariaZh : node.dataset.ariaEn);
   for (const button of document.querySelectorAll('[data-language]')) {
@@ -36,17 +36,7 @@
       : value && typeof value === 'object' ? Object.fromEntries(Object.entries(value).map(([key, value]) => [key, localized(value)])) : value;
     const data = localized(original);
     let position = 0;
-    const moments = [
-      [tr('Every perspective', '每个人的想法'), tr('First, make room for each person.', '先给每个人表达的空间。')],
-      [tr('Find common ground', '寻找共同点'), tr('Start with the problem you care about.', '从你们在意的问题开始。')],
-      [tr('Ask a little more', '多问一点'), tr('Leave fewer things unspoken.', '把还没说清楚的事聊明白。')],
-      [tr('Work through a difference', '谈清分歧'), tr('Give a difference room to be heard.', '让不同的意见被认真听见。')],
-      [tr('Choose the next step', '选择下一步'), tr('Decide when you are ready to explore.', '一起决定何时开始探索。')],
-      [tr('Explore an idea', '探索方案'), tr('Look closely at a possible direction.', '认真看看一个可能的方向。')],
-      [tr('Refine it together', '一起完善'), tr('A smaller idea. A clearer starting point.', '想法小一点，起点清楚一点。')],
-      [tr('A shared direction', '共同的方向'), tr('One project. Everyone on board.', '一个项目，全员认可。')],
-    ];
-    $('demo-status').textContent = tr('Recorded on ', '录制日期：') + new Date(data.recorded_at).toLocaleDateString(zh ? 'zh-CN' : 'en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+    $('demo-status').textContent = tr('Illustrative simulation · 2 teammates · 4 discussion rounds · 1 shared brief', '模拟情境 · 2 位队友 · 4 轮讨论 · 1 份共同简报');
     $('run-notes').textContent = data.notes;
     function list(title, items, parent) {
       if (!items?.length) return;
@@ -77,16 +67,16 @@
       button.type = 'button';
       button.setAttribute('aria-controls', 'step-body');
       el('span', String(index + 1).padStart(2, '0'), button);
-      el('span', moments[index]?.[0] || step.kind, button);
-      button.onclick = () => { position = index; render(); };
+      el('span', step.label, button);
+      button.onclick = () => { position = index; render(); focusStep(); };
       return button;
     });
     function render() {
       const step = data.steps[position];
       const out = $('step-body');
       out.replaceChildren();
-      $('step-number').textContent = tr('Moment ', '第 ') + String(position + 1).padStart(2, '0') + tr(' · ', ' 步 · ') + (moments[position]?.[0] || step.kind);
-      $('step-title').textContent = moments[position]?.[1] || step.title;
+      $('step-number').textContent = tr('Moment ', '第 ') + String(position + 1).padStart(2, '0') + tr(' · ', ' 步 · ') + step.label;
+      $('step-title').textContent = step.title;
       $('step-position').textContent = (position + 1) + ' / ' + data.steps.length;
       $('previous').disabled = position === 0;
       $('next').disabled = position === data.steps.length - 1;
@@ -94,7 +84,6 @@
         if (index === position) button.setAttribute('aria-current', 'step');
         else button.removeAttribute('aria-current');
       });
-      el('p', step.title, out);
       for (const text of step.paragraphs || []) el('p', text, out);
       for (const item of step.members || []) {
         const details = el('details', undefined, out);
@@ -112,6 +101,7 @@
         list(tr('For another day', '留待以后'), candidate.out_of_scope, out);
       }
       if (step.report) {
+        if (step.report.basis) el('p', step.report.basis, out).className = 'replay-assessment-note';
         for (const [key, test] of Object.entries(step.report.tests || {})) {
           const title = tr(({ novelty: 'How it compares', feasibility: 'Could we build it?' })[key] || 'Review', ({ novelty: '与已有项目相比', feasibility: '我们能做出来吗？' })[key] || '评估');
           const result = tr(({ pass: 'Looks promising', fail: 'Needs another look', insufficient_evidence: 'More to find out' })[test.result] || 'Still open', ({ pass: '值得尝试', fail: '需要再看看', insufficient_evidence: '还需了解更多' })[test.result] || '待确认');
@@ -121,17 +111,38 @@
         }
         sources(step.report.evidence, out);
       }
+      if (step.dialogue?.length) {
+        const conversation = el('ol', undefined, out);
+        conversation.className = 'replay-dialogue';
+        conversation.setAttribute('aria-label', tr('Shared conversation', '共享对话'));
+        for (const turn of step.dialogue) {
+          const item = el('li', undefined, conversation);
+          item.className = turn.speaker === 'Considea' ? 'replay-turn replay-turn-guide' : 'replay-turn';
+          el('strong', turn.speaker, item);
+          el('p', turn.text, item);
+        }
+      }
+      list(tr('The brief they leave with', '最终带走的简报'), step.deliverables, out);
+      if (step.outcome) {
+        const outcome = el('section', undefined, out);
+        outcome.className = 'replay-outcome';
+        el('h4', tr('What this step changes', '这一步得到什么'), outcome);
+        el('p', step.outcome, outcome);
+      }
+    }
+    function focusStep() {
+      $('step-title').focus({ preventScroll: true });
+      if ($('step-title').getBoundingClientRect().top < 0) $('step-title').scrollIntoView({ block: 'start' });
     }
     function move(delta) {
       position = Math.max(0, Math.min(data.steps.length - 1, position + delta));
       render();
-      $('step-title').focus({ preventScroll: true });
-      if ($('step-title').getBoundingClientRect().top < 0) $('step-title').scrollIntoView({ block: 'start' });
+      focusStep();
     }
     $('previous').onclick = () => move(-1);
     $('next').onclick = () => move(1);
     render();
   } catch {
-    $('demo-status').textContent = tr('The saved conversation could not be loaded. Refresh to try again, or watch the video above.', '讨论记录暂时无法加载，请刷新重试，或查看上方实录视频。');
+    $('demo-status').textContent = tr('The example conversation could not be loaded. Refresh to try again, or watch the video above.', '示例对话暂时无法加载，请刷新重试，或查看上方概念视频。');
   }
 })();

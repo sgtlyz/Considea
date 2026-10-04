@@ -1,0 +1,11 @@
+# Keep a shared Windows / WSL checkout stable in both Git clients.
+* text=auto eol=lf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.mp4 binary
+*.pdf binary

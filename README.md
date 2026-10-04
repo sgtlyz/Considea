@@ -5,7 +5,7 @@ Considea aligns small teams on what to build next. Through iterative private int
 
 - [Production website](https://considea.vercel.app): real DeepSeek and Tavily calls with PostgreSQL persistence. Use a team demo code or your own keys.
 - [Direct backend workspace](https://considea-dev-api.onrender.com): the same live service and saved rooms. The existing hostname is retained after promotion.
-- [Concept demo and saved results](https://considea.vercel.app/demo.html): no account, keys or live calls required. [Watch on YouTube](https://youtu.be/d4RyloKY-rE) · [Download the video](workflow/web/demo.mp4).
+- [Concept demo and simulated team walkthrough](https://considea.vercel.app/demo.html): no account, keys or live calls required. [Watch on YouTube](https://youtu.be/d4RyloKY-rE) · [Download the video](workflow/web/demo.mp4).
 - Development previews use a separate labelled mock backend.
 - [Setup and deployment](DEPLOYMENT.md), [workflow and HTTP API](workflow/README.md), [agent integration](workflow/INTEGRATION.md).
 - [Four agents on Agentverse / ASI:One](docs/AGENTVERSE.md): Interview, Negotiator, Idea Generator and Evaluator share the same workflow. All four are registered, active and chat-tested.
@@ -72,6 +72,8 @@ The workflow uses PostgreSQL when `DATABASE_URL` is set and SQLite otherwise. Pr
 Room access uses invitations and bearer credentials, not a full account service. Members can download private recovery cards. User-supplied room keys are encrypted, isolated per call, replaceable and removable. See [access and key handling](docs/ACCESS-AND-KEYS.md).
 
 ## Tests and development
+
+The repository uses LF line endings through `.gitattributes`, including when Windows and WSL share the same checkout. This prevents Windows checkout conversion from appearing as local edits in WSL. After changing editors, keep source files in LF format; do not discard apparent changes before checking their actual content.
 
 ```sh
 python -m unittest discover -s workflow/tests -v

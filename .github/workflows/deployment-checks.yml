@@ -46,7 +46,7 @@ jobs:
           docker run --rm --workdir /app/workflow/node considea-ci node --input-type=module -e "await import('./spacetime.mjs')"
       - name: Verify frontend routing and build
         run: |
-          docker run --rm considea-ci node --test deploy/tests/vercel-config.test.mjs
+          docker run --rm considea-ci node --test 'deploy/tests/*.test.mjs'
           docker run --rm considea-ci node deploy/build-frontend.mjs
 
   interface:

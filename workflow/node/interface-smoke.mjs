@@ -558,7 +558,7 @@ try {
   assert.equal(await creator.locator("#create-openai").inputValue(), "");
   assert.equal(await creator.locator("#create-tavily").inputValue(), "");
   assert.equal(await creator.evaluate(() => JSON.stringify({...sessionStorage,...localStorage}).includes("test-create-private")), false);
-  // The saved replay must work without a room, credentials or API requests.
+  // The illustrative walkthrough must work without a room, credentials or API requests.
   const replayContext = await browser.newContext({viewport:{width:1440,height:1000}});
   contexts.push(replayContext);
   const replay = await replayContext.newPage();
@@ -566,7 +566,7 @@ try {
   replay.on("pageerror",e=>replayErrors.push(e.message));
   replay.on("request",r=>{if(new URL(r.url()).pathname.startsWith("/api/"))apiRequests.push(r.url());});
   await replay.goto(base+"/demo.html");
-  await until(async()=> (await replay.locator("#demo-status").innerText()).startsWith("Recorded "));
+  await until(async()=> (await replay.locator("#demo-status").innerText()).startsWith("Illustrative simulation"));
   await until(()=>replay.locator("video").evaluate(v=>Number.isFinite(v.duration)&&v.duration>70&&v.duration<100));
   await replay.locator("video").evaluate(v=>{v.muted=true;return v.play();});
   await until(()=>replay.locator("video").evaluate(v=>v.currentTime>0.2));
@@ -578,15 +578,18 @@ try {
     for(let step=1;step<=8;step++) {
       assert.equal(await replay.locator("#step-position").innerText(),`${step} / 8`);
       assert.ok((await replay.locator("#step-body").innerText()).length>30);
+      assert.ok(await replay.locator('.replay-dialogue').isVisible());
+      assert.ok(await replay.locator('.replay-outcome').isVisible());
       assert.ok(await replay.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),"Replay must fit the viewport");
       if(step<8){await replay.locator("#next").focus();await replay.keyboard.press("Enter");}
     }
     assert.ok(await replay.locator("#next").isDisabled());
   }
   await replay.locator('[data-language="zh"]').click();
-  await until(async()=>(await replay.locator('#demo-status').innerText()).startsWith('录制日期：'));
+  await until(async()=>(await replay.locator('#demo-status').innerText()).startsWith('模拟情境'));
   for(let step=1;step<=8;step++) {
     assert.match(await replay.locator('#step-title').innerText(),/[\u3400-\u9fff]/);
+    for (const reply of await replay.locator('.replay-turn p').allTextContents()) assert.match(reply,/[\u3400-\u9fff]/);
     if(step<8)await replay.locator('#next').click();
   }
   assert.deepEqual(apiRequests,[]);

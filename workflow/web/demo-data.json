@@ -1,1090 +1,310 @@
 {
-  "recorded_at": "2026-10-04T08:39:36.681Z",
-  "model": "DeepSeek deepseek-flash",
-  "notes": "The run encountered three rejected evaluator attempts. Field-nesting feedback was improved without relaxing validation; an explicit retry resumed the same room. State and identities survived a service replacement.",
+  "content_type": "illustrative_simulation",
+  "updated_at": "2026-10-04",
+  "notes": "An authored simulation of two fictional teammates using Considea’s human decision gates. Dialogue, candidates, assessments and acceptance are illustrative. No new live agent session, web research, implementation or user study was performed for this story. Private follow-ups are summarized between rounds; only example approved shared statements are shown.",
   "steps": [
     {
-      "kind": "Shared summaries",
-      "title": "Each person decides what to share",
+      "kind": "shared_summaries",
+      "label": "Two starting points",
+      "title": "“We already have a group chat.”",
       "paragraphs": [
-        "Alice and Bob answered private interviews. Only their approved summaries appear in this record. The participants and their decisions are scripted test data."
+        "Alice and Bob have 24 hours to build a hackathon prototype. These opening statements represent the summaries each person would approve after a private interview."
       ],
-      "members": [
+      "dialogue": [
         {
-          "member": "alice",
-          "text": "Wants to help university study groups turn agreed assignments into a shared text-only checklist. Target users are university study groups. Can build the Python backend and database in 24 hours. Has experience building a Python backend and database. Prefers a reliable small demo over many features. No paid datasets, hardware, model training or calendar integration. Can accept manual entry, one team and one shared board. Round 3: Accepts the shared manual-entry MVP and the backend/frontend split. Accepts a text-only study-group checklist with manually entered tasks, owners and deadlines, with Alice implementing backend persistence and Bob building the interface, keeping the first demo to one team and one board within 24 hours. Wants the report to identify existing alternatives honestly. Round 4: Accepts the shared manual-entry MVP and the backend/frontend split."
+          "speaker": "Alice",
+          "text": "I can handle Python and a small database. Last time we lost half the day connecting unfinished pieces, so I want something we can get working early. I am not the person to build a polished frontend. No model training or university-system integration."
         },
         {
-          "member": "bob",
-          "text": "University study groups should be able to see a clear shared plan with owners and deadlines. University study groups. Can build the JavaScript interface within 24 hours. Prefers a simple mobile-friendly text interface. No social network, no notifications, and no model training. The project must fit within a 24-hour limit. Accepts a single board and manual entry instead of richer features. Accepts the backend/frontend split where Alice handles the backend and Bob handles the frontend. Accepts the shared manual-entry MVP for round 1. Round 4: accepts the shared manual-entry MVP and the backend/frontend split. Accepts a text-only study-group checklist with manually entered tasks, owners and deadlines, with Alice implementing backend persistence and Bob building the interface, keeping the first demo to one team and one board within 24 hours, and wants the report to identify existing alternatives honestly. Wants the report to identify existing alternatives honestly."
-        }
-      ]
-    },
-    {
-      "kind": "Discussion round 1",
-      "title": "Which problem is closer: \"Wants to help university study groups turn agreed assignmen…\" or \"University study groups should be able to see a clear share…\"?",
-      "paragraphs": [
-        "A different problem leads to a different product. Confirm whether the team is closer to \"Wants to help university study groups t…\" or \"University study groups should be able …\".",
-        "After the answers, the team returns to the interview."
-      ],
-      "members": [
-        {
-          "member": "alice",
-          "text": "I agree to a text-only study-group checklist with manually entered tasks, owners and deadlines. Alice implements backend persistence and Bob builds the interface. Keep the first demo to one team and one board within 24 hours. I accept this scope and want the report to identify existing alternatives honestly."
+          "speaker": "Bob",
+          "text": "I can build the JavaScript interface. In my course project, someone said the slides were done, but the charts were still on their laptop. We found out just before presenting. I want to fix that, but another to-do list is a hard sell. We already have a group chat."
         },
         {
-          "member": "bob",
-          "text": "I agree to a text-only study-group checklist with manually entered tasks, owners and deadlines. Alice implements backend persistence and Bob builds the interface. Keep the first demo to one team and one board within 24 hours. I accept this scope and want the report to identify existing alternatives honestly."
+          "speaker": "Considea",
+          "text": "You both want a small project, but you have not agreed on the problem. Alice is optimizing for a dependable build; Bob needs a reason a group would open it. Start with one breakdown you can actually demonstrate."
         }
-      ]
+      ],
+      "outcome": "Shared starting point: a student-team prototype, 24 hours, Python backend and JavaScript frontend. The product direction is still open."
     },
     {
-      "kind": "Discussion round 2",
-      "title": "This profile still has an unconfirmed item: \"No information on Alice's frontend or UI skills.\". Does it still hold?",
+      "kind": "discussion_round_1",
+      "label": "Name the real problem",
+      "title": "A missing owner—or an unfinished handoff?",
       "paragraphs": [
-        "An unknown has no shared statement behind it yet and needs the member to check it.",
-        "After the answers, the team returns to the interview."
+        "Round 1 · The Negotiator asks whether the failure was assigning work or knowing when a teammate could use the result. The replies below are shared answers, not private interview transcripts."
       ],
-      "members": [
+      "dialogue": [
         {
-          "member": "alice",
-          "text": "I agree to a text-only study-group checklist with manually entered tasks, owners and deadlines. Alice implements backend persistence and Bob builds the interface. Keep the first demo to one team and one board within 24 hours. I accept this scope and want the report to identify existing alternatives honestly."
-        }
-      ]
-    },
-    {
-      "kind": "Discussion round 3",
-      "title": "This direction was already discussed, and the answers are not aligned yet. What condition can you still not accept?",
-      "paragraphs": [
-        "Do not repackage an unfinished round as a new conflict.",
-        "After the answers, the team returns to the interview."
-      ],
-      "members": [
-        {
-          "member": "alice",
-          "text": "I agree to a text-only study-group checklist with manually entered tasks, owners and deadlines. Alice implements backend persistence and Bob builds the interface. Keep the first demo to one team and one board within 24 hours. I accept this scope and want the report to identify existing alternatives honestly."
+          "speaker": "Alice",
+          "text": "My first thought was a board with a name and a deadline on each task. At least everyone would know who is doing what."
         },
         {
-          "member": "bob",
-          "text": "I agree to a text-only study-group checklist with manually entered tasks, owners and deadlines. Alice implements backend persistence and Bob builds the interface. Keep the first demo to one team and one board within 24 hours. I accept this scope and want the report to identify existing alternatives honestly."
-        }
-      ]
-    },
-    {
-      "kind": "Discussion round 4",
-      "title": "This profile still has an unconfirmed item: \"No information on Alice's frontend or UI skills, despite the question being ask…\". Does it still hold?",
-      "paragraphs": [
-        "An unknown has no shared statement behind it yet and needs the member to check it.",
-        "Only now can the team choose to generate. Both participants explicitly voted to converge."
-      ],
-      "members": [
+          "speaker": "Bob",
+          "text": "We knew who owned the slides. That was not the problem. “Done” meant one thing to the person making them and another to the person presenting. A board full of green checkboxes would have looked fine."
+        },
         {
-          "member": "alice",
-          "text": "I agree to a text-only study-group checklist with manually entered tasks, owners and deadlines. Alice implements backend persistence and Bob builds the interface. Keep the first demo to one team and one board within 24 hours. I accept this scope and want the report to identify existing alternatives honestly."
+          "speaker": "Considea",
+          "text": "What would the presenter have needed to see before trusting that task was finished?"
+        },
+        {
+          "speaker": "Bob",
+          "text": "A link to the deck, the actual charts in it, and permission to open it. Not a message saying “nearly there.” I could check that without another meeting."
+        },
+        {
+          "speaker": "Alice",
+          "text": "Okay, that is narrower than a task manager. We could put “what needs to be handed over” next to each task. I can build that. I do not want us promising that the app can judge whether the work is good."
         }
-      ]
+      ],
+      "outcome": "Focus on a handoff: the next person needs a usable deliverable, not just an assigned task. Quality judgment stays with the team."
     },
     {
-      "kind": "First candidate and research",
-      "title": "Review the evidence before deciding",
+      "kind": "discussion_round_2",
+      "label": "Cut the risky shortcut",
+      "title": "Would AI save time—or create more checking?",
       "paragraphs": [
-        "The generator proposed three candidates. The team reviewed this one and requested a smaller, explicit MVP. The real evaluator retained missing evidence instead of inventing a pass."
+        "Round 2 · After another private follow-up and approved summary, Bob raises a practical objection: nobody wants to retype the group chat."
       ],
+      "dialogue": [
+        {
+          "speaker": "Bob",
+          "text": "If we make everyone type tasks again, they will stay in the chat. Could we paste the conversation and have AI pull out the commitments?"
+        },
+        {
+          "speaker": "Alice",
+          "text": "Maybe, but “I can probably do the graphs” is not an assignment. We would need people to check owners and deadlines anyway. There is also chat content the group might not want to upload."
+        },
+        {
+          "speaker": "Considea",
+          "text": "For tomorrow’s prototype, which matters more: importing a conversation or proving that a handoff is clearer? What is the smallest entry flow Bob would tolerate?"
+        },
+        {
+          "speaker": "Bob",
+          "text": "One person enters three agreed tasks at the end of the meeting. Task, owner, due time, and one sentence describing the handoff. No separate setup wizard. I still think entry effort could kill it, so we should test that."
+        },
+        {
+          "speaker": "Alice",
+          "text": "That works. I can have create, edit and save working first. If manual entry is already too painful, adding an AI step will not prove this version is useful."
+        }
+      ],
+      "outcome": "Use manual entry for three agreed tasks. Defer chat import, AI extraction and notifications. Keep input effort as a testable concern, not a solved problem."
+    },
+    {
+      "kind": "discussion_round_3",
+      "label": "Define “ready”",
+      "title": "“Done” still needs a shared meaning.",
+      "paragraphs": [
+        "Round 3 · The scope is smaller, but a checkbox would recreate the original ambiguity. The team works through one concrete task."
+      ],
+      "dialogue": [
+        {
+          "speaker": "Considea",
+          "text": "Take “finish the charts.” What would its handoff condition say, and what would someone attach when they were ready?"
+        },
+        {
+          "speaker": "Bob",
+          "text": "“Put two labeled charts in the shared deck and make the deck viewable.” The person could paste the deck link when ready. Then I would know where to look."
+        },
+        {
+          "speaker": "Alice",
+          "text": "A link field is easy. Verifying that the charts exist or that every teammate has permission is not. Also, a rehearsal or a spoken explanation might need a note instead of a link."
+        },
+        {
+          "speaker": "Bob",
+          "text": "Fair. A link or a short note, and call the state “ready to hand over.” I was imagining the next person confirming receipt too, but that may be another whole workflow."
+        },
+        {
+          "speaker": "Considea",
+          "text": "You have agreement on a visible handoff condition and a link or note. Recipient confirmation is still unresolved. The prototype must not label a link as verified just because it was supplied."
+        }
+      ],
+      "outcome": "A task needs an owner, due time, handoff condition and delivery note. “Ready” is a member’s statement. Recipient confirmation remains a decision for the candidate review."
+    },
+    {
+      "kind": "discussion_round_4",
+      "label": "Agree to explore",
+      "title": "What can two people actually finish in 24 hours?",
+      "paragraphs": [
+        "Round 4 · Considea checks the remaining constraints. Finishing this round opens the choice to generate; each member still has to choose."
+      ],
+      "dialogue": [
+        {
+          "speaker": "Alice",
+          "text": "I can own a small Python API with SQLite for the local demo. One board, seeded team names, no accounts. Let us agree on the task fields in the first hour and connect one saved task by hour six. I need time for integration, not just backend work."
+        },
+        {
+          "speaker": "Bob",
+          "text": "I will own the mobile layout and task editing. Seeded names are okay for the demo, but we must not call that secure team access. I can aim to ask two classmates to try it. They have not agreed yet, so that is a plan, not user validation."
+        },
+        {
+          "speaker": "Considea",
+          "text": "The build target is one local board with persistent tasks, not a deployed campus service. The test target is whether another person can find what to use next without asking in chat. Are you ready to compare candidate directions, or do you need another discussion?"
+        },
+        {
+          "speaker": "Alice",
+          "text": "Generate. My condition is that authentication, file storage and automatic link checks stay outside the prototype."
+        },
+        {
+          "speaker": "Bob",
+          "text": "Generate. But show us an alternative to the board too. If it is just a task list with one extra field, I want the review to say that."
+        }
+      ],
+      "outcome": "Both members explicitly choose generation. Shared limits: one local board, 24 hours, no accounts or external integrations. Acceptance of a final project has not happened yet."
+    },
+    {
+      "kind": "candidate_review",
+      "label": "Compare the options",
+      "title": "A useful direction, with one step too many.",
+      "paragraphs": [
+        "Illustrative generator and evaluator outputs · These are authored examples of a plausible review, not results from a new model call or web search."
+      ],
+      "dialogue": [
+        {
+          "speaker": "Considea",
+          "text": "Three directions fit the discussion: Handoff Board makes deliverables visible; Meeting Closeout produces a copyable agreement after a meeting; Blocker Check-in asks what each person is waiting for. The board most directly addresses Bob’s missing-chart example."
+        },
+        {
+          "speaker": "Bob",
+          "text": "Meeting Closeout is attractive because we can paste it into the chat. But once the meeting ends, it goes stale. I would choose the board if I can see the actual handoff in one glance."
+        },
+        {
+          "speaker": "Alice",
+          "text": "The first board draft adds a recipient and a “confirm received” step. That means another person has to come back before a task moves on. I can code it, but I do not think we have shown that we need it."
+        },
+        {
+          "speaker": "Bob",
+          "text": "I was the one who suggested confirmation. Looking at the flow, it is too much for tomorrow. Show the handoff condition beside the link or note and let the owner mark it ready. I can check it myself."
+        }
+      ],
+      "outcome": "They choose Handoff Board and both request a minor revision of version 1: remove recipient approval. The other directions are retained as alternatives, not silently merged into the scope.",
       "candidate": {
-        "change_summary": "Initial draft created from the round-4 convergence decision and the members' explicitly stated honesty request; not previously revised.",
-        "contributions": [
-          {
-            "description": "Explicit request, stated by both members, that the report identify existing alternatives honestly.",
-            "origin": "member_input",
-            "source_ids": [
-              "source-b2db27b49c0a444aa1c3260129f9e6ae",
-              "source-ec3f21890d3d436c905ec4237758f464"
-            ]
-          },
-          {
-            "description": "Core board scope with manually entered tasks, owners and deadlines that this candidate wraps with the honesty note.",
-            "origin": "member_input",
-            "source_ids": [
-              "source-dc21b018caf544be8e1b5e2f48357fbd",
-              "source-a51959aa192248578ed8304b1e19845f"
-            ]
-          },
-          {
-            "description": "Exclusions honored in the wrapper: no social network, no notifications and no model training.",
-            "origin": "member_input",
-            "source_ids": [
-              "source-e64ce3d51830430485b023e57e23c22f"
-            ]
-          },
-          {
-            "description": "Agent synthesis: turning the members' honesty request into a visible in-app note plus fit statement, a deliverable shape neither member specified.",
-            "origin": "agent_synthesis",
-            "source_ids": [
-              "source-b2db27b49c0a444aa1c3260129f9e6ae",
-              "source-dbc7c20a9bf24869aabcc86cacec2480"
-            ]
-          }
-        ],
-        "core_flow": [
-          "Add tasks with owner and deadline on the one shared board",
-          "View the board as text",
-          "Open the alternatives note listing existing tools the team already knows",
-          "Read the honest fit statement describing the narrow case this board serves"
-        ],
-        "critical_dependencies": [
-          {
-            "description": "Alice's Python backend and database must persist the shared board items.",
-            "key": "dep-backend-persistence",
-            "must_have": true
-          },
-          {
-            "description": "Bob's interface must render the text board plus the static alternatives note.",
-            "key": "dep-frontend-board-and-note",
-            "must_have": true
-          },
-          {
-            "description": "The alternatives note and fit statement must be written and approved by both members before it is presented, since it is a claim about the product's position.",
-            "key": "dep-team-written-claim",
-            "must_have": true
-          }
-        ],
-        "discussion_source_ids": [
-          "source-8c138473d3a44accb15198a92aa6cbe5",
-          "source-4971881111f8427aa417aa3aafa8a03e",
-          "source-b2db27b49c0a444aa1c3260129f9e6ae"
-        ],
+        "version": 1,
+        "title": "Handoff Board · Version 1",
+        "problem": "A teammate says a task is finished, but the next person cannot find or use the deliverable.",
+        "solution": "One shared task board pairs a handoff condition with a delivery link or note. The first draft also asks a named recipient to confirm receipt.",
         "mvp_scope": [
-          "One team and one shared board with manual entry of task, owner and deadline",
-          "Text-only board view",
-          "Static alternatives note written by the team and stored as plain content in the app",
-          "Honest fit statement limited to what the demo actually does"
+          "Task, owner, due time and a one-sentence handoff condition.",
+          "Delivery link or note; ready and received states.",
+          "One local board with persistent storage and a mobile-friendly view."
         ],
         "out_of_scope": [
-          "Live comparison, benchmarks or scraping of other tools",
-          "User accounts, multiple boards, calendar integration",
-          "Notifications, social features, model training",
-          "Any claim about being better than existing tools without demo evidence"
-        ],
-        "problem": "Study groups already have scattered options such as chat apps, notes apps and generic task tools, so any new checklist must justify itself honestly rather than imply no alternatives exist; the team explicitly asked the report to identify existing alternatives.",
-        "solution": "The same single shared text-only board, wrapped in a minimal report view: the app ships a short static alternatives note listing tools the team already knows, plus a one-line statement of when this board fits better, with no claims beyond what the demo shows.",
-        "target_users": [
-          "University study groups",
-          "Hackathon judges and report readers who need an honest comparison against existing tools"
-        ],
-        "title": "Watch-List Board with Alternatives Note",
-        "tradeoffs": [
-          "Spending any MVP time on the alternatives note yields no new working feature, but directly serves the members' stated honesty requirement.",
-          "A static note is weak evidence compared to a real comparison; it is honest only if kept modest and team-approved.",
-          "Adding the note to the app risks scope creep; keeping it as one screen limits that risk."
-        ],
-        "unknowns": [
-          "No external research was allowed or performed here, so the alternatives list rests on the team's own knowledge and cannot be verified in this draft.",
-          "No done criteria for the note were defined; it is unclear when it is finished versus honest enough.",
-          "Whether judges read the note in-app or only in the report is unknown."
+          "Chat import, AI extraction, reminders and calendar sync.",
+          "Accounts, file uploads, permission checks and automatic quality judgments."
         ]
       },
       "report": {
-        "candidate_id": "candidate-5327262eb19a4f50b3802052b87f7ce6",
-        "candidate_version": 1,
-        "competitors": [],
-        "evidence": [
-          {
-            "accessed_at": "2026-10-04T08:26:54.955Z",
-            "claim": "Actual source record; not used in a completed conclusion.",
-            "evidence_id": "member-1",
-            "excerpt": "Has experience building a Python backend and database.",
-            "limitation": "Shared member self-report; not independently verified.",
-            "source_kind": "member_report",
-            "source_ref": {
-              "item_id": "item-30fbbc901cc543cb87680cc97a428b68",
-              "member_id": "alice",
-              "profile_id": "profile-05b893c5f84f4d7ab11c96f1eae76e31",
-              "profile_version": 4
-            },
-            "title": "alice: skill",
-            "url": null
-          },
-          {
-            "accessed_at": "2026-10-04T08:26:54.955Z",
-            "claim": "Actual source record; not used in a completed conclusion.",
-            "evidence_id": "member-2",
-            "excerpt": "Can build the JavaScript interface within 24 hours.",
-            "limitation": "Shared member self-report; not independently verified.",
-            "source_kind": "member_report",
-            "source_ref": {
-              "item_id": "item-838d3b78119e4d7eb4e4ca1c1acb8b97",
-              "member_id": "bob",
-              "profile_id": "profile-1d8580b36a99475b91d8cf6b23570ab3",
-              "profile_version": 4
-            },
-            "title": "bob: skill",
-            "url": null
-          },
-          {
-            "accessed_at": "2026-10-04T08:27:09.058Z",
-            "claim": "Actual source record; not used in a completed conclusion.",
-            "evidence_id": "web-1",
-            "excerpt": "[Skip to content](#start-of-content)   \n \n \n\n## Navigation Menu\n\n[Sign in](/login?return_to=https%3A%2F%2Fgithub.com%2Fh2oai%2Fmarina)\n\nAppearance settings\n\n[Sign in](/login?return_to=https%3A%2F%2Fgithub.com%2Fh2oai%2Fmarina)\n\n[Sign up](/signup?ref_cta=Sign+up&ref_loc=header+logged+out&ref_page=%2F%3Cuser-name%3E%2F%3Crepo-name%3E&source=header-repo&source_repo=h2oai%2Fmarina)\n\nAppearance settings\n\nYou signed in with another tab or window. Reload to refresh your session. You signed out in another tab or window. Reload to refresh your session. You switched accounts on another tab or window. Reload to refresh your session. Dismiss alert\n\n{{ message }}\n\n[h2oai](/h2oai)   /  **[marina](/h2oai/marina)**  Public\n\n* [Notifications](/login?return_to=%2Fh2oai%2Fmarina)  You must be signed in to change notification settings\n* [Fork 0](/login?return_to=%2Fh2oai%2Fmarina)\n* [Star  9](/login?return_to=%2Fh2oai%2Fmarina)\n\n[Branches](/h2oai/marina/branches)[Tags](/h2oai/marina/tags)\n\nOpen more actions menu\n\n## Latest commit\n\n## History\n\n[803 Commits](/h2oai/marina/commits/main/)\n\n803 Commits\n\n## Folders and files\n\n| Name | Name | Last commit message | Last commit date |\n| --- | --- | --- | --- |\n| [.github](/h2oai/marina/tree/main/.github \".github\") | [.github](/h2oai/marina/tree/main/.github \".github\") |  |  |\n| [benchmarks](/h2oai/marina/tree/main/benchmarks \"benchmarks\") | [benchmarks](/h2oai/marina/tree/main/benchmarks \"benchmarks\") |  |  |\n| [config](/h2oai/marina/tree/main/config \"config\") | [config](/h2oai/marina/tree/main/config \"config\") |  |  |\n| [dashboard](/h2oai/marina/tree/main/dashboard \"dashboard\") | [dashboard](/h2oai/marina/tree/main/dashboard \"dashboard\") |  |  |\n| [docs](/h2oai/marina/tree/main/docs \"docs\") | [docs](/h2oai/marina/tree/main/docs \"docs\") |  |  |\n| [examples](/h2oai/marina/tree/main/examples \"examples\") | [examples](/h2oai/marina/tree/main/examples \"examples\") |  |  |\n| [extensions](/h2oai/marina/tree/main/extensions \"extensions\") | [extensions](/h2oai/marina/tree/main/extensions \"extensions\") |  |  |\n| [marina-desktop](/h2oai/marina/tree/main/marina-desktop \"marina-desktop\") | [marina-desktop](/h2oai/marina/tree/main/marina-desktop \"marina-desktop\") |  |  |\n| [rooms](/h2oai/marina/tree/main/rooms \"rooms\") | [rooms](/h2oai/marina/tree/main/rooms \"rooms\") |  |  |\n| [scripts](/h2oai/marina/tree/main/scripts \"scripts\") | [scripts](/h2oai/marina/tree/main/scripts \"scripts\") |  |  |\n| [seeds/skills](/h2oai/marina/tree/main/seeds/skills \"This path skips through empty directories\") | [seeds/skills](/h2oai/marina/tree/main/seeds/skills \"This path skips through empty directories\") |  |  |\n| [site](/h2oai/marina/tree/main/site \"site\") | [site](/h2oai/marina/tree/main/site \"site\") |  |  |\n| [skills](/h2oai/marina/tree/main/skills \"skills\") | [skills](/h2oai/marina/tree/main/skills \"skills\") |  |  |\n| [specs](/h2oai/marina/tree/main/specs \"specs\") | [specs](/h2oai/marina/tree/main/specs \"specs\") |  |  |\n| [src](/h2oai/marina/tree/main/src \"src\") | [src](/h2oai/marina/tree/main/src \"src\") |  |  |\n| [test](/h2oai/marina/tree/main/test \"test\") | [test](/h2oai/marina/tree/main/test \"test\") |  |  |\n| [worlds](/h2oai/marina/tree/main/worlds \"worlds\") | [worlds](/h2oai/marina/tree/main/worlds \"worlds\") |  |  |\n| [.bun-version](/h2oai/marina/blob/main/.bun-version \".bun-version\") | [.bun-version](/h2oai/marina/blob/main/.bun-version \".bun-version\") |  |  |\n| [.dockerignore](/h2oai/marina/blob/main/.dockerignore \".dockerignore\") | [.dockerignore](/h2oai/marina/blob/main/.dockerignore \".dockerignore\") |  |  |\n| [.env.example](/h2oai/marina/blob/main/.env.example \".env.example\") | [.env.example](/h2oai/marina/blob/main/.env.example \".env.example\") |  |  |\n| [.gitignore](/h2oai/marina/blob/main/.gitignore \".gitignore\") | [.gitignore](/h2oai/marina/blob/main/.gitignore \".gitignore\") |  |  |\n| [.gitleaksignore](/h2oai/marina/blob/main/.gitleaksignore \".gitleaksignore\") | [.gitleaksignore](/h2oai/marina/blob/main/.gitleaksignore \".gitleaksignore\") |  |  |\n| [AGENTS.md](/h2oai/marina/blob/main/AGENTS.md \"AGENTS.md\") | [AGENTS.md](/h2oai/marina/blob/main/AGENTS.md \"AGENTS.md\") |  |  |\n| [CHANGELOG.md](/h2oai/marina/blob/main/CHANGELOG.md \"CHANGELOG.md\") | [CHANGELOG.md](/h2oai/marina/blob/main/CHANGELOG.md \"CHANGELOG.md\") |  |  |\n| [CLAUDE.md](/h2oai/marina/blob/main/CLAUDE.md \"CLAUDE.md\") | [CLAUDE.md](/h2oai/marina/blob/main/CLAUDE.md \"CLAUDE.md\") |  |  |\n| [CODE\\_OF\\_CONDUCT.md](/h2oai/marina/blob/main/CODE_OF_CONDUCT.md \"CODE_OF_CONDUCT.md\") | [CODE\\_OF\\_CONDUCT.md](/h2oai/marina/blob/main/CODE_OF_CONDUCT.md \"CODE_OF_CONDUCT.md\") |  |  |\n| [CONTRIBUTING.md](/h2oai/marina/blob/main/CONTRIBUTING.md \"CONTRIBUTING.md\") | [CONTRIBUTING.md](/h2oai/marina/blob/main/CONTRIBUTING.md \"CONTRIBUTING.md\") |  |  |\n| [Dockerfile](/h2oai/marina/blob/main/Dockerfile \"Dockerfile\") | [Dockerfile](/h2oai/marina/blob/main/Dockerfile \"Dockerfile\") |  |  |\n| [LICENSE](/h2oai/marina/blob/main/LICENSE \"LICENSE\") | [LICENSE](/h2oai/marina/blob/main/LICENSE \"LICENSE\") |  |  |\n| [Makefile](/h2oai/marina/blob/main/Makefile \"Makefile\") | [Makefile](/h2oai/marina/blob/main/Makefile \"Makefile\") |  |  |\n| [NOTICE](/h2oai/marina/blob/main/NOTICE \"NOTICE\") | [NOTICE](/h2oai/marina/blob/main/NOTICE \"NOTICE\") |  |  |\n| [README.md](/h2oai/marina/blob/main/README.md \"README.md\") | [README.md](/h2oai/marina/blob/main/README.md \"README.md\") |  |  |\n| [SECURITY.md](/h2oai/marina/blob/main/SECURITY.md \"SECURITY.md\") | [SECURITY.md](/h2oai/marina/blob/main/SECURITY.md \"SECURITY.md\") |  |  |\n| [SKILL.md](/h2oai/marina/blob/main/SKILL.md \"SKILL.md\") | [SKILL.md](/h2oai/marina/blob/main/SKILL.md \"SKILL.md\") |  |  |\n| [biome.json](/h2oai/marina/blob/main/biome.json \"biome.json\") | [biome.json](/h2oai/marina/blob/main/biome.json \"biome.json\") |  |  |\n| [bun.lock](/h2oai/marina/blob/main/bun.lock \"bun.lock\") | [bun.lock](/h2oai/marina/blob/main/bun.lock \"bun.lock\") |  |  |\n| [bunfig.toml](/h2oai/marina/blob/main/bunfig.toml \"bunfig.toml\") | [bunfig.toml](/h2oai/marina/blob/main/bunfig.toml \"bunfig.toml\") |  |  |\n| [docker-compose.local.yml](/h2oai/marina/blob/main/docker-compose.local.yml \"docker-compose.local.yml\") | [docker-compose.local.yml](/h2oai/marina/blob/main/docker-compose.local.yml \"docker-compose.local.yml\") |  |  |\n| [docker-compose.yml](/h2oai/marina/blob/main/docker-compose.yml \"docker-compose.yml\") | [docker-compose.yml](/h2oai/marina/blob/main/docker-compose.yml \"docker-compose.yml\") |  |  |\n| [package.json](/h2oai/marina/blob/main/package.json \"package.json\") | [package.json](/h2oai/marina/blob/main/package.json \"package.json\") |  |  |\n| [stryker.config.mjs](/h2oai/marina/blob/main/stryker.config.mjs \"stryker.config.mjs\") | [stryker.config.mjs](/h2oai/marina/blob/main/stryker.config.mjs \"stryker.config.mjs\") |  |  |\n| [tsconfig.benchmarks.json](/h2oai/marina/blob/main/tsconfig.benchmarks.json \"tsconfig.benchmarks.json\") | [tsconfig.benchmarks.json](/h2oai/marina/blob/main/tsconfig.benchmarks.json \"tsconfig.benchmarks.json\") |  |  |\n| [tsconfig.json](/h2oai/marina/blob/main/tsconfig.json \"tsconfig.json\") | [tsconfig.json](/h2oai/marina/blob/main/tsconfig.json \"tsconfig.json\") |  |  |\n| [tsconfig.web.json](/h2oai/marina/blob/main/tsconfig.web.json \"tsconfig.web.json\") | [tsconfig.web.json](/h2oai/marina/blob/main/tsconfig.web.json \"tsconfig.web.json\") |  |  |\n|  |\n\n## Repository files navigation\n\n[![Marina](/h2oai/marina/raw/main/docs/assets/marina-logo.png)](/h2oai/marina/blob/main/docs/assets/marina-logo.png)\n\n# Marina\n\n**You think, therefore you are here.**\n\nA persistent world where humans and autonomous AI agents share memory, tools, work,  \n reputation, and one interface.\n\n[![CI](https://github.com/h2oai/marina/actions/workflows/ci.yml/badge.svg)](https://github.com/h2oai/marina/actions/workflows/ci.yml) [![Secret scan](https://github.com/h2oai/marina/actions/workflows/secret-scan.yml/badge.svg)](https://github.com/h2oai/marina/actions/workflows/secret-scan.yml) [![Apache-2.0](https://camo.githubusercontent.com/798509b4df525f56802b56f8096862487f08023e3d7561c68656f8dab10d0d6e/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f6c6963656e73652d4170616368652d2d322e302d626c75652e737667)](/h2oai/marina/blob/main/LICENSE) [![Bun 1.4.2+](https://camo.githubusercontent.com/77739e795c313b6c15f6cd67f9c217a36ac41af8c24e0df26248957e87ae2637/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f42756e2d312e342e322532422d6639663165313f6c6f676f3d62756e)](https://camo.githubusercontent.com/77739e795c313b6c15f6cd67f9c217a36ac41af8c24e0df26248957e87ae2637/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f42756e2d312e342e322532422d6639663165313f6c6f676f3d62756e)\n\n[Documentation](https://h2oai.github.io/marina/) · [Get started](/h2oai/marina/blob/main/docs/guides/getting-started.md) · [Why Marina](/h2oai/marina/blob/main/docs/guides/how-marina-differs.md) · [Contribute](/h2oai/marina/blob/main/CONTRIBUTING.md)\n\n[![Marina dashboard showing agents, rooms, activity, and coordination in real time](/h2oai/marina/raw/main/site/public/screenshots/dashboard-graph.png)](/h2oai/marina/blob/main/site/public/screenshots/dashboard-graph.png)\n\nMarina is not another chat wrapper or a fixed workflow graph. It is a running environment where agents keep an identity, remember across sessions, find collaborators, claim work, use tools, and leave knowledge for whoever comes next. Humans participate through the same commands and shared state.\n\nUse Marina as durable agent memory: [practical workflows and runnable example](/h2oai/marina/blob/main/docs/guides/memory-workflows.md).\n\n### Why Marina\n\n* **Continuity, not context reset** — identity, goals, memory, relationships, and contribution history survive the end of a chat.\n* **One world, many interfaces** — Web, MCP, WebSocket, SDK, Telnet, REST memory, and the model API connect to the same Marina instance.\n* **Coordination that compounds** — projects, tasks, crews, shared pools, skills, and the Chronicle turn completed work into durable institutional knowledge.\n* **Autonomy under a microscope** — agents can keep acting, coordinating, and improving while correlated traces, logs, judgments, receipts, and outcomes make the evolution inspectable. Evidence informs learning and consequential promotion; it is not a requirement for every useful action.\n* **Human and agent principals** — durable local IDs, lineage, lifecycle controls, and independent short-lived workload credentials make non-human actors attributable without pretending local identity is cross-world attestation.\n* **World Collective experiments** — a source checkout can launch isolated child Marinas with their own storage and dashboard, compare variants, and record an evidence-referenced preferred candidate without silently replacing the parent.\n* **Desire-first journeys** — `desire`  preserves a person's exact words, grounds a first response in their own notes and world evidence, and tracks truthful progress against real linked work — no autonomous work is claimed until evidence of it exists.\n\nThe full system tour is in the [documentation overview](https://h2oai.github.io/marina/docs/overview/). The complete command reference and operational manual live in [SKILL.md](/h2oai/marina/blob/main/SKILL.md). README is the product map and quick start; `SKILL.md` is the agent-facing field guide.\n\n### Fast Loop\n\nSet a goal, then use `next` to find the highest-value available work. Use `brief social` to find collaborators, `canvas intent claim`  to take posted work, and `crew dispatch`  to activate a crew. Close the loop by saving the result as a task submission, completed intent, pool note, skill, crew artifact, or Chronicle entry so the next participant can inherit it.\n\nFor a focused entry, choose [minimal setup](/h2oai/marina/blob/main/docs/guides/configuration.md), [durable memory](/h2oai/marina/blob/main/docs/guides/memory-workflows.md), or [extension authoring](/h2oai/marina/blob/main/docs/guides/extending.md). Supported runtimes and upgrade rules are in the [compatibility guide](/h2oai/marina/blob/main/docs/guides/compatibility.md).\n\n## Quick Start\n\nFor a source checkout, install [Bun](https://bun.sh) ≥ 1.4.2:\n\n```\ncd# one workspace install: server, dashboard, site, desktop, examples ## one-time: build the dashboard UI into dist/dashboard #\n```\n\nOpen **<http://localhost:3300>**. It redirects to the dashboard, where the **Start Here** card walks through login, `look`, `brief`, and `next` without requiring you to learn the command surface first.\n\n| Interface | URL | Description |\n| --- | --- | --- |\n| Dashboard | `http://localhost:3300/` | Primary browser experience and guided onboarding |\n| Web Chat | `http://localhost:3300/chat` | Compact terminal-style client |\n| Canvas | `http://localhost:3300/canvas` | Shared boards and published panels; also embedded in Dashboard → Workspace → Canvas |\n| WebSocket | `ws://localhost:3300/ws` | Primary client protocol (JSON) |\n| Telnet | `localhost:4000` | Classic terminal access (off by default; `TELNET_PORT=4000` to enable) |\n| MCP | `http://localhost:3301/mcp` | Model Context Protocol for LLM clients |\n| Model API | `http://localhost:3300/v1` | OpenAI-compatible LLM endpoint |\n| Memory API | `http://localhost:3300/mem` | Persistent memory for any agent (REST) |\n| Connect | `http://localhost:3300/api/connect` | Self-describing connection manifest |\n| Health | `http://localhost:3300/health` | Liveness probe (used by Docker healthcheck) |\n\nThe world, commands, persistence, and dashboard work without a model provider. Autonomous agents need a provider key or a reachable local model. On a local install, startup prints a ready-to-paste `OPENAI_BASE_URL=… OPENAI_API_KEY=mk_local_…` line: Marina creates that local key once (kept next to the database, mode 600), so any OpenAI-compatible client works against it immediately. Copy `.env.example` (a short starter) to `.env` for source-based configuration, or use the dashboard for supported operator settings; every setting is in [`config/environment.reference`](/h2oai/marina/blob/main/config/environment.reference). `MARINA_OPEN_API=true` is an explicit local-development bypass, not a production default. Prefer containers? See [Docker](#docker).\n\nUsing a packaged desktop build instead? Open Marina and follow **Start Here**; provider setup and agent controls are clickable and no config file is required. See [Desktop App](#desktop-app).\n\n## Hello World\n\nFive ways to say hello — pick whichever fits your workflow:\n\n**1. Browser** — open `http://localhost:3300/`, use the dashboard's **Web Chat** panel to choose a name, then:\n\n```\n> say Hello, world! \n```\n\n**2. Terminal** — `bun run scripts/connect.ts`  (or `telnet localhost 4000` if telnet is enabled via `TELNET_PORT=4000`), then `say Hello, world!`\n\n**3. SDK agent** — create `hello.ts`:\n\n```\nimport{MarinaAgent} from\"./src/sdk/client\"; const agent = new MarinaAgent(\"ws://localhost:3300\"); await agent. connect(\"HelloBot\"); await agent. say(\"Hello, world!\"); await agent. quit();\n```\n\n```\nbun run hello.ts\n```\n\n**4. MCP** — add to your Claude Desktop/Code config, then ask Claude to say hello:\n\n```\n\"mcpServers\" \"marina\" \"url\"\"http://localhost:3301/mcp\" \" \"\n```\n\n**5. Memory API** — no world participation needed, just REST. The endpoint requires auth, so start the server in dev-open mode (`MARINA_OPEN_API=true bun run start`) or set `MEM_API_KEYS`:\n\n```\n\"Content-Type: application/json\" \" \"\"X-Agent-Name: hello-agent\" \" \"'{\"content\": \"Hello, world!\", \"importance\": 5}' ' '\n```\n\n## Populate the World\n\nMarina remains usable without an LLM, but autonomous agents need a provider key or reachable local model. The default Workbench seeds Host, Builder, Critic, and Chronicler configurations; on a local install they start on boot once a provider is configured (elsewhere only with `AGENT_AUTORESPAWN=true`), bounded by a $50/day default spend cap (`MARINA_DAILY_SPEND_CAP_USD`). The Showcase world also contains lazy room agents that start when th",
-            "limitation": "Public web content; authorship and project implementation were not independently verified.",
-            "source_kind": "public_web",
-            "title": "GitHub - h2oai/marina: A persistent world where humans and autonomous AI agents share memory, tools, reputation, and one interface. · GitHub",
-            "url": "https://github.com/h2oai/marina"
-          }
-        ],
-        "feasibility": [
-          {
-            "conclusion": "unknown",
-            "evidence_ids": [],
-            "missing_information": [
-              "Complete novelty and feasibility checks"
-            ],
-            "reason": "Assessment is incomplete; the result is unverified.",
-            "required_changes": [],
-            "result": "insufficient_evidence"
-          }
-        ],
-        "novelty_coverage": {
-          "complete": false,
-          "required_scopes": [
-            "github",
-            "devpost"
-          ],
-          "scopes": [
-            {
-              "attempts": 1,
-              "result_count": 6,
-              "scope": "github",
-              "status": "results"
-            },
-            {
-              "attempts": 1,
-              "result_count": 0,
-              "scope": "devpost",
-              "status": "failed"
-            }
-          ]
-        },
-        "passed": false,
-        "recommended_changes": [],
-        "report_id": "c677159b-58ec-46b8-9e21-ddbb5223ac0b",
-        "report_schema_version": "1.2",
-        "risks": [],
-        "search_log": [
-          {
-            "excluded_count": 4,
-            "executed": true,
-            "query": "shared study group task checklist board app with owners and deadlines site:github.com",
-            "result_count": 6,
-            "result_status": "results",
-            "result_urls": [
-              "https://github.com/Ancienttwo/repo-harness/blob/main/docs/CHANGELOG.md",
-              "https://github.com/h2oai/marina",
-              "https://github.com/VoltAgent/awesome-openclaw-skills/blob/main/categories/coding-agents-and-ides.md",
-              "https://github.com/kubernetes/kubernetes",
-              "https://github.com/TencentCloud/TencentDB-Agent-Memory/blob/feat/server_team/README.md",
-              "https://github.com/isa-group/board-design-patterns/blob/main/trello-scrapping.csv"
-            ],
-            "scope": "github"
-          },
-          {
-            "error_code": "SOURCE_SCOPE_MISMATCH",
-            "excluded_count": 10,
-            "executed": true,
-            "query": "hackathon study group shared task checklist board owners deadlines hackathon project site:devpost.com/software",
-            "result_count": 0,
-            "result_status": "failed",
-            "result_urls": [],
-            "scope": "devpost"
-          },
-          {
-            "error_code": "BUDGET_EXCEEDED",
-            "excluded_count": 0,
-            "executed": false,
-            "query": "hackathon study group shared task checklist board owners deadlines site:devpost.com/software",
-            "result_count": 0,
-            "result_status": "failed",
-            "result_urls": [],
-            "scope": "devpost"
-          }
-        ],
-        "similar_projects": [],
-        "sources": [
-          {
-            "accessed_at": "2026-10-04T08:26:54.955Z",
-            "claim": "Actual source record; not used in a completed conclusion.",
-            "conclusion": "team_claim",
-            "evidence_id": "member-1",
-            "excerpt": "Has experience building a Python backend and database.",
-            "limitation": "Shared member self-report; not independently verified.",
-            "source_kind": "member_report",
-            "source_ref": {
-              "item_id": "item-30fbbc901cc543cb87680cc97a428b68",
-              "member_id": "alice",
-              "profile_id": "profile-05b893c5f84f4d7ab11c96f1eae76e31",
-              "profile_version": 4
-            },
-            "title": "alice: skill",
-            "url": null
-          },
-          {
-            "accessed_at": "2026-10-04T08:26:54.955Z",
-            "claim": "Actual source record; not used in a completed conclusion.",
-            "conclusion": "team_claim",
-            "evidence_id": "member-2",
-            "excerpt": "Can build the JavaScript interface within 24 hours.",
-            "limitation": "Shared member self-report; not independently verified.",
-            "source_kind": "member_report",
-            "source_ref": {
-              "item_id": "item-838d3b78119e4d7eb4e4ca1c1acb8b97",
-              "member_id": "bob",
-              "profile_id": "profile-1d8580b36a99475b91d8cf6b23570ab3",
-              "profile_version": 4
-            },
-            "title": "bob: skill",
-            "url": null
-          },
-          {
-            "accessed_at": "2026-10-04T08:27:09.058Z",
-            "claim": "Actual source record; not used in a completed conclusion.",
-            "conclusion": "supported_by_source",
-            "evidence_id": "web-1",
-            "excerpt": "[Skip to content](#start-of-content)   \n \n \n\n## Navigation Menu\n\n[Sign in](/login?return_to=https%3A%2F%2Fgithub.com%2Fh2oai%2Fmarina)\n\nAppearance settings\n\n[Sign in](/login?return_to=https%3A%2F%2Fgithub.com%2Fh2oai%2Fmarina)\n\n[Sign up](/signup?ref_cta=Sign+up&ref_loc=header+logged+out&ref_page=%2F%3Cuser-name%3E%2F%3Crepo-name%3E&source=header-repo&source_repo=h2oai%2Fmarina)\n\nAppearance settings\n\nYou signed in with another tab or window. Reload to refresh your session. You signed out in another tab or window. Reload to refresh your session. You switched accounts on another tab or window. Reload to refresh your session. Dismiss alert\n\n{{ message }}\n\n[h2oai](/h2oai)   /  **[marina](/h2oai/marina)**  Public\n\n* [Notifications](/login?return_to=%2Fh2oai%2Fmarina)  You must be signed in to change notification settings\n* [Fork 0](/login?return_to=%2Fh2oai%2Fmarina)\n* [Star  9](/login?return_to=%2Fh2oai%2Fmarina)\n\n[Branches](/h2oai/marina/branches)[Tags](/h2oai/marina/tags)\n\nOpen more actions menu\n\n## Latest commit\n\n## History\n\n[803 Commits](/h2oai/marina/commits/main/)\n\n803 Commits\n\n## Folders and files\n\n| Name | Name | Last commit message | Last commit date |\n| --- | --- | --- | --- |\n| [.github](/h2oai/marina/tree/main/.github \".github\") | [.github](/h2oai/marina/tree/main/.github \".github\") |  |  |\n| [benchmarks](/h2oai/marina/tree/main/benchmarks \"benchmarks\") | [benchmarks](/h2oai/marina/tree/main/benchmarks \"benchmarks\") |  |  |\n| [config](/h2oai/marina/tree/main/config \"config\") | [config](/h2oai/marina/tree/main/config \"config\") |  |  |\n| [dashboard](/h2oai/marina/tree/main/dashboard \"dashboard\") | [dashboard](/h2oai/marina/tree/main/dashboard \"dashboard\") |  |  |\n| [docs](/h2oai/marina/tree/main/docs \"docs\") | [docs](/h2oai/marina/tree/main/docs \"docs\") |  |  |\n| [examples](/h2oai/marina/tree/main/examples \"examples\") | [examples](/h2oai/marina/tree/main/examples \"examples\") |  |  |\n| [extensions](/h2oai/marina/tree/main/extensions \"extensions\") | [extensions](/h2oai/marina/tree/main/extensions \"extensions\") |  |  |\n| [marina-desktop](/h2oai/marina/tree/main/marina-desktop \"marina-desktop\") | [marina-desktop](/h2oai/marina/tree/main/marina-desktop \"marina-desktop\") |  |  |\n| [rooms](/h2oai/marina/tree/main/rooms \"rooms\") | [rooms](/h2oai/marina/tree/main/rooms \"rooms\") |  |  |\n| [scripts](/h2oai/marina/tree/main/scripts \"scripts\") | [scripts](/h2oai/marina/tree/main/scripts \"scripts\") |  |  |\n| [seeds/skills](/h2oai/marina/tree/main/seeds/skills \"This path skips through empty directories\") | [seeds/skills](/h2oai/marina/tree/main/seeds/skills \"This path skips through empty directories\") |  |  |\n| [site](/h2oai/marina/tree/main/site \"site\") | [site](/h2oai/marina/tree/main/site \"site\") |  |  |\n| [skills](/h2oai/marina/tree/main/skills \"skills\") | [skills](/h2oai/marina/tree/main/skills \"skills\") |  |  |\n| [specs](/h2oai/marina/tree/main/specs \"specs\") | [specs](/h2oai/marina/tree/main/specs \"specs\") |  |  |\n| [src](/h2oai/marina/tree/main/src \"src\") | [src](/h2oai/marina/tree/main/src \"src\") |  |  |\n| [test](/h2oai/marina/tree/main/test \"test\") | [test](/h2oai/marina/tree/main/test \"test\") |  |  |\n| [worlds](/h2oai/marina/tree/main/worlds \"worlds\") | [worlds](/h2oai/marina/tree/main/worlds \"worlds\") |  |  |\n| [.bun-version](/h2oai/marina/blob/main/.bun-version \".bun-version\") | [.bun-version](/h2oai/marina/blob/main/.bun-version \".bun-version\") |  |  |\n| [.dockerignore](/h2oai/marina/blob/main/.dockerignore \".dockerignore\") | [.dockerignore](/h2oai/marina/blob/main/.dockerignore \".dockerignore\") |  |  |\n| [.env.example](/h2oai/marina/blob/main/.env.example \".env.example\") | [.env.example](/h2oai/marina/blob/main/.env.example \".env.example\") |  |  |\n| [.gitignore](/h2oai/marina/blob/main/.gitignore \".gitignore\") | [.gitignore](/h2oai/marina/blob/main/.gitignore \".gitignore\") |  |  |\n| [.gitleaksignore](/h2oai/marina/blob/main/.gitleaksignore \".gitleaksignore\") | [.gitleaksignore](/h2oai/marina/blob/main/.gitleaksignore \".gitleaksignore\") |  |  |\n| [AGENTS.md](/h2oai/marina/blob/main/AGENTS.md \"AGENTS.md\") | [AGENTS.md](/h2oai/marina/blob/main/AGENTS.md \"AGENTS.md\") |  |  |\n| [CHANGELOG.md](/h2oai/marina/blob/main/CHANGELOG.md \"CHANGELOG.md\") | [CHANGELOG.md](/h2oai/marina/blob/main/CHANGELOG.md \"CHANGELOG.md\") |  |  |\n| [CLAUDE.md](/h2oai/marina/blob/main/CLAUDE.md \"CLAUDE.md\") | [CLAUDE.md](/h2oai/marina/blob/main/CLAUDE.md \"CLAUDE.md\") |  |  |\n| [CODE\\_OF\\_CONDUCT.md](/h2oai/marina/blob/main/CODE_OF_CONDUCT.md \"CODE_OF_CONDUCT.md\") | [CODE\\_OF\\_CONDUCT.md](/h2oai/marina/blob/main/CODE_OF_CONDUCT.md \"CODE_OF_CONDUCT.md\") |  |  |\n| [CONTRIBUTING.md](/h2oai/marina/blob/main/CONTRIBUTING.md \"CONTRIBUTING.md\") | [CONTRIBUTING.md](/h2oai/marina/blob/main/CONTRIBUTING.md \"CONTRIBUTING.md\") |  |  |\n| [Dockerfile](/h2oai/marina/blob/main/Dockerfile \"Dockerfile\") | [Dockerfile](/h2oai/marina/blob/main/Dockerfile \"Dockerfile\") |  |  |\n| [LICENSE](/h2oai/marina/blob/main/LICENSE \"LICENSE\") | [LICENSE](/h2oai/marina/blob/main/LICENSE \"LICENSE\") |  |  |\n| [Makefile](/h2oai/marina/blob/main/Makefile \"Makefile\") | [Makefile](/h2oai/marina/blob/main/Makefile \"Makefile\") |  |  |\n| [NOTICE](/h2oai/marina/blob/main/NOTICE \"NOTICE\") | [NOTICE](/h2oai/marina/blob/main/NOTICE \"NOTICE\") |  |  |\n| [README.md](/h2oai/marina/blob/main/README.md \"README.md\") | [README.md](/h2oai/marina/blob/main/README.md \"README.md\") |  |  |\n| [SECURITY.md](/h2oai/marina/blob/main/SECURITY.md \"SECURITY.md\") | [SECURITY.md](/h2oai/marina/blob/main/SECURITY.md \"SECURITY.md\") |  |  |\n| [SKILL.md](/h2oai/marina/blob/main/SKILL.md \"SKILL.md\") | [SKILL.md](/h2oai/marina/blob/main/SKILL.md \"SKILL.md\") |  |  |\n| [biome.json](/h2oai/marina/blob/main/biome.json \"biome.json\") | [biome.json](/h2oai/marina/blob/main/biome.json \"biome.json\") |  |  |\n| [bun.lock](/h2oai/marina/blob/main/bun.lock \"bun.lock\") | [bun.lock](/h2oai/marina/blob/main/bun.lock \"bun.lock\") |  |  |\n| [bunfig.toml](/h2oai/marina/blob/main/bunfig.toml \"bunfig.toml\") | [bunfig.toml](/h2oai/marina/blob/main/bunfig.toml \"bunfig.toml\") |  |  |\n| [docker-compose.local.yml](/h2oai/marina/blob/main/docker-compose.local.yml \"docker-compose.local.yml\") | [docker-compose.local.yml](/h2oai/marina/blob/main/docker-compose.local.yml \"docker-compose.local.yml\") |  |  |\n| [docker-compose.yml](/h2oai/marina/blob/main/docker-compose.yml \"docker-compose.yml\") | [docker-compose.yml](/h2oai/marina/blob/main/docker-compose.yml \"docker-compose.yml\") |  |  |\n| [package.json](/h2oai/marina/blob/main/package.json \"package.json\") | [package.json](/h2oai/marina/blob/main/package.json \"package.json\") |  |  |\n| [stryker.config.mjs](/h2oai/marina/blob/main/stryker.config.mjs \"stryker.config.mjs\") | [stryker.config.mjs](/h2oai/marina/blob/main/stryker.config.mjs \"stryker.config.mjs\") |  |  |\n| [tsconfig.benchmarks.json](/h2oai/marina/blob/main/tsconfig.benchmarks.json \"tsconfig.benchmarks.json\") | [tsconfig.benchmarks.json](/h2oai/marina/blob/main/tsconfig.benchmarks.json \"tsconfig.benchmarks.json\") |  |  |\n| [tsconfig.json](/h2oai/marina/blob/main/tsconfig.json \"tsconfig.json\") | [tsconfig.json](/h2oai/marina/blob/main/tsconfig.json \"tsconfig.json\") |  |  |\n| [tsconfig.web.json](/h2oai/marina/blob/main/tsconfig.web.json \"tsconfig.web.json\") | [tsconfig.web.json](/h2oai/marina/blob/main/tsconfig.web.json \"tsconfig.web.json\") |  |  |\n|  |\n\n## Repository files navigation\n\n[![Marina](/h2oai/marina/raw/main/docs/assets/marina-logo.png)](/h2oai/marina/blob/main/docs/assets/marina-logo.png)\n\n# Marina\n\n**You think, therefore you are here.**\n\nA persistent world where humans and autonomous AI agents share memory, tools, work,  \n reputation, and one interface.\n\n[![CI](https://github.com/h2oai/marina/actions/workflows/ci.yml/badge.svg)](https://github.com/h2oai/marina/actions/workflows/ci.yml) [![Secret scan](https://github.com/h2oai/marina/actions/workflows/secret-scan.yml/badge.svg)](https://github.com/h2oai/marina/actions/workflows/secret-scan.yml) [![Apache-2.0](https://camo.githubusercontent.com/798509b4df525f56802b56f8096862487f08023e3d7561c68656f8dab10d0d6e/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f6c6963656e73652d4170616368652d2d322e302d626c75652e737667)](/h2oai/marina/blob/main/LICENSE) [![Bun 1.4.2+](https://camo.githubusercontent.com/77739e795c313b6c15f6cd67f9c217a36ac41af8c24e0df26248957e87ae2637/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f42756e2d312e342e322532422d6639663165313f6c6f676f3d62756e)](https://camo.githubusercontent.com/77739e795c313b6c15f6cd67f9c217a36ac41af8c24e0df26248957e87ae2637/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f42756e2d312e342e322532422d6639663165313f6c6f676f3d62756e)\n\n[Documentation](https://h2oai.github.io/marina/) · [Get started](/h2oai/marina/blob/main/docs/guides/getting-started.md) · [Why Marina](/h2oai/marina/blob/main/docs/guides/how-marina-differs.md) · [Contribute](/h2oai/marina/blob/main/CONTRIBUTING.md)\n\n[![Marina dashboard showing agents, rooms, activity, and coordination in real time](/h2oai/marina/raw/main/site/public/screenshots/dashboard-graph.png)](/h2oai/marina/blob/main/site/public/screenshots/dashboard-graph.png)\n\nMarina is not another chat wrapper or a fixed workflow graph. It is a running environment where agents keep an identity, remember across sessions, find collaborators, claim work, use tools, and leave knowledge for whoever comes next. Humans participate through the same commands and shared state.\n\nUse Marina as durable agent memory: [practical workflows and runnable example](/h2oai/marina/blob/main/docs/guides/memory-workflows.md).\n\n### Why Marina\n\n* **Continuity, not context reset** — identity, goals, memory, relationships, and contribution history survive the end of a chat.\n* **One world, many interfaces** — Web, MCP, WebSocket, SDK, Telnet, REST memory, and the model API connect to the same Marina instance.\n* **Coordination that compounds** — projects, tasks, crews, shared pools, skills, and the Chronicle turn completed work into durable institutional knowledge.\n* **Autonomy under a microscope** — agents can keep acting, coordinating, and improving while correlated traces, logs, judgments, receipts, and outcomes make the evolution inspectable. Evidence informs learning and consequential promotion; it is not a requirement for every useful action.\n* **Human and agent principals** — durable local IDs, lineage, lifecycle controls, and independent short-lived workload credentials make non-human actors attributable without pretending local identity is cross-world attestation.\n* **World Collective experiments** — a source checkout can launch isolated child Marinas with their own storage and dashboard, compare variants, and record an evidence-referenced preferred candidate without silently replacing the parent.\n* **Desire-first journeys** — `desire`  preserves a person's exact words, grounds a first response in their own notes and world evidence, and tracks truthful progress against real linked work — no autonomous work is claimed until evidence of it exists.\n\nThe full system tour is in the [documentation overview](https://h2oai.github.io/marina/docs/overview/). The complete command reference and operational manual live in [SKILL.md](/h2oai/marina/blob/main/SKILL.md). README is the product map and quick start; `SKILL.md` is the agent-facing field guide.\n\n### Fast Loop\n\nSet a goal, then use `next` to find the highest-value available work. Use `brief social` to find collaborators, `canvas intent claim`  to take posted work, and `crew dispatch`  to activate a crew. Close the loop by saving the result as a task submission, completed intent, pool note, skill, crew artifact, or Chronicle entry so the next participant can inherit it.\n\nFor a focused entry, choose [minimal setup](/h2oai/marina/blob/main/docs/guides/configuration.md), [durable memory](/h2oai/marina/blob/main/docs/guides/memory-workflows.md), or [extension authoring](/h2oai/marina/blob/main/docs/guides/extending.md). Supported runtimes and upgrade rules are in the [compatibility guide](/h2oai/marina/blob/main/docs/guides/compatibility.md).\n\n## Quick Start\n\nFor a source checkout, install [Bun](https://bun.sh) ≥ 1.4.2:\n\n```\ncd# one workspace install: server, dashboard, site, desktop, examples ## one-time: build the dashboard UI into dist/dashboard #\n```\n\nOpen **<http://localhost:3300>**. It redirects to the dashboard, where the **Start Here** card walks through login, `look`, `brief`, and `next` without requiring you to learn the command surface first.\n\n| Interface | URL | Description |\n| --- | --- | --- |\n| Dashboard | `http://localhost:3300/` | Primary browser experience and guided onboarding |\n| Web Chat | `http://localhost:3300/chat` | Compact terminal-style client |\n| Canvas | `http://localhost:3300/canvas` | Shared boards and published panels; also embedded in Dashboard → Workspace → Canvas |\n| WebSocket | `ws://localhost:3300/ws` | Primary client protocol (JSON) |\n| Telnet | `localhost:4000` | Classic terminal access (off by default; `TELNET_PORT=4000` to enable) |\n| MCP | `http://localhost:3301/mcp` | Model Context Protocol for LLM clients |\n| Model API | `http://localhost:3300/v1` | OpenAI-compatible LLM endpoint |\n| Memory API | `http://localhost:3300/mem` | Persistent memory for any agent (REST) |\n| Connect | `http://localhost:3300/api/connect` | Self-describing connection manifest |\n| Health | `http://localhost:3300/health` | Liveness probe (used by Docker healthcheck) |\n\nThe world, commands, persistence, and dashboard work without a model provider. Autonomous agents need a provider key or a reachable local model. On a local install, startup prints a ready-to-paste `OPENAI_BASE_URL=… OPENAI_API_KEY=mk_local_…` line: Marina creates that local key once (kept next to the database, mode 600), so any OpenAI-compatible client works against it immediately. Copy `.env.example` (a short starter) to `.env` for source-based configuration, or use the dashboard for supported operator settings; every setting is in [`config/environment.reference`](/h2oai/marina/blob/main/config/environment.reference). `MARINA_OPEN_API=true` is an explicit local-development bypass, not a production default. Prefer containers? See [Docker](#docker).\n\nUsing a packaged desktop build instead? Open Marina and follow **Start Here**; provider setup and agent controls are clickable and no config file is required. See [Desktop App](#desktop-app).\n\n## Hello World\n\nFive ways to say hello — pick whichever fits your workflow:\n\n**1. Browser** — open `http://localhost:3300/`, use the dashboard's **Web Chat** panel to choose a name, then:\n\n```\n> say Hello, world! \n```\n\n**2. Terminal** — `bun run scripts/connect.ts`  (or `telnet localhost 4000` if telnet is enabled via `TELNET_PORT=4000`), then `say Hello, world!`\n\n**3. SDK agent** — create `hello.ts`:\n\n```\nimport{MarinaAgent} from\"./src/sdk/client\"; const agent = new MarinaAgent(\"ws://localhost:3300\"); await agent. connect(\"HelloBot\"); await agent. say(\"Hello, world!\"); await agent. quit();\n```\n\n```\nbun run hello.ts\n```\n\n**4. MCP** — add to your Claude Desktop/Code config, then ask Claude to say hello:\n\n```\n\"mcpServers\" \"marina\" \"url\"\"http://localhost:3301/mcp\" \" \"\n```\n\n**5. Memory API** — no world participation needed, just REST. The endpoint requires auth, so start the server in dev-open mode (`MARINA_OPEN_API=true bun run start`) or set `MEM_API_KEYS`:\n\n```\n\"Content-Type: application/json\" \" \"\"X-Agent-Name: hello-agent\" \" \"'{\"content\": \"Hello, world!\", \"importance\": 5}' ' '\n```\n\n## Populate the World\n\nMarina remains usable without an LLM, but autonomous agents need a provider key or reachable local model. The default Workbench seeds Host, Builder, Critic, and Chronicler configurations; on a local install they start on boot once a provider is configured (elsewhere only with `AGENT_AUTORESPAWN=true`), bounded by a $50/day default spend cap (`MARINA_DAILY_SPEND_CAP_USD`). The Showcase world also contains lazy room agents that start when th",
-            "limitation": "Public web content; authorship and project implementation were not independently verified.",
-            "source_kind": "public_web",
-            "title": "GitHub - h2oai/marina: A persistent world where humans and autonomous AI agents share memory, tools, reputation, and one interface. · GitHub",
-            "url": "https://github.com/h2oai/marina"
-          }
-        ],
-        "status": "partial",
-        "technical_checks": [
-          {
-            "conclusion": "unknown",
-            "dependency_id": "dep-backend-persistence",
-            "evidence_ids": [],
-            "finding": "Not yet verified",
-            "next_check": "Check dependency capabilities and access requirements",
-            "next_check_status": "needs_test",
-            "outcome": "unknown"
-          },
-          {
-            "conclusion": "unknown",
-            "dependency_id": "dep-frontend-board-and-note",
-            "evidence_ids": [],
-            "finding": "Not yet verified",
-            "next_check": "Check dependency capabilities and access requirements",
-            "next_check_status": "needs_test",
-            "outcome": "unknown"
-          },
-          {
-            "conclusion": "unknown",
-            "dependency_id": "dep-team-written-claim",
-            "evidence_ids": [],
-            "finding": "Not yet verified",
-            "next_check": "Check dependency capabilities and access requirements",
-            "next_check_status": "needs_test",
-            "outcome": "unknown"
-          }
-        ],
+        "basis": "Simulated assessment · no external evidence collected for this scenario.",
         "tests": {
-          "feasibility": {
-            "evidence_ids": [],
-            "missing_information": [
-              "Complete novelty and feasibility checks"
-            ],
-            "reason": "Assessment is incomplete; the result is unverified.",
-            "required_changes": [],
-            "result": "insufficient_evidence"
-          },
           "novelty": {
-            "evidence_ids": [],
+            "result": "insufficient_evidence",
+            "reason": "Owners, deadlines and checklists are familiar task-management patterns. Making handoff conditions prominent may be useful, but this scenario provides no comparative research or user evidence that establishes a distinct advantage.",
             "missing_information": [
-              "Complete novelty and feasibility checks",
-              "Complete the required Devpost hackathon projects search (failed)."
-            ],
-            "reason": "Assessment is incomplete; the result is unverified.",
-            "required_changes": [],
-            "result": "insufficient_evidence"
+              "Compare the same handoff in a group chat, a shared document and this board."
+            ]
+          },
+          "feasibility": {
+            "result": "insufficient_evidence",
+            "reason": "A local single-board prototype is plausible given the stated skills. Recipient approval adds a second-person dependency; storage, integration and the 24-hour estimate have not been tested.",
+            "missing_information": [
+              "Prove that a task and its ready state survive reload and a local server restart.",
+              "Check that the flow is usable on a phone before adding more states."
+            ]
           }
-        },
-        "unknowns": [
-          "Assessment incomplete",
-          "Complete novelty and feasibility checks",
-          "Complete the required Devpost hackathon projects search (failed).",
-          "dep-backend-persistence: Not yet verified",
-          "dep-frontend-board-and-note: Not yet verified",
-          "dep-team-written-claim: Not yet verified"
-        ],
-        "unverified_assumptions": [
-          "Assessment incomplete"
-        ],
-        "version": 1
+        }
       }
     },
     {
-      "kind": "Revision and new evaluation",
-      "title": "A smaller scope needs a fresh review",
+      "kind": "revision",
+      "label": "Make the trade-off",
+      "title": "Less workflow. A clearer handoff.",
       "paragraphs": [
-        "Both participants requested the same change: one board, manual tasks, owner, due date and a completed checkbox; reminders and integrations deferred. Old approvals did not transfer."
+        "The generator revises the same candidate. Version 2 gets its own assessment; the earlier decisions do not count as acceptance of this version."
       ],
+      "dialogue": [
+        {
+          "speaker": "Considea",
+          "text": "Version 2 removes the recipient field and receipt approval. The owner marks a task ready after adding a delivery link or note. Anyone can read the handoff condition; the app does not verify the work. No new integrations were added."
+        },
+        {
+          "speaker": "Alice",
+          "text": "For the demo, I will validate required fields on the server and save the ready state in SQLite. If the save fails, the interface must keep the draft and show an error. A green state that only exists in the browser would recreate the trust problem."
+        },
+        {
+          "speaker": "Bob",
+          "text": "I will keep the condition and delivery note on the same card, including on a narrow phone screen. Also, can we call it “ready” everywhere? “Verified” would imply we checked the link, and we are explicitly not doing that."
+        },
+        {
+          "speaker": "Considea",
+          "text": "The revision removes one dependency and makes failure handling explicit. The remaining uncertainty is usefulness: people can put an empty promise in a note too. Test whether the handoff condition changes what they actually share."
+        }
+      ],
+      "outcome": "Version 2 is ready for individual review. It is a smaller build with clearer acceptance checks; it is still an unbuilt, unvalidated proposal.",
       "candidate": {
-        "change_summary": "Minor revision of candidate-5327262eb19a4f50b3802052b87f7ce6 v1 per both human minor_revision reviews: MVP is now limited to one shared board with manual task entry carrying task text, owner, due date and a completed checkbox, and core_flow reflects the checkbox step. Reminders, calendars and external integrations are now explicitly listed as out of scope, and a contributor synthesis line plus new tradeoff/unknown were added for these changes. Unaffected parts (alternatives note, fit statement, honesty contributions, exclusions and discussion_source_ids) are preserved; the base ref is unchanged and no approval or round advance is implied.",
-        "contributions": [
-          {
-            "description": "Explicit request, stated by both members, that the report identify existing alternatives honestly.",
-            "origin": "member_input",
-            "source_ids": [
-              "source-b2db27b49c0a444aa1c3260129f9e6ae",
-              "source-ec3f21890d3d436c905ec4237758f464"
-            ]
-          },
-          {
-            "description": "Core board scope with manually entered tasks, owners and deadlines that this candidate wraps with the honesty note.",
-            "origin": "member_input",
-            "source_ids": [
-              "source-dc21b018caf544be8e1b5e2f48357fbd",
-              "source-a51959aa192248578ed8304b1e19845f"
-            ]
-          },
-          {
-            "description": "Exclusions honored in the wrapper: no social network, no notifications and no model training.",
-            "origin": "member_input",
-            "source_ids": [
-              "source-e64ce3d51830430485b023e57e23c22f"
-            ]
-          },
-          {
-            "description": "Agent synthesis: turning the members' honesty request into a visible in-app note plus fit statement, a deliverable shape neither member specified.",
-            "origin": "agent_synthesis",
-            "source_ids": [
-              "source-b2db27b49c0a444aa1c3260129f9e6ae",
-              "source-dbc7c20a9bf24869aabcc86cacec2480"
-            ]
-          },
-          {
-            "description": "Agent synthesis: adding a per-task completed checkbox and explicitly deferring reminders, calendars and external integrations in response to the two human minor-revision reviews.",
-            "origin": "agent_synthesis",
-            "source_ids": [
-              "source-3b1999f488434ab79eb17ecd25563abe",
-              "source-84708489ea674d16b6fdc84bd23cf9ef"
-            ]
-          }
-        ],
-        "core_flow": [
-          "Add a task on the one shared board by manually typing task text, owner and due date",
-          "Tick the completed checkbox when a task is done",
-          "View the board as text with owner, due date and completion state",
-          "Open the alternatives note listing existing tools the team already knows",
-          "Read the honest fit statement describing the narrow case this board serves"
-        ],
-        "critical_dependencies": [
-          {
-            "description": "Alice's Python backend and database must persist the shared board items including task text, owner, due date and the completed flag.",
-            "key": "dep-backend-persistence",
-            "must_have": true
-          },
-          {
-            "description": "Bob's interface must render the text board with task, owner, due date and completed checkbox, plus the static alternatives note screen.",
-            "key": "dep-frontend-board-and-note",
-            "must_have": true
-          },
-          {
-            "description": "The alternatives note and fit statement must be written and approved by both members before it is presented, since it is a claim about the product's position.",
-            "key": "dep-team-written-claim",
-            "must_have": true
-          }
-        ],
-        "discussion_source_ids": [
-          "source-8c138473d3a44accb15198a92aa6cbe5",
-          "source-4971881111f8427aa417aa3aafa8a03e",
-          "source-b2db27b49c0a444aa1c3260129f9e6ae",
-          "source-3b1999f488434ab79eb17ecd25563abe",
-          "source-84708489ea674d16b6fdc84bd23cf9ef"
-        ],
+        "version": 2,
+        "title": "Handoff Board · Version 2",
+        "problem": "A teammate says a task is finished, but the next person cannot find or use the deliverable.",
+        "solution": "Before starting, agree what the next person needs. When ready, attach a link or note beside that condition. Keep the task and its state after refresh; leave judgment to the people using it.",
         "mvp_scope": [
-          "One team and one shared board with manual entry of task text, owner and due date",
-          "Completed checkbox per task that toggles the done state",
-          "Text-only board view showing task, owner, due date and completed state",
-          "Static alternatives note written by the team and stored as plain content in the app",
-          "Honest fit statement limited to what the demo actually does"
+          "One board: task, owner, due time, handoff condition and delivery link or note.",
+          "Two states: in progress and ready to hand over. A delivery link or note is required before marking ready.",
+          "Create, edit and reopen tasks; persist changes in the local database.",
+          "One shared card layout on desktop and phone; preserve the draft when a save fails."
         ],
         "out_of_scope": [
-          "Reminders and any notification mechanism",
-          "Calendar views, calendar sync or any calendar integration",
-          "External integrations and imports from other tools",
-          "Live comparison, benchmarks or scraping of other tools",
-          "User accounts, multiple boards or multiple teams",
-          "Social features and model training",
-          "Any claim about being better than existing tools without demo evidence"
-        ],
-        "problem": "Study groups already have scattered options such as chat apps, notes apps and generic task tools, so any new checklist must justify itself honestly rather than imply no alternatives exist; the team explicitly asked the report to identify existing alternatives. Both members also asked to keep the first demo to one shared board with manual entry.",
-        "solution": "A single shared text-only board limited to the round-4 manual-entry core: each task carries a manually typed task text, an owner, a due date and a completed checkbox, with no reminders, calendars or external integrations. The app also shows a short static alternatives note and a one-line fit statement, limited to what the demo actually does.",
-        "target_users": [
-          "University study groups using one shared board",
-          "Hackathon judges and report readers who need an honest comparison against existing tools"
-        ],
-        "title": "One-Board Study Checklist with Honest Alternatives Note",
-        "tradeoffs": [
-          "Spending any MVP time on the alternatives note yields no new working feature, but directly serves the members' stated honesty requirement.",
-          "A static note is weak evidence compared to a real comparison; it is honest only if kept modest and team-approved.",
-          "Adding the note to the app risks scope creep; keeping it as one screen limits that risk.",
-          "Adding the completed checkbox widens the task shape beyond task/owner/deadline, but it was explicitly requested in both minor-revision reviews."
-        ],
-        "unknowns": [
-          "No external research was allowed or performed here, so the alternatives list rests on the team's own knowledge and cannot be verified in this draft.",
-          "No done criteria for the note were defined; it is unclear when it is finished versus honest enough.",
-          "Whether judges read the note in-app or only in the report is unknown.",
-          "No done criteria were defined for the completed checkbox (whether toggling must persist across reload is unstated)."
+          "Chat import, AI extraction, reminders and calendar sync.",
+          "Accounts, file uploads, permission checks and automatic quality judgments.",
+          "Recipient approval, automatic link checking and production access control."
         ]
       },
       "report": {
-        "candidate_id": "candidate-5327262eb19a4f50b3802052b87f7ce6",
-        "candidate_version": 2,
-        "competitors": [
-          {
-            "differences": [
-              "AI-powered scheduling and prioritization, whereas the candidate is deliberately manual and text-only",
-              "Broader product: accounts, multiple lists/users, sign-in and a Kanban-style UI versus one team, one board and a text view",
-              "The read source does not describe an in-app 'honest alternatives and fit' note; this difference is unverified rather than a proven absence"
-            ],
-            "evidence_ids": [
-              "web-1"
-            ],
-            "maturity": "self_reported_implemented",
-            "name": "tuesday.com",
-            "overlap": [
-              "Shared team task board holding task entries, owners and deadlines",
-              "Multi-user collaboration on a live board within a team",
-              "Task management aimed at helping teams stay productive and meet deadlines"
-            ],
-            "url": "https://devpost.com/software/tuesday-com"
-          },
-          {
-            "differences": [
-              "AI-driven prioritization, personalized study plans and reminders versus a manual single-board checklist",
-              "Requires accounts and authentication; candidate has no accounts",
-              "Shared task boards are listed only as planned future work, and no in-app alternatives note is described"
-            ],
-            "evidence_ids": [
-              "web-3"
-            ],
-            "maturity": "self_reported_implemented",
-            "name": "StudyBuddy AI",
-            "overlap": [
-              "Student-facing task and assignment tracking with deadlines",
-              "Basic task CRUD/toggle plus progress and completion tracking",
-              "Built by a university-student team for organizing coursework"
-            ],
-            "url": "https://devpost.com/software/studybuddy-ai-hvfyog"
-          },
-          {
-            "differences": [
-              "LLM-driven second-brain system with cognitive-load scoring, Chrome extension and companion agent versus a static text board",
-              "Heavy AI/automation scope versus no model use at all",
-              "Collaboration is framed as future work, not a shared manual board"
-            ],
-            "evidence_ids": [
-              "web-2"
-            ],
-            "maturity": "self_reported_implemented",
-            "name": "ClearHead",
-            "overlap": [
-              "Task capture and triage with due dates and completion check-off",
-              "Built as a hackathon project for students and knowledge workers",
-              "Explicit 'what the app won't decide for you' honesty framing is conceptually adjacent to the candidate's fit statement"
-            ],
-            "url": "https://devpost.com/software/clearhead-av3du9"
-          }
-        ],
-        "evidence": [
-          {
-            "accessed_at": "2026-10-04T08:38:51.266Z",
-            "claim": "The core path (Bob's HTML/CSS/JS board screen calling Alice's Python backend and database to persist task text, owner, due date and a completed flag, plus one static note screen) is simple and consistent with the members' self-reported skills inside the 24-hour limit. Yet the two must_have dependencies dep-backend-persistence and dep-frontend-board-and-note rest on concrete technical resources for which no resource item was approved and no official documentation was read, so those checks remain unknown and a pass is forbidden.; Persisting task text, owner, due date and a completed flag in a Python backend and database is a routine implementation path, and Alice self-reports Python backend and database experience; however no approved resource item and no official documentation for the specific framework or database were available, so support is not established.",
-            "evidence_id": "member-1",
-            "excerpt": "Has experience building a Python backend and database.",
-            "limitation": "Shared member self-report; not independently verified.",
-            "source_kind": "member_report",
-            "source_ref": {
-              "item_id": "item-30fbbc901cc543cb87680cc97a428b68",
-              "member_id": "alice",
-              "profile_id": "profile-05b893c5f84f4d7ab11c96f1eae76e31",
-              "profile_version": 4
-            },
-            "title": "alice: skill",
-            "url": null
-          },
-          {
-            "accessed_at": "2026-10-04T08:38:51.266Z",
-            "claim": "The core path (Bob's HTML/CSS/JS board screen calling Alice's Python backend and database to persist task text, owner, due date and a completed flag, plus one static note screen) is simple and consistent with the members' self-reported skills inside the 24-hour limit. Yet the two must_have dependencies dep-backend-persistence and dep-frontend-board-and-note rest on concrete technical resources for which no resource item was approved and no official documentation was read, so those checks remain unknown and a pass is forbidden.; Bob self-reports being able to build the JavaScript interface within 24 hours, which covers a text board with owner, due date, completion checkbox and one static note screen; this is a team self-report, not an executed or documented verification.",
-            "evidence_id": "member-2",
-            "excerpt": "Can build the JavaScript interface within 24 hours.",
-            "limitation": "Shared member self-report; not independently verified.",
-            "source_kind": "member_report",
-            "source_ref": {
-              "item_id": "item-838d3b78119e4d7eb4e4ca1c1acb8b97",
-              "member_id": "bob",
-              "profile_id": "profile-1d8580b36a99475b91d8cf6b23570ab3",
-              "profile_version": 4
-            },
-            "title": "bob: skill",
-            "url": null
-          },
-          {
-            "accessed_at": "2026-10-04T08:38:59.998Z",
-            "claim": "Both required platform searches were attempted: the GitHub repository search returned only unrelated productivity roundups and awesome lists, with no specific repository body matching a manual one-board study-group checklist, while the Devpost search surfaced several task/study projects of which the three closest were read. Tuesday.com (a multi-user task board with owners, deadlines and real-time collaboration) and StudyBuddy AI (student task tracking with deadlines and completion stats) partially overlap, but both are far broader (AI scheduling, accounts, multi-board, reminders, calendars) and neither page describes the candidate's distinguishing element, a static in-app 'honest alternatives and fit' note. Without a readable matching GitHub repository body and with only partial Devpost overlap, the comparison supports neither a pass nor a sourced duplicate failure.",
-            "evidence_id": "web-1",
-            "excerpt": "We will be undergoing planned maintenance on Oct 7th 6:00AM UTC / Oct 7th 2:00AM ET\n\n# tuesday.com\n\ntuesday.com: Like monday.com, but on a Tuesday. Built at Hacked 2025—same vibes, slightly worse.\n\n[Like 2](https://secure.devpost.com/users/register?flow%5Bdata%5D%5Bsoftware_id%5D=876682&flow%5Bname%5D=like_software&return_to=https%3A%2F%2Fdevpost.com%2Fsoftware%2Ftuesday-com)\n\n [Comment](/software/tuesday-com#updates)\n\n* [![tuesday.com  – screenshot 1](//d112y698adiu2z.cloudfront.net/photos/production/software_photos/003/276/785/datas/gallery.jpg)](https://d112y698adiu2z.cloudfront.net/photos/production/software_photos/003/276/785/datas/original.jpeg) \n\n  *Task view*\n* [![tuesday.com  – screenshot 2](//d112y698adiu2z.cloudfront.net/photos/production/software_photos/003/276/693/datas/gallery.jpg)](https://d112y698adiu2z.cloudfront.net/photos/production/software_photos/003/276/693/datas/original.png) \n\n  *Adding tasks/users to the list*\n* [![tuesday.com  – screenshot 3](//d112y698adiu2z.cloudfront.net/photos/production/software_photos/003/276/701/datas/gallery.jpg)](https://d112y698adiu2z.cloudfront.net/photos/production/software_photos/003/276/701/datas/original.png) \n\n  *Create/Select Lists Page*\n* [![tuesday.com  – screenshot 4](//d112y698adiu2z.cloudfront.net/photos/production/software_photos/003/276/702/datas/gallery.jpg)](https://d112y698adiu2z.cloudfront.net/photos/production/software_photos/003/276/702/datas/original.png) \n\n  *Sign in Page*\n* [![tuesday.com  – screenshot 5](//d112y698adiu2z.cloudfront.net/photos/production/software_photos/003/276/705/datas/gallery.jpg)](https://d112y698adiu2z.cloudfront.net/photos/production/software_photos/003/276/705/datas/original.png) \n\n  *Sign up Page*\n\nInspiration:\n\nProject management is a critical yet often overwhelming aspect of modern work environments. Teams juggle multiple tasks, deadlines, and collaborations, which can lead to inefficiencies, missed deadlines, and burnout. Recognizing this challenge, we were inspired to create an AI-powered solution that simplifies task automation, optimizes workflows, and enhances productivity. Our goal was to build a platform that not only manages tasks but also adapts to the dynamic needs of teams, ensuring seamless collaboration and efficient project execution.\n\n---\n\nWhat it Does:\n\nTuesday.com is an AI-driven project management platform designed to automate and optimize task management. It combines an intuitive Kanban(ish) interface with advanced AI capabilities to provide:\n\n1. Task Automation: AI-powered scheduling and prioritization based on deadlines, workload, and team capacity.\n2. Real-Time Collaboration: A live Kanban(ish) board that updates in real-time, enabling teams to collaborate effectively.\n3. Dynamic Workload Adaptation: The platform adjusts task priorities in real-time as project requirements change. (Adding in the near future) Tuesday.com is built to help teams stay productive, reduce manual effort, and focus on completing high-impact tasks.\n\n---\n\nHow We Built It:\n\nThe development of Tuesday.com involved a combination of modern web technologies and AI integration:\n\n1. Frontend: Built using Embedded JavaScript and HTML/CSS, the frontend provides a responsive, attractive and user-friendly Kanban(ish) interface.\n2. Backend: Powered by Node.js, MongoDB, TogetherAI API, Express, the backend handles task management, user authentication, and data storage/organization.\n3. AI Integration: Machine learning models were developed using Python and integrated into the platform to enable predictive task dividing and prioritization.\n4. Database: MongoDB was used for storing task data, user profiles, and project details. The AI models were trained on historical project data to predict task durations, identify bottlenecks, and optimize workflows.\n\n---\n\nChallenges We Ran Into:\n\n1. User-Friendly Design: Designing an intuitive Kanban(ish) interface that balances functionality with simplicity was a significant design challenge.\n2. Data Synchronization: Handling data consistency across multiple users and devices, especially during simultaneous updates, required robust backend logic.\n3. Time Constraints: Completing the project within the hackathon timeframe demanded efficient teamwork and rapid problem-solving.\n\n---\n\nAccomplishments We’re Proud Of:\n\n1. AI Integration: Successfully integrating AI-powered task automation and predictive analytics into the platform.\n2. Dynamic Scheduling: Creating a scheduling system that adapts to changing workloads and project requirements.\n3. Team Collaboration: Delivering a fully functional project management tool within the hackathon timeframe.\n4. User Experience: Designing a platform that is both powerful and easy to use, catering to diverse team needs.\n\n---\n\nWhat We Learned:\n\n1. AI Optimization: The importance of fine-tuning AI models for real-time decision-making and scalability.\n2. User Experience: How to balance advanced features with simplicity to create a user-friendly interface.\n3. Real-Time Systems: Best practices for handling real-time collaboration and data synchronization in a multi-user environment.\n4. Teamwork: The value of clear communication, division of tasks, and rapid iteration in a high-pressure setting.\n5. Project Management: Insights into the challenges teams face and how technology can address them effectively.\n\n---\n\nWhat’s Next for Tuesday.com\n\n1. Enhanced AI Features: Improve predictive analytics and introduce natural language processing (NLP) for task creation and updates.\n2. Third-Party Integrations: Integrate with tools like Slack, Google Calendar, and GitHub for seamless workflow management.\n3. Performance Optimization: Optimize the platform for larger teams and more complex projects.\n4. SaaS Platform: Expand Tuesday.com into a full-fledged SaaS product with subscription-based pricing.\n5. Mobile App: Develop a mobile version to enable on-the-go task management.\n6. Customization: Allow users to customize workflows, task views, and notifications to suit their specific needs.\n\n---\n\nCommercial Viability:\n\nTuesday.com targets a wide range of users, including startups, corporate teams, and remote workers. The initial market includes small to medium-sized businesses looking for affordable yet powerful project management tools. As the platform grows, it can expand to larger enterprises and specialized industries. Revenue Model:\n\n1. Subscription Plans: Monthly or annual subscriptions based on the number of users and features.\n2. Enterprise Solutions: Custom plans for large organizations with advanced needs.\n3. Freemium Model: A free tier with basic features to attract users, with premium features available for paid subscribers.\n\n## Built With\n\n* ai\n* [css](https://devpost.com/software/built-with/css)\n* [ejs](https://devpost.com/software/built-with/ejs)\n* [express.js](https://devpost.com/software/built-with/express-js)\n* [html](https://devpost.com/software/built-with/html)\n* [javascript](https://devpost.com/software/built-with/javascript)\n* [mongodb](https://devpost.com/software/built-with/mongodb)\n\n[Like 2](https://secure.devpost.com/users/register?flow%5Bdata%5D%5Bsoftware_id%5D=876682&flow%5Bname%5D=like_software&return_to=https%3A%2F%2Fdevpost.com%2Fsoftware%2Ftuesday-com)\n\n 2 people like this: \n\n* [![Muhammad Zain Asad](https://lh3.googleusercontent.com/a/ACg8ocI6cMohiLyOrdbJh-PxHw_47dJAaLJZhHFxxewVB_1HJ4xFGaFz=s96-c?type=square \"Muhammad Zain Asad\")](https://devpost.com/muhammadzainasad6)\n* [![Misbah Ahmed Nauman](//d112y698adiu2z.cloudfront.net/photos/production/user_photos/003/141/011/datas/medium.jpg \"Misbah Ahmed Nauman\")](https://devpost.com/misbahan)\n\nShare this project:\n\n## Updates\n\n[![Raahim Khan](https://lh3.googleusercontent.com/a/ACg8ocJHMk564rztoqcLwd-9D7O4DRsCKKEO9DrSZKkt1b1UpySkBA=s96-c?height=180&width=180 \"Raahim Khan\")](https://devpost.com/Raahim24)\n\n[Raahim Khan](https://devpost.com/Raahim24) started this project  —\n\n*Leave feedback in the comments!*\n\n**[Log in](https://secure.devpost.com/users/login)** or **[sign up for Devpost](https://secure.devpost.com/users/register?flow%5Bdata%5D%5Bcommentable_id%5D=619388&flow%5Bname%5D=comment_on_software_update&return_to=https%3A%2F%2Fdevpost.com%2Fsoftware%2Ftuesday-com)** to join the conversation.\n\n## Submission history",
-            "limitation": "Public web content; authorship and project implementation were not independently verified.",
-            "source_kind": "public_web",
-            "title": "tuesday.com | Devpost",
-            "url": "https://devpost.com/software/tuesday-com"
-          },
-          {
-            "accessed_at": "2026-10-04T08:39:00.044Z",
-            "claim": "Both required platform searches were attempted: the GitHub repository search returned only unrelated productivity roundups and awesome lists, with no specific repository body matching a manual one-board study-group checklist, while the Devpost search surfaced several task/study projects of which the three closest were read. Tuesday.com (a multi-user task board with owners, deadlines and real-time collaboration) and StudyBuddy AI (student task tracking with deadlines and completion stats) partially overlap, but both are far broader (AI scheduling, accounts, multi-board, reminders, calendars) and neither page describes the candidate's distinguishing element, a static in-app 'honest alternatives and fit' note. Without a readable matching GitHub repository body and with only partial Devpost overlap, the comparison supports neither a pass nor a sourced duplicate failure.",
-            "evidence_id": "web-2",
-            "excerpt": "We will be undergoing planned maintenance on Oct 7th 6:00AM UTC / Oct 7th 2:00AM ET\n\n# ClearHead\n\nYour AI second brain: brain dump the chaos, shape it into a plan, before overload takes over\n\n[Like](https://secure.devpost.com/users/register?flow%5Bdata%5D%5Bsoftware_id%5D=1301418&flow%5Bname%5D=like_software&return_to=https%3A%2F%2Fdevpost.com%2Fsoftware%2Fclearhead-av3du9)\n\n [Comment](/software/clearhead-av3du9#updates)\n\n* [![ClearHead – screenshot 1](//d112y698adiu2z.cloudfront.net/photos/production/software_photos/004/796/916/datas/gallery.jpg)](https://d112y698adiu2z.cloudfront.net/photos/production/software_photos/004/796/916/datas/original.png) \n\n  *first screen*\n* [![ClearHead – screenshot 2](//d112y698adiu2z.cloudfront.net/photos/production/software_photos/004/797/020/datas/gallery.jpg)](https://d112y698adiu2z.cloudfront.net/photos/production/software_photos/004/797/020/datas/original.png) \n\n  *main page*\n* [![ClearHead – screenshot 3](//d112y698adiu2z.cloudfront.net/photos/production/software_photos/004/797/026/datas/gallery.jpg)](https://d112y698adiu2z.cloudfront.net/photos/production/software_photos/004/797/026/datas/original.png) \n\n  *bubi-chat*\n* [![ClearHead – screenshot 4](//d112y698adiu2z.cloudfront.net/photos/production/software_photos/004/797/040/datas/gallery.jpg)](https://d112y698adiu2z.cloudfront.net/photos/production/software_photos/004/797/040/datas/original.png) \n\n  *task-chat*\n* [![ClearHead – screenshot 5](//d112y698adiu2z.cloudfront.net/photos/production/software_photos/004/797/041/datas/gallery.jpg)](https://d112y698adiu2z.cloudfront.net/photos/production/software_photos/004/797/041/datas/original.png) \n\n  *shape your idea main page*\n* [![ClearHead – screenshot 6](//d112y698adiu2z.cloudfront.net/photos/production/software_photos/004/797/042/datas/gallery.jpg)](https://d112y698adiu2z.cloudfront.net/photos/production/software_photos/004/797/042/datas/original.png) \n\n  *python goal roadmap*\n* [![ClearHead – screenshot 7](//d112y698adiu2z.cloudfront.net/photos/production/software_photos/004/797/062/datas/gallery.jpg)](https://d112y698adiu2z.cloudfront.net/photos/production/software_photos/004/797/062/datas/original.png) \n\n  *MenuScreen*\n* [![ClearHead – screenshot 8](//d112y698adiu2z.cloudfront.net/photos/production/software_photos/004/797/044/datas/gallery.jpg)](https://d112y698adiu2z.cloudfront.net/photos/production/software_photos/004/797/044/datas/original.png) \n\n  *task\\_list page*\n* [![ClearHead – screenshot 9](//d112y698adiu2z.cloudfront.net/photos/production/software_photos/004/797/045/datas/gallery.jpg)](https://d112y698adiu2z.cloudfront.net/photos/production/software_photos/004/797/045/datas/original.png) \n\n  *tasklist page*\n* [![ClearHead – screenshot 10](//d112y698adiu2z.cloudfront.net/photos/production/software_photos/004/797/052/datas/gallery.jpg)](https://d112y698adiu2z.cloudfront.net/photos/production/software_photos/004/797/052/datas/original.png) \n\n  *focus\\_Guard + extension*\n* [![ClearHead – screenshot 11](//d112y698adiu2z.cloudfront.net/photos/production/software_photos/004/797/053/datas/gallery.jpg)](https://d112y698adiu2z.cloudfront.net/photos/production/software_photos/004/797/053/datas/original.png) \n\n  *settings*\n* [![ClearHead – screenshot 12](//d112y698adiu2z.cloudfront.net/photos/production/software_photos/004/797/060/datas/gallery.jpg)](https://d112y698adiu2z.cloudfront.net/photos/production/software_photos/004/797/060/datas/original.png) \n\n  *takeABreak screen*\n\n# ClearHead\n\n## Inspiration\n\nI know what it feels like to open your notes app, stare at fifteen half-finished tasks, and close it again without doing anything. Not because I was lazy — because I genuinely didn't know where to start. That paralysis isn't a discipline problem. It's a cognitive load problem.\n\nMost productivity tools make it worse. They let you pile more things in, color-code them, and build elaborate systems that take longer to maintain than the work itself. What nobody builds is something that meets you where you *are* — tired, anxious, overwhelmed — and says: \"Here. Start with this. I'll walk you through it.\"\n\nThat was the spark for ClearHead. The USAII Global Hackathon prompt — *\"Build the Second Brain for Real Life\"* — framed it perfectly. A second brain shouldn't just store information. It should do what a good friend would do: listen to the dump, triage the noise, give you one clear thing to do next, and quietly protect your focus while you do it.\n\nI also wanted to build something for the way brains *actually* work at the end of a long day — when energy is low, when vague ambitions compete with urgent deadlines, when the idea you've been sitting on (\"I want to learn Python\", \"I should start that project\") stays permanently on the backburner because nobody helped you turn it into a real plan.\n\n## What it does\n\nClearHead is a cognitive load manager built as an AI second brain. Here's the full flow:\n\n**Brain Dump → Triage** You paste, type or upload everything in your head — tasks, worries, vague goals, text from a PDF or DOCX. ClearHead's LLM pipeline classifies every item into four buckets: *urgent task*, *future plan*, *unresolvable worry*, or *irrelevant noise*. Worries get acknowledged and archived, not lost. Noise gets discarded. What's left is a clean, actionable list.\n\n**Overload Index** A live 0–100 cognitive load score, computed from deadline proximity, task count, effort estimates, your current energy level, time of day, and detected crisis keywords. Low energy? The score scales up — because carrying the same load feels heavier when you're exhausted. This score drives Bubi's mood and the agent's decisions.\n\n**Interactive Mind Map** Tasks aren't a list — they're a canvas of floating bubbles, semantically clustered. The LLM can filter by topic (\"School\", \"Finance\") so you only see what matters right now, not all twenty things at once.\n\n**Duolingo-Style Focus Path** The daily guided path. Tasks are ranked by deadline + urgency + effort + energy fit, and the top task comes with a plain-English reason: *\"Start here because your exam is in two days.\"* You unlock tasks one at a time. Each task opens into three micro-steps. You check them off, get a celebration animation, and the next bubble unlocks.\n\n**Shape an Idea — Golden Goals** This is the Direction B core. You type a vague ambition (\"master Python\", \"launch a podcast\"), answer two quick questions (experience level + available hours/week), and optionally attach a reference PDF or roadmap. One LLM call returns: a clarified goal, key assumptions with confidence levels, real risks, exactly three concrete milestones with realistic timeframes derived from *your* schedule, a first move, and an explicit \"what ClearHead won't decide for you\" safeguard. You review, edit, and commit. Then you walk the milestone roadmap bubble-by-bubble, exactly like the Focus Path.\n\n**Bubi — AI Companion** A pet whose mood mirrors your mental state (calm, stressed, burnt, focused, angry). Bubi has a full chat interface with access to your tasks, energy, overload trend, focus history, browsing patterns, and goal progress. Ask *\"Is my focus better than yesterday?\"* or *\"Should I take a break?\"* — Bubi reasons over real data, not generic advice.\n\n**Focus Guard Chrome Extension** A Manifest V3 extension with an on-device domain classifier. No URLs ever leave your machine. It tracks productive vs. distracted time per task, detects distraction streaks, and injects mindfulness overlays — a breathing circle on distracting sites, a 15-second tab-close warning when you drift mid-task.\n\n**Autonomous Agent** Runs on a configurable tick (Gentle / Balanced / Assertive modes). Heuristics handle clear cases (distraction streak → block domain, overload > 80 → suggest break, stale tasks → nudge). For nuanced decisions, it calls Groq with full context and produces structured JSON actions: nudge, reprioritize, daily plan, wellbeing check. Every action is undoable from the Agent Feed.\n\n**Burnout Trend + Calendar** 7-day overload history, daily focus stats, and a daily recap. Due dates are extracted from natural language by the LLM. A Calendar button opens a prefilled Google Calendar event — no OAuth, no API keys, just a URL template.\n\n## How we built it\n\n**Architecture:** React 19 + Vite SPA → FastAPI backend → local JSON stores → Manifest V3 Chrome extension. No database — JSON files *are* the database, which kept deployment simple for a hackathon.\n\n**LLM strategy:** Two models, used deliberately.\n\n* **Groq (llama-3.3-70b-versatile)** for the autonomous agent and analysis endpoints — fast, cheap, structured JSON output.\n* **Hugging Face (Qwen/Qwen2.5-72B-Instruct)** for chat — more conversational, handles longer context.\n* Hierarchical fallback: primary Groq key → secondary key → smaller model (llama-3.1-8b-instant) → deterministic mock. The app runs fully offline without any API keys.\n\n**Key engineering decisions:**\n\n* *Single LLM call for Shape an Idea* — one `/idea/shape` endpoint returns the full plan (goal + assumptions + risks + 3 milestones + sub-tasks + first move) in one shot. No multi-stage pipelines, no stitching.\n* *Pre-generated micro-steps* — `/onething/start` generates all 3 steps once. The Focus Path reuses them. No LLM call per level tap.\n* *Heuristic-first agent* — deterministic rules fire first (fast, zero cost). LLM only when reasoning is genuinely needed.\n* *Energy-aware scoring* — overload score and Focus Path ranking both take energy level as input. Tired users get lighter recommendations; energized users get pushed harder.\n* *On-device URL classification* — the extension's domain classifier runs in JavaScript inside the browser. Raw URLs never leave the machine.\n* *markitdown for document ingestion* — converts PDFs, DOCX, PPTX to structured Markdown locally before sending to the LLM, preserving headings and lists.\n\n**UI aesthetic:** \"2D Cute Sketch UI\" — cream `#F7F3E6` background, bold 2.5px borders, offset box shadows, navy `#1A1AA7`, orange `#FFA142`, Caveat headings + Space Grotesk body. Every animation (bubble pulse, celebration, breathing circle) is intentional and calm, not frantic.\n\n## Challenges we ran into\n\n**Getting the LLM to output clean, structured JSON consistently** was the biggest technical hurdle. Raw LLM output is messy — markdown fences, trailing commas, truncated arrays. We wrote a `clean_json_string` utility that strips fences, fixes common malformations, and falls back gracefully. We also had to carefully engineer prompts that force strict schema adherence without sacrificing output quality.\n\n**The overload score needed to feel right, not just right mathematically.** Early versions were either too trigger-happy (everything was \"critical\") or too muted (users at genuine burnout showed \"moderate\"). We tuned weights iteratively — worries count less than urgent tasks, but a lot of worries still tip the needle; energy is a multiplier, not just an addend; late-night brain dumps get a slight bump because that's when catastrophizing peaks.\n\n**The autonomous agent had to earn trust, not demand it.** An agent that fires unsolicited actions feels invasive. We built in three mode levels (Gentle/Balanced/Assertive), mandatory undo for every action, and a visible Agent Feed so users can see exactly what it did and why. The first time the agent closes a tab is jarring; making that action transparent and reversible was critical to keeping users on board.\n\n**Groq rate limits during rapid testing** were a constant friction. The hierarchical fallback (primary → secondary → smaller model → mock) took several iterations to get right — especially ensuring the smaller 8B model prompt still produced usable structured JSON.\n\n**The Shape an Idea flow had too many screens** in early versions. Users would drop off during the setup questions. We collapsed it: two lightweight pre-questions → one loading screen → full review panel → commit or re-shape. The single-page review with inline editing reduced abandonment significantly in our testing.\n\n**Milestone timeframes were initially generic (30/60/90 days).** That felt template-ish. We moved to deriving timeframes from the user's stated available hours per week: if you have 5 hrs/week and we think this milestone needs ~20 hrs, the milestone is labeled \"4–5 weeks.\" That specificity made the plans feel personal, not AI-cookie-cutter.\n\n## Accomplishments that we're proud of\n\n**The Focus Path actually works as a UX.** The Duolingo mechanic isn't just cosmetic — locking future bubbles until you complete the current one removes the paralysis of choice. In our own testing, we found ourselves starting tasks we'd been avoiding for days, purely because the path told us \"this one, now, here's why.\"\n\n**Shape an Idea is a complete zero-to-one pipeline in a single LLM call.** Vague ambition in → clarified goal + assumptions + risks + concrete milestone roadmap + first move out. The \"what ClearHead won't decide for you\" field was a late addition — it became one of our favorite details because it makes the human-in-the-loop contract explicit and honest.\n\n**The autonomous agent is genuinely useful, not gimmicky.** Heuristics handle 80% of cases deterministically (fast, free). LLM reasoning handles the nuanced 20%. The undo system and Agent Feed make it trustworthy. It's not \"AI because hackathon\" — it's AI because those decisions (should I nudge? is this a real crisis?) benefit from reasoning over context.\n\n**The cognitive load scoring feels psychologically accurate.** Energy as a multiplier, late-night penalty, wellbeing keyword detection, volume penalty for open loops — these aren't arbitrary. They reflect how cognitive load actually works, and users in testing said \"yeah, that number makes sense\" rather than arguing with it.\n\n**The Chrome extension completes the loop.** Most productivity apps live in a tab you switch *away* from. ClearHead's extension watches what you actually do and closes the gap between intention and behavior.\n\n## What we learned\n\nThe most important lesson: **AI features should reduce cognitive load, not add to it.** It's easy to make an AI product that asks users too many questions, shows too much reasoning, or fires too many notifications. Every feature we shipped went through the question \"does this make the experience calmer and clearer, or louder and busier?\" Several ideas (a full analytics dashboard, a daily email digest, a social sharing feature) got cut because the answer was \"busier.\"\n\n**Prompt engineering is a product skill, not just a technical one.** The difference between a Shape an Idea result that feels insightful versus one that feels generic comes down to how the prompt frames the user's context — including their energy level, their exact wording, their attached reference, and the explicit instruction to derive timeframes from available hours. Changing a single sentence in the prompt changed the product meaningfully.\n\n**Heuristics first, LLM second.** We started with more LLM calls in the agent and walked them back. Deterministic rules are faster, cheaper, more predictable, and easier to debug. LLMs are best for decisions that genuinely require reasoning over unstructured context — not for \"has the user been distracted for 5 minutes.\"\n\n**The document ingestion pipeline is underrated.** Being able to drop in a syllabus PDF or a career roadmap DOCX and have Shape an Idea reference it in the milestone reasoning (\"Because your roadmap mentions PyTorch, milestone 2 focuses on it\") was a small technical addition with outsized perceived intelligence.\n\n**Trust is built in the details.** The undo button on agent actions, the confidence levels on assumptions, the \"what ClearHead won't decide\" field, the explicit \"Start here because…\" reason — none of these are technically impressive. All of them are what make users feel safe giving the app agency over their day.\n\n## What's next for ClearHead\n\n**Multi-device sync** — the local JSON store works great for a hackathon; it won'",
-            "limitation": "Public web content; authorship and project implementation were not independently verified.",
-            "source_kind": "public_web",
-            "title": "ClearHead | Devpost",
-            "url": "https://devpost.com/software/clearhead-av3du9"
-          },
-          {
-            "accessed_at": "2026-10-04T08:39:01.252Z",
-            "claim": "Both required platform searches were attempted: the GitHub repository search returned only unrelated productivity roundups and awesome lists, with no specific repository body matching a manual one-board study-group checklist, while the Devpost search surfaced several task/study projects of which the three closest were read. Tuesday.com (a multi-user task board with owners, deadlines and real-time collaboration) and StudyBuddy AI (student task tracking with deadlines and completion stats) partially overlap, but both are far broader (AI scheduling, accounts, multi-board, reminders, calendars) and neither page describes the candidate's distinguishing element, a static in-app 'honest alternatives and fit' note. Without a readable matching GitHub repository body and with only partial Devpost overlap, the comparison supports neither a pass nor a sourced duplicate failure.",
-            "evidence_id": "web-3",
-            "excerpt": "We will be undergoing planned maintenance on Oct 7th 6:00AM UTC / Oct 7th 2:00AM ET\n\n# StudyBuddy AI\n\nYour AI-powered study companion — organize, prioritize, and conquer your workload effortlessly.\n\n[Like](https://secure.devpost.com/users/register?flow%5Bdata%5D%5Bsoftware_id%5D=1237766&flow%5Bname%5D=like_software&return_to=https%3A%2F%2Fdevpost.com%2Fsoftware%2Fstudybuddy-ai-hvfyog)\n\n [Comment](/software/studybuddy-ai-hvfyog#updates)\n\n* [![StudyBuddy AI – screenshot 1](//d112y698adiu2z.cloudfront.net/photos/production/software_photos/004/544/225/datas/gallery.jpg)](https://d112y698adiu2z.cloudfront.net/photos/production/software_photos/004/544/225/datas/original.jpg)\n* [![StudyBuddy AI – screenshot 2](//d112y698adiu2z.cloudfront.net/photos/production/software_photos/004/544/226/datas/gallery.jpg)](https://d112y698adiu2z.cloudfront.net/photos/production/software_photos/004/544/226/datas/original.png)\n\n# Project Story — StudyBuddy AI\n\n## Inspiration\n\nDuring my university years, I struggled with managing multiple assignments, exams, and deadlines. I noticed that most students relied on basic to-do lists or calendars, which were static and didn’t adapt to priorities or workload. I wanted to create a tool that not only tracked tasks but also **smartly suggested study plans and priorities using AI**, helping students maximize productivity without burnout.\n\n## What it does\n\nStudyBuddy AI is a **full-stack AI-powered study scheduler** that helps students:\n\n* Organize tasks, assignments, and reminders in one place.\n* Auto-prioritize tasks based on deadlines, subjects, and workload.\n* Generate personalized study plans using **Google Gemini AI**.\n* Track progress with completion stats, streaks, and hours studied.\n* Receive daily/weekly reminders and auto-overdue task alerts.\n\nIt’s essentially a **personal AI study assistant** available on desktop and mobile.\n\n## How we built it\n\nThe project is built using a **modern web stack**:\n\n* **Backend:** Node.js + Express + MongoDB, with JWT authentication for secure user sessions.\n* **Frontend:** HTML/CSS/JS served statically, fully responsive and mobile-friendly.\n* **AI Integration:** **Google Gemini API (1.5 Flash)** to suggest personalized study schedules and task prioritization.\n* **Automation:** Cron jobs to mark overdue tasks and repeat reminders.\n* **Database:** Mongoose schemas for `User`, `Task`, and `Reminder` with validation, virtuals, and helper methods.\n\nThe workflow:\n\n1. Users register/login → JWT session issued.\n2. Users add tasks & reminders → tasks auto-checked for overdue status.\n3. Users request AI suggestions → system calls **Gemini API** → personalized plan returned.\n4. Users track progress → stats updated in real-time.\n\n### Example: Task Prioritization Formula\n\nWe calculate a priority score $P$ for each task:\n\n$$P = \\frac{W}{T} \\times U$$\n\nwhere:\n\n* $W$ = workload (estimated hours)\n* $T$ = time until deadline (in hours)\n* $U$ = user-defined urgency factor\n\nThis ensures tasks with less time and higher workload appear first.\n\n## Challenges we ran into\n\n* **AI Provider Migration:** Transitioning from traditional LLM structures to **Google Gemini’s content-based API architecture**.\n* **Task Scheduling Logic:** Ensuring recurring reminders, overdue updates, and progress tracking worked seamlessly together.\n* **Authentication:** Securing JWTs and password hashing while keeping the user experience smooth.\n* **Frontend Rendering:** Making a responsive calendar view and real-time task updates without heavy frameworks.\n\n## Accomplishments that we're proud of\n\n* Successfully integrated **Google Gemini 1.5 API** for high-speed, personalized study planning.\n* Implemented **full CRUD + toggle + bulk delete + progress tracking** for tasks.\n* Achieved **real-time reminders and overdue automation** via cron jobs.\n* Created a **light/dark mode** feature saved in localStorage.\n* Made the app fully **responsive** for both desktop and mobile.\n\n## What we learned\n\n* Full-stack architecture from database to frontend integration.\n* Interacting with **Google Generative AI** services for practical automation.\n* Advanced MongoDB/Mongoose techniques: virtuals, population, auto-updates.\n* Task scheduling logic, prioritization, and UX for productivity apps.\n* Real-world challenges of authentication, error handling, and cron automation.\n\n## What's next for StudyBuddy AI\n\n* Mobile app version with offline support.\n* Improved AI capabilities: auto-summarize notes, detect procrastination patterns.\n* Calendar integrations with Google Calendar / Outlook.\n* Gamification features to encourage streaks and achievements.\n* Collaborative features: group study plans and shared task boards.\n\n## Built With\n\n* bcrypt\n* [css](https://devpost.com/software/built-with/css)\n* [express.js](https://devpost.com/software/built-with/express-js)\n* [html](https://devpost.com/software/built-with/html)\n* [javascript](https://devpost.com/software/built-with/javascript)\n* jwt\n* [mongoose](https://devpost.com/software/built-with/mongoose)\n* [node.js](https://devpost.com/software/built-with/node-js)\n* nodemon\n\n[Like](https://secure.devpost.com/users/register?flow%5Bdata%5D%5Bsoftware_id%5D=1237766&flow%5Bname%5D=like_software&return_to=https%3A%2F%2Fdevpost.com%2Fsoftware%2Fstudybuddy-ai-hvfyog)\n\nShare this project:\n\n## Updates\n\n[![Moamen Abouhaty](//d112y698adiu2z.cloudfront.net/photos/production/user_photos/005/442/002/datas/profile.png \"Moamen Abouhaty\")](https://devpost.com/MoamenAbouhaty)\n\n[Moamen Abouhaty](https://devpost.com/MoamenAbouhaty) started this project  —\n\n*Leave feedback in the comments!*\n\n**[Log in](https://secure.devpost.com/users/login)** or **[sign up for Devpost](https://secure.devpost.com/users/register?flow%5Bdata%5D%5Bcommentable_id%5D=759476&flow%5Bname%5D=comment_on_software_update&return_to=https%3A%2F%2Fdevpost.com%2Fsoftware%2Fstudybuddy-ai-hvfyog)** to join the conversation.\n\n## Submission history",
-            "limitation": "Public web content; authorship and project implementation were not independently verified.",
-            "source_kind": "public_web",
-            "title": "StudyBuddy AI | Devpost",
-            "url": "https://devpost.com/software/studybuddy-ai-hvfyog"
-          }
-        ],
-        "feasibility": [
-          {
-            "conclusion": "unknown",
-            "evidence_ids": [
-              "member-1",
-              "member-2"
-            ],
-            "missing_information": [
-              "No official documentation was read for the Python backend framework or the database meant to persist board items, so these must_have dependencies are unknown rather than blocked.",
-              "No evidence that the completed checkbox toggle is persisted server-side rather than kept as client-only state.",
-              "No integration or contract test covers the board API contract between Alice's backend and Bob's interface."
-            ],
-            "reason": "The core path (Bob's HTML/CSS/JS board screen calling Alice's Python backend and database to persist task text, owner, due date and a completed flag, plus one static note screen) is simple and consistent with the members' self-reported skills inside the 24-hour limit. Yet the two must_have dependencies dep-backend-persistence and dep-frontend-board-and-note rest on concrete technical resources for which no resource item was approved and no official documentation was read, so those checks remain unknown and a pass is forbidden.",
-            "required_changes": [
-              "Confirm the concrete backend stack (Python framework plus database) so persistence of task text, owner, due date and completed flag can be verified before any technical-readiness claim.",
-              "Specify whether the completed checkbox persists server-side across reload; the candidate's own unknowns leave this done criterion undefined."
-            ],
-            "result": "insufficient_evidence"
-          }
-        ],
-        "novelty_coverage": {
-          "complete": true,
-          "required_scopes": [
-            "github",
-            "devpost"
-          ],
-          "scopes": [
-            {
-              "attempts": 1,
-              "result_count": 7,
-              "scope": "github",
-              "status": "results"
-            },
-            {
-              "attempts": 1,
-              "result_count": 5,
-              "scope": "devpost",
-              "status": "results"
-            }
-          ]
-        },
-        "passed": false,
-        "recommended_changes": [
-          "Keep the MVP as one team, one board, manual entry plus the checkbox, and freeze scope against the listed out-of-scope items.",
-          "Store the alternatives note and fit statement as static team-approved content and record both members' approval before the demo.",
-          "Define explicit done criteria: checkbox persists server-side across reload, and the note names at least the well-known alternatives the team already knows.",
-          "Have Alice and Bob agree the board JSON/API contract early and run one end-to-end check that a task created in the UI survives a reload."
-        ],
-        "report_id": "a91b365e-b852-44c7-a56f-3fe4349a581d",
-        "report_schema_version": "1.2",
-        "risks": [
-          "The GitHub scope produced no comparable repository, so unread or unindexed similar projects could exist; the novelty assessment only reflects this limited search scope.",
-          "The static alternatives note yields no working feature and is weak evidence of comparative honesty if judges only skim it; it must stay modest and team-approved.",
-          "Adding the completed checkbox widens the task shape beyond task/owner/deadline and could invite scope creep toward reminders or calendars that are explicitly out of scope.",
-          "No integration test covers the backend-board API contract, so Alice's persistence and Bob's UI could diverge late in the 24-hour window."
-        ],
-        "search_log": [
-          {
-            "excluded_count": 3,
-            "executed": true,
-            "query": "study group shared task checklist board with owner and due date web app site:github.com",
-            "result_count": 7,
-            "result_status": "results",
-            "result_urls": [
-              "https://github.com/wzbzt70/best-ai-tools",
-              "https://github.com/super-productivity/super-productivity",
-              "https://github.com/paperclipai/paperclip",
-              "https://github.com/makeplane/plane",
-              "https://github.com/lukasz-madon/awesome-remote-job",
-              "https://github.com/promptslab/awesome-prompt-engineering",
-              "https://github.com/sindresorhus/awesome"
-            ],
-            "scope": "github"
-          },
-          {
-            "excluded_count": 5,
-            "executed": true,
-            "query": "hackathon study group shared checklist task board owner due date hackathon project site:devpost.com/software",
-            "result_count": 5,
-            "result_status": "results",
-            "result_urls": [
-              "https://devpost.com/software/studybuddy-ai-hvfyog",
-              "https://devpost.com/software/clearhead-av3du9",
-              "https://devpost.com/software/tuesday-com",
-              "https://devpost.com/software/workflowlens-ai",
-              "https://devpost.com/software/orchestra-w9tsnj"
-            ],
-            "scope": "devpost"
-          }
-        ],
-        "similar_projects": [
-          {
-            "conclusion": "supported_by_source",
-            "differences": [
-              "AI-powered scheduling and prioritization, whereas the candidate is deliberately manual and text-only",
-              "Broader product: accounts, multiple lists/users, sign-in and a Kanban-style UI versus one team, one board and a text view",
-              "The read source does not describe an in-app 'honest alternatives and fit' note; this difference is unverified rather than a proven absence"
-            ],
-            "evidence_ids": [
-              "web-1"
-            ],
-            "maturity": "self_reported_implemented",
-            "name": "tuesday.com",
-            "overlap": [
-              "Shared team task board holding task entries, owners and deadlines",
-              "Multi-user collaboration on a live board within a team",
-              "Task management aimed at helping teams stay productive and meet deadlines"
-            ],
-            "url": "https://devpost.com/software/tuesday-com"
-          },
-          {
-            "conclusion": "supported_by_source",
-            "differences": [
-              "AI-driven prioritization, personalized study plans and reminders versus a manual single-board checklist",
-              "Requires accounts and authentication; candidate has no accounts",
-              "Shared task boards are listed only as planned future work, and no in-app alternatives note is described"
-            ],
-            "evidence_ids": [
-              "web-3"
-            ],
-            "maturity": "self_reported_implemented",
-            "name": "StudyBuddy AI",
-            "overlap": [
-              "Student-facing task and assignment tracking with deadlines",
-              "Basic task CRUD/toggle plus progress and completion tracking",
-              "Built by a university-student team for organizing coursework"
-            ],
-            "url": "https://devpost.com/software/studybuddy-ai-hvfyog"
-          },
-          {
-            "conclusion": "supported_by_source",
-            "differences": [
-              "LLM-driven second-brain system with cognitive-load scoring, Chrome extension and companion agent versus a static text board",
-              "Heavy AI/automation scope versus no model use at all",
-              "Collaboration is framed as future work, not a shared manual board"
-            ],
-            "evidence_ids": [
-              "web-2"
-            ],
-            "maturity": "self_reported_implemented",
-            "name": "ClearHead",
-            "overlap": [
-              "Task capture and triage with due dates and completion check-off",
-              "Built as a hackathon project for students and knowledge workers",
-              "Explicit 'what the app won't decide for you' honesty framing is conceptually adjacent to the candidate's fit statement"
-            ],
-            "url": "https://devpost.com/software/clearhead-av3du9"
-          }
-        ],
-        "sources": [
-          {
-            "accessed_at": "2026-10-04T08:38:51.266Z",
-            "claim": "The core path (Bob's HTML/CSS/JS board screen calling Alice's Python backend and database to persist task text, owner, due date and a completed flag, plus one static note screen) is simple and consistent with the members' self-reported skills inside the 24-hour limit. Yet the two must_have dependencies dep-backend-persistence and dep-frontend-board-and-note rest on concrete technical resources for which no resource item was approved and no official documentation was read, so those checks remain unknown and a pass is forbidden.; Persisting task text, owner, due date and a completed flag in a Python backend and database is a routine implementation path, and Alice self-reports Python backend and database experience; however no approved resource item and no official documentation for the specific framework or database were available, so support is not established.",
-            "conclusion": "team_claim",
-            "evidence_id": "member-1",
-            "excerpt": "Has experience building a Python backend and database.",
-            "limitation": "Shared member self-report; not independently verified.",
-            "source_kind": "member_report",
-            "source_ref": {
-              "item_id": "item-30fbbc901cc543cb87680cc97a428b68",
-              "member_id": "alice",
-              "profile_id": "profile-05b893c5f84f4d7ab11c96f1eae76e31",
-              "profile_version": 4
-            },
-            "title": "alice: skill",
-            "url": null
-          },
-          {
-            "accessed_at": "2026-10-04T08:38:51.266Z",
-            "claim": "The core path (Bob's HTML/CSS/JS board screen calling Alice's Python backend and database to persist task text, owner, due date and a completed flag, plus one static note screen) is simple and consistent with the members' self-reported skills inside the 24-hour limit. Yet the two must_have dependencies dep-backend-persistence and dep-frontend-board-and-note rest on concrete technical resources for which no resource item was approved and no official documentation was read, so those checks remain unknown and a pass is forbidden.; Bob self-reports being able to build the JavaScript interface within 24 hours, which covers a text board with owner, due date, completion checkbox and one static note screen; this is a team self-report, not an executed or documented verification.",
-            "conclusion": "team_claim",
-            "evidence_id": "member-2",
-            "excerpt": "Can build the JavaScript interface within 24 hours.",
-            "limitation": "Shared member self-report; not independently verified.",
-            "source_kind": "member_report",
-            "source_ref": {
-              "item_id": "item-838d3b78119e4d7eb4e4ca1c1acb8b97",
-              "member_id": "bob",
-              "profile_id": "profile-1d8580b36a99475b91d8cf6b23570ab3",
-              "profile_version": 4
-            },
-            "title": "bob: skill",
-            "url": null
-          },
-          {
-            "accessed_at": "2026-10-04T08:38:59.998Z",
-            "claim": "Both required platform searches were attempted: the GitHub repository search returned only unrelated productivity roundups and awesome lists, with no specific repository body matching a manual one-board study-group checklist, while the Devpost search surfaced several task/study projects of which the three closest were read. Tuesday.com (a multi-user task board with owners, deadlines and real-time collaboration) and StudyBuddy AI (student task tracking with deadlines and completion stats) partially overlap, but both are far broader (AI scheduling, accounts, multi-board, reminders, calendars) and neither page describes the candidate's distinguishing element, a static in-app 'honest alternatives and fit' note. Without a readable matching GitHub repository body and with only partial Devpost overlap, the comparison supports neither a pass nor a sourced duplicate failure.",
-            "conclusion": "supported_by_source",
-            "evidence_id": "web-1",
-            "excerpt": "We will be undergoing planned maintenance on Oct 7th 6:00AM UTC / Oct 7th 2:00AM ET\n\n# tuesday.com\n\ntuesday.com: Like monday.com, but on a Tuesday. Built at Hacked 2025—same vibes, slightly worse.\n\n[Like 2](https://secure.devpost.com/users/register?flow%5Bdata%5D%5Bsoftware_id%5D=876682&flow%5Bname%5D=like_software&return_to=https%3A%2F%2Fdevpost.com%2Fsoftware%2Ftuesday-com)\n\n [Comment](/software/tuesday-com#updates)\n\n* [![tuesday.com  – screenshot 1](//d112y698adiu2z.cloudfront.net/photos/production/software_photos/003/276/785/datas/gallery.jpg)](https://d112y698adiu2z.cloudfront.net/photos/production/software_photos/003/276/785/datas/original.jpeg) \n\n  *Task view*\n* [![tuesday.com  – screenshot 2](//d112y698adiu2z.cloudfront.net/photos/production/software_photos/003/276/693/datas/gallery.jpg)](https://d112y698adiu2z.cloudfront.net/photos/production/software_photos/003/276/693/datas/original.png) \n\n  *Adding tasks/users to the list*\n* [![tuesday.com  – screenshot 3](//d112y698adiu2z.cloudfront.net/photos/production/software_photos/003/276/701/datas/gallery.jpg)](https://d112y698adiu2z.cloudfront.net/photos/production/software_photos/003/276/701/datas/original.png) \n\n  *Create/Select Lists Page*\n* [![tuesday.com  – screenshot 4](//d112y698adiu2z.cloudfront.net/photos/production/software_photos/003/276/702/datas/gallery.jpg)](https://d112y698adiu2z.cloudfront.net/photos/production/software_photos/003/276/702/datas/original.png) \n\n  *Sign in Page*\n* [![tuesday.com  – screenshot 5](//d112y698adiu2z.cloudfront.net/photos/production/software_photos/003/276/705/datas/gallery.jpg)](https://d112y698adiu2z.cloudfront.net/photos/production/software_photos/003/276/705/datas/original.png) \n\n  *Sign up Page*\n\nInspiration:\n\nProject management is a critical yet often overwhelming aspect of modern work environments. Teams juggle multiple tasks, deadlines, and collaborations, which can lead to inefficiencies, missed deadlines, and burnout. Recognizing this challenge, we were inspired to create an AI-powered solution that simplifies task automation, optimizes workflows, and enhances productivity. Our goal was to build a platform that not only manages tasks but also adapts to the dynamic needs of teams, ensuring seamless collaboration and efficient project execution.\n\n---\n\nWhat it Does:\n\nTuesday.com is an AI-driven project management platform designed to automate and optimize task management. It combines an intuitive Kanban(ish) interface with advanced AI capabilities to provide:\n\n1. Task Automation: AI-powered scheduling and prioritization based on deadlines, workload, and team capacity.\n2. Real-Time Collaboration: A live Kanban(ish) board that updates in real-time, enabling teams to collaborate effectively.\n3. Dynamic Workload Adaptation: The platform adjusts task priorities in real-time as project requirements change. (Adding in the near future) Tuesday.com is built to help teams stay productive, reduce manual effort, and focus on completing high-impact tasks.\n\n---\n\nHow We Built It:\n\nThe development of Tuesday.com involved a combination of modern web technologies and AI integration:\n\n1. Frontend: Built using Embedded JavaScript and HTML/CSS, the frontend provides a responsive, attractive and user-friendly Kanban(ish) interface.\n2. Backend: Powered by Node.js, MongoDB, TogetherAI API, Express, the backend handles task management, user authentication, and data storage/organization.\n3. AI Integration: Machine learning models were developed using Python and integrated into the platform to enable predictive task dividing and prioritization.\n4. Database: MongoDB was used for storing task data, user profiles, and project details. The AI models were trained on historical project data to predict task durations, identify bottlenecks, and optimize workflows.\n\n---\n\nChallenges We Ran Into:\n\n1. User-Friendly Design: Designing an intuitive Kanban(ish) interface that balances functionality with simplicity was a significant design challenge.\n2. Data Synchronization: Handling data consistency across multiple users and devices, especially during simultaneous updates, required robust backend logic.\n3. Time Constraints: Completing the project within the hackathon timeframe demanded efficient teamwork and rapid problem-solving.\n\n---\n\nAccomplishments We’re Proud Of:\n\n1. AI Integration: Successfully integrating AI-powered task automation and predictive analytics into the platform.\n2. Dynamic Scheduling: Creating a scheduling system that adapts to changing workloads and project requirements.\n3. Team Collaboration: Delivering a fully functional project management tool within the hackathon timeframe.\n4. User Experience: Designing a platform that is both powerful and easy to use, catering to diverse team needs.\n\n---\n\nWhat We Learned:\n\n1. AI Optimization: The importance of fine-tuning AI models for real-time decision-making and scalability.\n2. User Experience: How to balance advanced features with simplicity to create a user-friendly interface.\n3. Real-Time Systems: Best practices for handling real-time collaboration and data synchronization in a multi-user environment.\n4. Teamwork: The value of clear communication, division of tasks, and rapid iteration in a high-pressure setting.\n5. Project Management: Insights into the challenges teams face and how technology can address them effectively.\n\n---\n\nWhat’s Next for Tuesday.com\n\n1. Enhanced AI Features: Improve predictive analytics and introduce natural language processing (NLP) for task creation and updates.\n2. Third-Party Integrations: Integrate with tools like Slack, Google Calendar, and GitHub for seamless workflow management.\n3. Performance Optimization: Optimize the platform for larger teams and more complex projects.\n4. SaaS Platform: Expand Tuesday.com into a full-fledged SaaS product with subscription-based pricing.\n5. Mobile App: Develop a mobile version to enable on-the-go task management.\n6. Customization: Allow users to customize workflows, task views, and notifications to suit their specific needs.\n\n---\n\nCommercial Viability:\n\nTuesday.com targets a wide range of users, including startups, corporate teams, and remote workers. The initial market includes small to medium-sized businesses looking for affordable yet powerful project management tools. As the platform grows, it can expand to larger enterprises and specialized industries. Revenue Model:\n\n1. Subscription Plans: Monthly or annual subscriptions based on the number of users and features.\n2. Enterprise Solutions: Custom plans for large organizations with advanced needs.\n3. Freemium Model: A free tier with basic features to attract users, with premium features available for paid subscribers.\n\n## Built With\n\n* ai\n* [css](https://devpost.com/software/built-with/css)\n* [ejs](https://devpost.com/software/built-with/ejs)\n* [express.js](https://devpost.com/software/built-with/express-js)\n* [html](https://devpost.com/software/built-with/html)\n* [javascript](https://devpost.com/software/built-with/javascript)\n* [mongodb](https://devpost.com/software/built-with/mongodb)\n\n[Like 2](https://secure.devpost.com/users/register?flow%5Bdata%5D%5Bsoftware_id%5D=876682&flow%5Bname%5D=like_software&return_to=https%3A%2F%2Fdevpost.com%2Fsoftware%2Ftuesday-com)\n\n 2 people like this: \n\n* [![Muhammad Zain Asad](https://lh3.googleusercontent.com/a/ACg8ocI6cMohiLyOrdbJh-PxHw_47dJAaLJZhHFxxewVB_1HJ4xFGaFz=s96-c?type=square \"Muhammad Zain Asad\")](https://devpost.com/muhammadzainasad6)\n* [![Misbah Ahmed Nauman](//d112y698adiu2z.cloudfront.net/photos/production/user_photos/003/141/011/datas/medium.jpg \"Misbah Ahmed Nauman\")](https://devpost.com/misbahan)\n\nShare this project:\n\n## Updates\n\n[![Raahim Khan](https://lh3.googleusercontent.com/a/ACg8ocJHMk564rztoqcLwd-9D7O4DRsCKKEO9DrSZKkt1b1UpySkBA=s96-c?height=180&width=180 \"Raahim Khan\")](https://devpost.com/Raahim24)\n\n[Raahim Khan](https://devpost.com/Raahim24) started this project  —\n\n*Leave feedback in the comments!*\n\n**[Log in](https://secure.devpost.com/users/login)** or **[sign up for Devpost](https://secure.devpost.com/users/register?flow%5Bdata%5D%5Bcommentable_id%5D=619388&flow%5Bname%5D=comment_on_software_update&return_to=https%3A%2F%2Fdevpost.com%2Fsoftware%2Ftuesday-com)** to join the conversation.\n\n## Submission history",
-            "limitation": "Public web content; authorship and project implementation were not independently verified.",
-            "source_kind": "public_web",
-            "title": "tuesday.com | Devpost",
-            "url": "https://devpost.com/software/tuesday-com"
-          },
-          {
-            "accessed_at": "2026-10-04T08:39:00.044Z",
-            "claim": "Both required platform searches were attempted: the GitHub repository search returned only unrelated productivity roundups and awesome lists, with no specific repository body matching a manual one-board study-group checklist, while the Devpost search surfaced several task/study projects of which the three closest were read. Tuesday.com (a multi-user task board with owners, deadlines and real-time collaboration) and StudyBuddy AI (student task tracking with deadlines and completion stats) partially overlap, but both are far broader (AI scheduling, accounts, multi-board, reminders, calendars) and neither page describes the candidate's distinguishing element, a static in-app 'honest alternatives and fit' note. Without a readable matching GitHub repository body and with only partial Devpost overlap, the comparison supports neither a pass nor a sourced duplicate failure.",
-            "conclusion": "supported_by_source",
-            "evidence_id": "web-2",
-            "excerpt": "We will be undergoing planned maintenance on Oct 7th 6:00AM UTC / Oct 7th 2:00AM ET\n\n# ClearHead\n\nYour AI second brain: brain dump the chaos, shape it into a plan, before overload takes over\n\n[Like](https://secure.devpost.com/users/register?flow%5Bdata%5D%5Bsoftware_id%5D=1301418&flow%5Bname%5D=like_software&return_to=https%3A%2F%2Fdevpost.com%2Fsoftware%2Fclearhead-av3du9)\n\n [Comment](/software/clearhead-av3du9#updates)\n\n* [![ClearHead – screenshot 1](//d112y698adiu2z.cloudfront.net/photos/production/software_photos/004/796/916/datas/gallery.jpg)](https://d112y698adiu2z.cloudfront.net/photos/production/software_photos/004/796/916/datas/original.png) \n\n  *first screen*\n* [![ClearHead – screenshot 2](//d112y698adiu2z.cloudfront.net/photos/production/software_photos/004/797/020/datas/gallery.jpg)](https://d112y698adiu2z.cloudfront.net/photos/production/software_photos/004/797/020/datas/original.png) \n\n  *main page*\n* [![ClearHead – screenshot 3](//d112y698adiu2z.cloudfront.net/photos/production/software_photos/004/797/026/datas/gallery.jpg)](https://d112y698adiu2z.cloudfront.net/photos/production/software_photos/004/797/026/datas/original.png) \n\n  *bubi-chat*\n* [![ClearHead – screenshot 4](//d112y698adiu2z.cloudfront.net/photos/production/software_photos/004/797/040/datas/gallery.jpg)](https://d112y698adiu2z.cloudfront.net/photos/production/software_photos/004/797/040/datas/original.png) \n\n  *task-chat*\n* [![ClearHead – screenshot 5](//d112y698adiu2z.cloudfront.net/photos/production/software_photos/004/797/041/datas/gallery.jpg)](https://d112y698adiu2z.cloudfront.net/photos/production/software_photos/004/797/041/datas/original.png) \n\n  *shape your idea main page*\n* [![ClearHead – screenshot 6](//d112y698adiu2z.cloudfront.net/photos/production/software_photos/004/797/042/datas/gallery.jpg)](https://d112y698adiu2z.cloudfront.net/photos/production/software_photos/004/797/042/datas/original.png) \n\n  *python goal roadmap*\n* [![ClearHead – screenshot 7](//d112y698adiu2z.cloudfront.net/photos/production/software_photos/004/797/062/datas/gallery.jpg)](https://d112y698adiu2z.cloudfront.net/photos/production/software_photos/004/797/062/datas/original.png) \n\n  *MenuScreen*\n* [![ClearHead – screenshot 8](//d112y698adiu2z.cloudfront.net/photos/production/software_photos/004/797/044/datas/gallery.jpg)](https://d112y698adiu2z.cloudfront.net/photos/production/software_photos/004/797/044/datas/original.png) \n\n  *task\\_list page*\n* [![ClearHead – screenshot 9](//d112y698adiu2z.cloudfront.net/photos/production/software_photos/004/797/045/datas/gallery.jpg)](https://d112y698adiu2z.cloudfront.net/photos/production/software_photos/004/797/045/datas/original.png) \n\n  *tasklist page*\n* [![ClearHead – screenshot 10](//d112y698adiu2z.cloudfront.net/photos/production/software_photos/004/797/052/datas/gallery.jpg)](https://d112y698adiu2z.cloudfront.net/photos/production/software_photos/004/797/052/datas/original.png) \n\n  *focus\\_Guard + extension*\n* [![ClearHead – screenshot 11](//d112y698adiu2z.cloudfront.net/photos/production/software_photos/004/797/053/datas/gallery.jpg)](https://d112y698adiu2z.cloudfront.net/photos/production/software_photos/004/797/053/datas/original.png) \n\n  *settings*\n* [![ClearHead – screenshot 12](//d112y698adiu2z.cloudfront.net/photos/production/software_photos/004/797/060/datas/gallery.jpg)](https://d112y698adiu2z.cloudfront.net/photos/production/software_photos/004/797/060/datas/original.png) \n\n  *takeABreak screen*\n\n# ClearHead\n\n## Inspiration\n\nI know what it feels like to open your notes app, stare at fifteen half-finished tasks, and close it again without doing anything. Not because I was lazy — because I genuinely didn't know where to start. That paralysis isn't a discipline problem. It's a cognitive load problem.\n\nMost productivity tools make it worse. They let you pile more things in, color-code them, and build elaborate systems that take longer to maintain than the work itself. What nobody builds is something that meets you where you *are* — tired, anxious, overwhelmed — and says: \"Here. Start with this. I'll walk you through it.\"\n\nThat was the spark for ClearHead. The USAII Global Hackathon prompt — *\"Build the Second Brain for Real Life\"* — framed it perfectly. A second brain shouldn't just store information. It should do what a good friend would do: listen to the dump, triage the noise, give you one clear thing to do next, and quietly protect your focus while you do it.\n\nI also wanted to build something for the way brains *actually* work at the end of a long day — when energy is low, when vague ambitions compete with urgent deadlines, when the idea you've been sitting on (\"I want to learn Python\", \"I should start that project\") stays permanently on the backburner because nobody helped you turn it into a real plan.\n\n## What it does\n\nClearHead is a cognitive load manager built as an AI second brain. Here's the full flow:\n\n**Brain Dump → Triage** You paste, type or upload everything in your head — tasks, worries, vague goals, text from a PDF or DOCX. ClearHead's LLM pipeline classifies every item into four buckets: *urgent task*, *future plan*, *unresolvable worry*, or *irrelevant noise*. Worries get acknowledged and archived, not lost. Noise gets discarded. What's left is a clean, actionable list.\n\n**Overload Index** A live 0–100 cognitive load score, computed from deadline proximity, task count, effort estimates, your current energy level, time of day, and detected crisis keywords. Low energy? The score scales up — because carrying the same load feels heavier when you're exhausted. This score drives Bubi's mood and the agent's decisions.\n\n**Interactive Mind Map** Tasks aren't a list — they're a canvas of floating bubbles, semantically clustered. The LLM can filter by topic (\"School\", \"Finance\") so you only see what matters right now, not all twenty things at once.\n\n**Duolingo-Style Focus Path** The daily guided path. Tasks are ranked by deadline + urgency + effort + energy fit, and the top task comes with a plain-English reason: *\"Start here because your exam is in two days.\"* You unlock tasks one at a time. Each task opens into three micro-steps. You check them off, get a celebration animation, and the next bubble unlocks.\n\n**Shape an Idea — Golden Goals** This is the Direction B core. You type a vague ambition (\"master Python\", \"launch a podcast\"), answer two quick questions (experience level + available hours/week), and optionally attach a reference PDF or roadmap. One LLM call returns: a clarified goal, key assumptions with confidence levels, real risks, exactly three concrete milestones with realistic timeframes derived from *your* schedule, a first move, and an explicit \"what ClearHead won't decide for you\" safeguard. You review, edit, and commit. Then you walk the milestone roadmap bubble-by-bubble, exactly like the Focus Path.\n\n**Bubi — AI Companion** A pet whose mood mirrors your mental state (calm, stressed, burnt, focused, angry). Bubi has a full chat interface with access to your tasks, energy, overload trend, focus history, browsing patterns, and goal progress. Ask *\"Is my focus better than yesterday?\"* or *\"Should I take a break?\"* — Bubi reasons over real data, not generic advice.\n\n**Focus Guard Chrome Extension** A Manifest V3 extension with an on-device domain classifier. No URLs ever leave your machine. It tracks productive vs. distracted time per task, detects distraction streaks, and injects mindfulness overlays — a breathing circle on distracting sites, a 15-second tab-close warning when you drift mid-task.\n\n**Autonomous Agent** Runs on a configurable tick (Gentle / Balanced / Assertive modes). Heuristics handle clear cases (distraction streak → block domain, overload > 80 → suggest break, stale tasks → nudge). For nuanced decisions, it calls Groq with full context and produces structured JSON actions: nudge, reprioritize, daily plan, wellbeing check. Every action is undoable from the Agent Feed.\n\n**Burnout Trend + Calendar** 7-day overload history, daily focus stats, and a daily recap. Due dates are extracted from natural language by the LLM. A Calendar button opens a prefilled Google Calendar event — no OAuth, no API keys, just a URL template.\n\n## How we built it\n\n**Architecture:** React 19 + Vite SPA → FastAPI backend → local JSON stores → Manifest V3 Chrome extension. No database — JSON files *are* the database, which kept deployment simple for a hackathon.\n\n**LLM strategy:** Two models, used deliberately.\n\n* **Groq (llama-3.3-70b-versatile)** for the autonomous agent and analysis endpoints — fast, cheap, structured JSON output.\n* **Hugging Face (Qwen/Qwen2.5-72B-Instruct)** for chat — more conversational, handles longer context.\n* Hierarchical fallback: primary Groq key → secondary key → smaller model (llama-3.1-8b-instant) → deterministic mock. The app runs fully offline without any API keys.\n\n**Key engineering decisions:**\n\n* *Single LLM call for Shape an Idea* — one `/idea/shape` endpoint returns the full plan (goal + assumptions + risks + 3 milestones + sub-tasks + first move) in one shot. No multi-stage pipelines, no stitching.\n* *Pre-generated micro-steps* — `/onething/start` generates all 3 steps once. The Focus Path reuses them. No LLM call per level tap.\n* *Heuristic-first agent* — deterministic rules fire first (fast, zero cost). LLM only when reasoning is genuinely needed.\n* *Energy-aware scoring* — overload score and Focus Path ranking both take energy level as input. Tired users get lighter recommendations; energized users get pushed harder.\n* *On-device URL classification* — the extension's domain classifier runs in JavaScript inside the browser. Raw URLs never leave the machine.\n* *markitdown for document ingestion* — converts PDFs, DOCX, PPTX to structured Markdown locally before sending to the LLM, preserving headings and lists.\n\n**UI aesthetic:** \"2D Cute Sketch UI\" — cream `#F7F3E6` background, bold 2.5px borders, offset box shadows, navy `#1A1AA7`, orange `#FFA142`, Caveat headings + Space Grotesk body. Every animation (bubble pulse, celebration, breathing circle) is intentional and calm, not frantic.\n\n## Challenges we ran into\n\n**Getting the LLM to output clean, structured JSON consistently** was the biggest technical hurdle. Raw LLM output is messy — markdown fences, trailing commas, truncated arrays. We wrote a `clean_json_string` utility that strips fences, fixes common malformations, and falls back gracefully. We also had to carefully engineer prompts that force strict schema adherence without sacrificing output quality.\n\n**The overload score needed to feel right, not just right mathematically.** Early versions were either too trigger-happy (everything was \"critical\") or too muted (users at genuine burnout showed \"moderate\"). We tuned weights iteratively — worries count less than urgent tasks, but a lot of worries still tip the needle; energy is a multiplier, not just an addend; late-night brain dumps get a slight bump because that's when catastrophizing peaks.\n\n**The autonomous agent had to earn trust, not demand it.** An agent that fires unsolicited actions feels invasive. We built in three mode levels (Gentle/Balanced/Assertive), mandatory undo for every action, and a visible Agent Feed so users can see exactly what it did and why. The first time the agent closes a tab is jarring; making that action transparent and reversible was critical to keeping users on board.\n\n**Groq rate limits during rapid testing** were a constant friction. The hierarchical fallback (primary → secondary → smaller model → mock) took several iterations to get right — especially ensuring the smaller 8B model prompt still produced usable structured JSON.\n\n**The Shape an Idea flow had too many screens** in early versions. Users would drop off during the setup questions. We collapsed it: two lightweight pre-questions → one loading screen → full review panel → commit or re-shape. The single-page review with inline editing reduced abandonment significantly in our testing.\n\n**Milestone timeframes were initially generic (30/60/90 days).** That felt template-ish. We moved to deriving timeframes from the user's stated available hours per week: if you have 5 hrs/week and we think this milestone needs ~20 hrs, the milestone is labeled \"4–5 weeks.\" That specificity made the plans feel personal, not AI-cookie-cutter.\n\n## Accomplishments that we're proud of\n\n**The Focus Path actually works as a UX.** The Duolingo mechanic isn't just cosmetic — locking future bubbles until you complete the current one removes the paralysis of choice. In our own testing, we found ourselves starting tasks we'd been avoiding for days, purely because the path told us \"this one, now, here's why.\"\n\n**Shape an Idea is a complete zero-to-one pipeline in a single LLM call.** Vague ambition in → clarified goal + assumptions + risks + concrete milestone roadmap + first move out. The \"what ClearHead won't decide for you\" field was a late addition — it became one of our favorite details because it makes the human-in-the-loop contract explicit and honest.\n\n**The autonomous agent is genuinely useful, not gimmicky.** Heuristics handle 80% of cases deterministically (fast, free). LLM reasoning handles the nuanced 20%. The undo system and Agent Feed make it trustworthy. It's not \"AI because hackathon\" — it's AI because those decisions (should I nudge? is this a real crisis?) benefit from reasoning over context.\n\n**The cognitive load scoring feels psychologically accurate.** Energy as a multiplier, late-night penalty, wellbeing keyword detection, volume penalty for open loops — these aren't arbitrary. They reflect how cognitive load actually works, and users in testing said \"yeah, that number makes sense\" rather than arguing with it.\n\n**The Chrome extension completes the loop.** Most productivity apps live in a tab you switch *away* from. ClearHead's extension watches what you actually do and closes the gap between intention and behavior.\n\n## What we learned\n\nThe most important lesson: **AI features should reduce cognitive load, not add to it.** It's easy to make an AI product that asks users too many questions, shows too much reasoning, or fires too many notifications. Every feature we shipped went through the question \"does this make the experience calmer and clearer, or louder and busier?\" Several ideas (a full analytics dashboard, a daily email digest, a social sharing feature) got cut because the answer was \"busier.\"\n\n**Prompt engineering is a product skill, not just a technical one.** The difference between a Shape an Idea result that feels insightful versus one that feels generic comes down to how the prompt frames the user's context — including their energy level, their exact wording, their attached reference, and the explicit instruction to derive timeframes from available hours. Changing a single sentence in the prompt changed the product meaningfully.\n\n**Heuristics first, LLM second.** We started with more LLM calls in the agent and walked them back. Deterministic rules are faster, cheaper, more predictable, and easier to debug. LLMs are best for decisions that genuinely require reasoning over unstructured context — not for \"has the user been distracted for 5 minutes.\"\n\n**The document ingestion pipeline is underrated.** Being able to drop in a syllabus PDF or a career roadmap DOCX and have Shape an Idea reference it in the milestone reasoning (\"Because your roadmap mentions PyTorch, milestone 2 focuses on it\") was a small technical addition with outsized perceived intelligence.\n\n**Trust is built in the details.** The undo button on agent actions, the confidence levels on assumptions, the \"what ClearHead won't decide\" field, the explicit \"Start here because…\" reason — none of these are technically impressive. All of them are what make users feel safe giving the app agency over their day.\n\n## What's next for ClearHead\n\n**Multi-device sync** — the local JSON store works great for a hackathon; it won'",
-            "limitation": "Public web content; authorship and project implementation were not independently verified.",
-            "source_kind": "public_web",
-            "title": "ClearHead | Devpost",
-            "url": "https://devpost.com/software/clearhead-av3du9"
-          },
-          {
-            "accessed_at": "2026-10-04T08:39:01.252Z",
-            "claim": "Both required platform searches were attempted: the GitHub repository search returned only unrelated productivity roundups and awesome lists, with no specific repository body matching a manual one-board study-group checklist, while the Devpost search surfaced several task/study projects of which the three closest were read. Tuesday.com (a multi-user task board with owners, deadlines and real-time collaboration) and StudyBuddy AI (student task tracking with deadlines and completion stats) partially overlap, but both are far broader (AI scheduling, accounts, multi-board, reminders, calendars) and neither page describes the candidate's distinguishing element, a static in-app 'honest alternatives and fit' note. Without a readable matching GitHub repository body and with only partial Devpost overlap, the comparison supports neither a pass nor a sourced duplicate failure.",
-            "conclusion": "supported_by_source",
-            "evidence_id": "web-3",
-            "excerpt": "We will be undergoing planned maintenance on Oct 7th 6:00AM UTC / Oct 7th 2:00AM ET\n\n# StudyBuddy AI\n\nYour AI-powered study companion — organize, prioritize, and conquer your workload effortlessly.\n\n[Like](https://secure.devpost.com/users/register?flow%5Bdata%5D%5Bsoftware_id%5D=1237766&flow%5Bname%5D=like_software&return_to=https%3A%2F%2Fdevpost.com%2Fsoftware%2Fstudybuddy-ai-hvfyog)\n\n [Comment](/software/studybuddy-ai-hvfyog#updates)\n\n* [![StudyBuddy AI – screenshot 1](//d112y698adiu2z.cloudfront.net/photos/production/software_photos/004/544/225/datas/gallery.jpg)](https://d112y698adiu2z.cloudfront.net/photos/production/software_photos/004/544/225/datas/original.jpg)\n* [![StudyBuddy AI – screenshot 2](//d112y698adiu2z.cloudfront.net/photos/production/software_photos/004/544/226/datas/gallery.jpg)](https://d112y698adiu2z.cloudfront.net/photos/production/software_photos/004/544/226/datas/original.png)\n\n# Project Story — StudyBuddy AI\n\n## Inspiration\n\nDuring my university years, I struggled with managing multiple assignments, exams, and deadlines. I noticed that most students relied on basic to-do lists or calendars, which were static and didn’t adapt to priorities or workload. I wanted to create a tool that not only tracked tasks but also **smartly suggested study plans and priorities using AI**, helping students maximize productivity without burnout.\n\n## What it does\n\nStudyBuddy AI is a **full-stack AI-powered study scheduler** that helps students:\n\n* Organize tasks, assignments, and reminders in one place.\n* Auto-prioritize tasks based on deadlines, subjects, and workload.\n* Generate personalized study plans using **Google Gemini AI**.\n* Track progress with completion stats, streaks, and hours studied.\n* Receive daily/weekly reminders and auto-overdue task alerts.\n\nIt’s essentially a **personal AI study assistant** available on desktop and mobile.\n\n## How we built it\n\nThe project is built using a **modern web stack**:\n\n* **Backend:** Node.js + Express + MongoDB, with JWT authentication for secure user sessions.\n* **Frontend:** HTML/CSS/JS served statically, fully responsive and mobile-friendly.\n* **AI Integration:** **Google Gemini API (1.5 Flash)** to suggest personalized study schedules and task prioritization.\n* **Automation:** Cron jobs to mark overdue tasks and repeat reminders.\n* **Database:** Mongoose schemas for `User`, `Task`, and `Reminder` with validation, virtuals, and helper methods.\n\nThe workflow:\n\n1. Users register/login → JWT session issued.\n2. Users add tasks & reminders → tasks auto-checked for overdue status.\n3. Users request AI suggestions → system calls **Gemini API** → personalized plan returned.\n4. Users track progress → stats updated in real-time.\n\n### Example: Task Prioritization Formula\n\nWe calculate a priority score $P$ for each task:\n\n$$P = \\frac{W}{T} \\times U$$\n\nwhere:\n\n* $W$ = workload (estimated hours)\n* $T$ = time until deadline (in hours)\n* $U$ = user-defined urgency factor\n\nThis ensures tasks with less time and higher workload appear first.\n\n## Challenges we ran into\n\n* **AI Provider Migration:** Transitioning from traditional LLM structures to **Google Gemini’s content-based API architecture**.\n* **Task Scheduling Logic:** Ensuring recurring reminders, overdue updates, and progress tracking worked seamlessly together.\n* **Authentication:** Securing JWTs and password hashing while keeping the user experience smooth.\n* **Frontend Rendering:** Making a responsive calendar view and real-time task updates without heavy frameworks.\n\n## Accomplishments that we're proud of\n\n* Successfully integrated **Google Gemini 1.5 API** for high-speed, personalized study planning.\n* Implemented **full CRUD + toggle + bulk delete + progress tracking** for tasks.\n* Achieved **real-time reminders and overdue automation** via cron jobs.\n* Created a **light/dark mode** feature saved in localStorage.\n* Made the app fully **responsive** for both desktop and mobile.\n\n## What we learned\n\n* Full-stack architecture from database to frontend integration.\n* Interacting with **Google Generative AI** services for practical automation.\n* Advanced MongoDB/Mongoose techniques: virtuals, population, auto-updates.\n* Task scheduling logic, prioritization, and UX for productivity apps.\n* Real-world challenges of authentication, error handling, and cron automation.\n\n## What's next for StudyBuddy AI\n\n* Mobile app version with offline support.\n* Improved AI capabilities: auto-summarize notes, detect procrastination patterns.\n* Calendar integrations with Google Calendar / Outlook.\n* Gamification features to encourage streaks and achievements.\n* Collaborative features: group study plans and shared task boards.\n\n## Built With\n\n* bcrypt\n* [css](https://devpost.com/software/built-with/css)\n* [express.js](https://devpost.com/software/built-with/express-js)\n* [html](https://devpost.com/software/built-with/html)\n* [javascript](https://devpost.com/software/built-with/javascript)\n* jwt\n* [mongoose](https://devpost.com/software/built-with/mongoose)\n* [node.js](https://devpost.com/software/built-with/node-js)\n* nodemon\n\n[Like](https://secure.devpost.com/users/register?flow%5Bdata%5D%5Bsoftware_id%5D=1237766&flow%5Bname%5D=like_software&return_to=https%3A%2F%2Fdevpost.com%2Fsoftware%2Fstudybuddy-ai-hvfyog)\n\nShare this project:\n\n## Updates\n\n[![Moamen Abouhaty](//d112y698adiu2z.cloudfront.net/photos/production/user_photos/005/442/002/datas/profile.png \"Moamen Abouhaty\")](https://devpost.com/MoamenAbouhaty)\n\n[Moamen Abouhaty](https://devpost.com/MoamenAbouhaty) started this project  —\n\n*Leave feedback in the comments!*\n\n**[Log in](https://secure.devpost.com/users/login)** or **[sign up for Devpost](https://secure.devpost.com/users/register?flow%5Bdata%5D%5Bcommentable_id%5D=759476&flow%5Bname%5D=comment_on_software_update&return_to=https%3A%2F%2Fdevpost.com%2Fsoftware%2Fstudybuddy-ai-hvfyog)** to join the conversation.\n\n## Submission history",
-            "limitation": "Public web content; authorship and project implementation were not independently verified.",
-            "source_kind": "public_web",
-            "title": "StudyBuddy AI | Devpost",
-            "url": "https://devpost.com/software/studybuddy-ai-hvfyog"
-          }
-        ],
-        "status": "complete",
-        "technical_checks": [
-          {
-            "conclusion": "unknown",
-            "dependency_id": "dep-backend-persistence",
-            "evidence_ids": [
-              "member-1"
-            ],
-            "finding": "Persisting task text, owner, due date and a completed flag in a Python backend and database is a routine implementation path, and Alice self-reports Python backend and database experience; however no approved resource item and no official documentation for the specific framework or database were available, so support is not established.",
-            "next_check": "Name the Python framework and database, then read their official documentation for schema/storage of the board item fields before claiming readiness.",
-            "next_check_status": "needs_test",
-            "outcome": "unknown"
-          },
-          {
-            "conclusion": "team_claim",
-            "dependency_id": "dep-frontend-board-and-note",
-            "evidence_ids": [
-              "member-2"
-            ],
-            "finding": "Bob self-reports being able to build the JavaScript interface within 24 hours, which covers a text board with owner, due date, completion checkbox and one static note screen; this is a team self-report, not an executed or documented verification.",
-            "next_check": "Build the board and note screens against the backend API and confirm rendering plus checkbox toggle within the 24-hour window.",
-            "next_check_status": "needs_test",
-            "outcome": "support"
-          },
-          {
-            "conclusion": "unknown",
-            "dependency_id": "dep-team-written-claim",
-            "evidence_ids": [],
-            "finding": "The alternatives note and fit statement are plain team-authored content with no external data or API requirement; the only condition is that both members approve the wording before it is shown, which is a process step rather than a technical dependency.",
-            "next_check": "Both members review and approve the exact note and fit-statement text and store it as static content in the app.",
-            "next_check_status": "needs_test",
-            "outcome": "unknown"
-          }
-        ],
+        "basis": "Simulated re-evaluation of version 2 · no build, user test or research run is claimed.",
         "tests": {
-          "feasibility": {
-            "evidence_ids": [
-              "member-1",
-              "member-2"
-            ],
-            "missing_information": [
-              "No official documentation was read for the Python backend framework or the database meant to persist board items, so these must_have dependencies are unknown rather than blocked.",
-              "No evidence that the completed checkbox toggle is persisted server-side rather than kept as client-only state.",
-              "No integration or contract test covers the board API contract between Alice's backend and Bob's interface."
-            ],
-            "reason": "The core path (Bob's HTML/CSS/JS board screen calling Alice's Python backend and database to persist task text, owner, due date and a completed flag, plus one static note screen) is simple and consistent with the members' self-reported skills inside the 24-hour limit. Yet the two must_have dependencies dep-backend-persistence and dep-frontend-board-and-note rest on concrete technical resources for which no resource item was approved and no official documentation was read, so those checks remain unknown and a pass is forbidden.",
-            "required_changes": [
-              "Confirm the concrete backend stack (Python framework plus database) so persistence of task text, owner, due date and completed flag can be verified before any technical-readiness claim.",
-              "Specify whether the completed checkbox persists server-side across reload; the candidate's own unknowns leave this done criterion undefined."
-            ],
-            "result": "insufficient_evidence"
-          },
           "novelty": {
-            "evidence_ids": [
-              "web-1",
-              "web-2",
-              "web-3"
-            ],
+            "result": "insufficient_evidence",
+            "reason": "Removing approval does not establish novelty. The hypothesis is that visible handoff conditions reduce clarification messages; only a comparison with the team’s current workflow can test that.",
             "missing_information": [
-              "No readable GitHub repository body for a minimal one-board study-group checklist was found; the GitHub scope returned only unrelated repositories (productivity roundups/awesome lists).",
-              "No located project demonstrates or rules out the candidate's distinctive element (a static, team-approved 'honest alternatives and fit' note shipped inside the app), so that differentiator stays unverified rather than proven unique.",
-              "Whether any of the partially overlapping Devpost projects is currently maintained or actively used was not verified beyond author statements."
-            ],
-            "reason": "Both required platform searches were attempted: the GitHub repository search returned only unrelated productivity roundups and awesome lists, with no specific repository body matching a manual one-board study-group checklist, while the Devpost search surfaced several task/study projects of which the three closest were read. Tuesday.com (a multi-user task board with owners, deadlines and real-time collaboration) and StudyBuddy AI (student task tracking with deadlines and completion stats) partially overlap, but both are far broader (AI scheduling, accounts, multi-board, reminders, calendars) and neither page describes the candidate's distinguishing element, a static in-app 'honest alternatives and fit' note. Without a readable matching GitHub repository body and with only partial Devpost overlap, the comparison supports neither a pass nor a sourced duplicate failure.",
-            "required_changes": [],
-            "result": "insufficient_evidence"
+              "Observe whether a receiver still needs to ask where the deliverable is or whether it is usable."
+            ]
+          },
+          "feasibility": {
+            "result": "insufficient_evidence",
+            "reason": "The scope is more manageable without a second-person approval flow. Feasibility remains an estimate until Alice and Bob connect the UI to persistence and run the agreed checks.",
+            "missing_information": [
+              "Run create → mark ready → refresh → restart → reopen using the same stored task."
+            ]
           }
-        },
-        "unknowns": [
-          "That the members' honesty request is satisfied by a static in-app note plus a one-line fit statement rather than an actual comparison.",
-          "That the completed checkbox state will persist across reload; the candidate leaves this done criterion undefined.",
-          "That judges will read the alternatives note in-app rather than only in the report.",
-          "That a text-only single board is meaningfully different for users from existing generic task tools, beyond the honesty note itself.",
-          "No readable GitHub repository body for a minimal one-board study-group checklist was found; the GitHub scope returned only unrelated repositories (productivity roundups/awesome lists).",
-          "No located project demonstrates or rules out the candidate's distinctive element (a static, team-approved 'honest alternatives and fit' note shipped inside the app), so that differentiator stays unverified rather than proven unique.",
-          "Whether any of the partially overlapping Devpost projects is currently maintained or actively used was not verified beyond author statements.",
-          "No official documentation was read for the Python backend framework or the database meant to persist board items, so these must_have dependencies are unknown rather than blocked.",
-          "No evidence that the completed checkbox toggle is persisted server-side rather than kept as client-only state.",
-          "No integration or contract test covers the board API contract between Alice's backend and Bob's interface.",
-          "dep-backend-persistence: Persisting task text, owner, due date and a completed flag in a Python backend and database is a routine implementation path, and Alice self-reports Python backend and database experience; however no approved resource item and no official documentation for the specific framework or database were available, so support is not established.",
-          "dep-team-written-claim: The alternatives note and fit statement are plain team-authored content with no external data or API requirement; the only condition is that both members approve the wording before it is shown, which is a process step rather than a technical dependency."
-        ],
-        "unverified_assumptions": [
-          "That the members' honesty request is satisfied by a static in-app note plus a one-line fit statement rather than an actual comparison.",
-          "That the completed checkbox state will persist across reload; the candidate leaves this done criterion undefined.",
-          "That judges will read the alternatives note in-app rather than only in the report.",
-          "That a text-only single board is meaningfully different for users from existing generic task tools, beyond the honesty note itself."
-        ],
-        "version": 2
+        }
       }
     },
     {
-      "kind": "Accepted version 2",
-      "title": "Both participants accept the same version",
+      "kind": "accepted",
+      "label": "Leave with a plan",
+      "title": "“I can own this version.”",
       "paragraphs": [
-        "Alice and Bob each accepted candidate version 2 and its current evaluation. The workflow saved and exported the final brief.",
-        "The source-backed report still records insufficient evidence for novelty and feasibility. Human acceptance does not erase those limitations."
+        "Illustrative ending · Each person reviews candidate version 2 and its current assessment before accepting. The resulting brief records a decision to build, not a finished product."
       ],
-      "candidate": {
-        "change_summary": "Minor revision of candidate-5327262eb19a4f50b3802052b87f7ce6 v1 per both human minor_revision reviews: MVP is now limited to one shared board with manual task entry carrying task text, owner, due date and a completed checkbox, and core_flow reflects the checkbox step. Reminders, calendars and external integrations are now explicitly listed as out of scope, and a contributor synthesis line plus new tradeoff/unknown were added for these changes. Unaffected parts (alternatives note, fit statement, honesty contributions, exclusions and discussion_source_ids) are preserved; the base ref is unchanged and no approval or round advance is implied.",
-        "contributions": [
-          {
-            "description": "Explicit request, stated by both members, that the report identify existing alternatives honestly.",
-            "origin": "member_input",
-            "source_ids": [
-              "source-b2db27b49c0a444aa1c3260129f9e6ae",
-              "source-ec3f21890d3d436c905ec4237758f464"
-            ]
-          },
-          {
-            "description": "Core board scope with manually entered tasks, owners and deadlines that this candidate wraps with the honesty note.",
-            "origin": "member_input",
-            "source_ids": [
-              "source-dc21b018caf544be8e1b5e2f48357fbd",
-              "source-a51959aa192248578ed8304b1e19845f"
-            ]
-          },
-          {
-            "description": "Exclusions honored in the wrapper: no social network, no notifications and no model training.",
-            "origin": "member_input",
-            "source_ids": [
-              "source-e64ce3d51830430485b023e57e23c22f"
-            ]
-          },
-          {
-            "description": "Agent synthesis: turning the members' honesty request into a visible in-app note plus fit statement, a deliverable shape neither member specified.",
-            "origin": "agent_synthesis",
-            "source_ids": [
-              "source-b2db27b49c0a444aa1c3260129f9e6ae",
-              "source-dbc7c20a9bf24869aabcc86cacec2480"
-            ]
-          },
-          {
-            "description": "Agent synthesis: adding a per-task completed checkbox and explicitly deferring reminders, calendars and external integrations in response to the two human minor-revision reviews.",
-            "origin": "agent_synthesis",
-            "source_ids": [
-              "source-3b1999f488434ab79eb17ecd25563abe",
-              "source-84708489ea674d16b6fdc84bd23cf9ef"
-            ]
-          }
-        ],
-        "core_flow": [
-          "Add a task on the one shared board by manually typing task text, owner and due date",
-          "Tick the completed checkbox when a task is done",
-          "View the board as text with owner, due date and completion state",
-          "Open the alternatives note listing existing tools the team already knows",
-          "Read the honest fit statement describing the narrow case this board serves"
-        ],
-        "critical_dependencies": [
-          {
-            "description": "Alice's Python backend and database must persist the shared board items including task text, owner, due date and the completed flag.",
-            "key": "dep-backend-persistence",
-            "must_have": true
-          },
-          {
-            "description": "Bob's interface must render the text board with task, owner, due date and completed checkbox, plus the static alternatives note screen.",
-            "key": "dep-frontend-board-and-note",
-            "must_have": true
-          },
-          {
-            "description": "The alternatives note and fit statement must be written and approved by both members before it is presented, since it is a claim about the product's position.",
-            "key": "dep-team-written-claim",
-            "must_have": true
-          }
-        ],
-        "discussion_source_ids": [
-          "source-8c138473d3a44accb15198a92aa6cbe5",
-          "source-4971881111f8427aa417aa3aafa8a03e",
-          "source-b2db27b49c0a444aa1c3260129f9e6ae",
-          "source-3b1999f488434ab79eb17ecd25563abe",
-          "source-84708489ea674d16b6fdc84bd23cf9ef"
-        ],
-        "mvp_scope": [
-          "One team and one shared board with manual entry of task text, owner and due date",
-          "Completed checkbox per task that toggles the done state",
-          "Text-only board view showing task, owner, due date and completed state",
-          "Static alternatives note written by the team and stored as plain content in the app",
-          "Honest fit statement limited to what the demo actually does"
-        ],
-        "out_of_scope": [
-          "Reminders and any notification mechanism",
-          "Calendar views, calendar sync or any calendar integration",
-          "External integrations and imports from other tools",
-          "Live comparison, benchmarks or scraping of other tools",
-          "User accounts, multiple boards or multiple teams",
-          "Social features and model training",
-          "Any claim about being better than existing tools without demo evidence"
-        ],
-        "problem": "Study groups already have scattered options such as chat apps, notes apps and generic task tools, so any new checklist must justify itself honestly rather than imply no alternatives exist; the team explicitly asked the report to identify existing alternatives. Both members also asked to keep the first demo to one shared board with manual entry.",
-        "solution": "A single shared text-only board limited to the round-4 manual-entry core: each task carries a manually typed task text, an owner, a due date and a completed checkbox, with no reminders, calendars or external integrations. The app also shows a short static alternatives note and a one-line fit statement, limited to what the demo actually does.",
-        "target_users": [
-          "University study groups using one shared board",
-          "Hackathon judges and report readers who need an honest comparison against existing tools"
-        ],
-        "title": "One-Board Study Checklist with Honest Alternatives Note",
-        "tradeoffs": [
-          "Spending any MVP time on the alternatives note yields no new working feature, but directly serves the members' stated honesty requirement.",
-          "A static note is weak evidence compared to a real comparison; it is honest only if kept modest and team-approved.",
-          "Adding the note to the app risks scope creep; keeping it as one screen limits that risk.",
-          "Adding the completed checkbox widens the task shape beyond task/owner/deadline, but it was explicitly requested in both minor-revision reviews."
-        ],
-        "unknowns": [
-          "No external research was allowed or performed here, so the alternatives list rests on the team's own knowledge and cannot be verified in this draft.",
-          "No done criteria for the note were defined; it is unclear when it is finished versus honest enough.",
-          "Whether judges read the note in-app or only in the report is unknown.",
-          "No done criteria were defined for the completed checkbox (whether toggling must persist across reload is unstated)."
-        ]
-      }
+      "dialogue": [
+        {
+          "speaker": "Alice",
+          "text": "I accept version 2 with the current assessment. I own the API, SQLite persistence and the restart check. If the first end-to-end task is not working by hour six, we stop adding features and fix that path."
+        },
+        {
+          "speaker": "Bob",
+          "text": "I accept version 2 too. I own the interface, the mobile check and the test script. I will try to recruit two classmates. If nobody is available, we will label our own role-play as a rehearsal, not claim we tested it with users."
+        },
+        {
+          "speaker": "Considea",
+          "text": "Both accept the same version. The brief includes the scope, owners, checkpoints and unresolved evidence. The team is aligned on what to try next; adoption and differentiation remain open."
+        }
+      ],
+      "outcome": "Expected result: an accepted version-2 brief for a 24-hour prototype, with explicit responsibilities and a way to discover that the idea is not useful enough.",
+      "deliverables": [
+        "First hour · Agree the task fields, an example response and the handoff wording. Alice and Bob do this together.",
+        "By hour 6 · Alice and Bob connect one task from the interface to SQLite and reload it successfully. If blocked, pause feature work.",
+        "By hour 16 · Bob finishes the single-board flow; Alice checks edits, ready-state validation and failed saves. Keep the remaining time for integration and rehearsal.",
+        "Technical acceptance · Create a task, attach a delivery note, mark it ready, refresh, restart the local server and reopen the same task. Stored fields and state must match. Check the flow at 375px width.",
+        "Usefulness check · Give a receiver the three sample tasks. Can they find the deliverable and say what is ready without asking the author? Compare against the same information in a chat message. Record entry time and remaining questions; do not claim a statistical result from two people.",
+        "Decision after the test · If the chat is equally clear or the board takes too much work to maintain, revisit Meeting Closeout or stop. Shared agreement is permission to test, not evidence of demand."
+      ]
     }
   ]
 }
