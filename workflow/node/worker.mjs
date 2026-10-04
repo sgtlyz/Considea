@@ -35,7 +35,7 @@ async function handle(message) {
     }
     const runtime = offline_response
       ? createOfflineRuntime(() => ({ status: offline_response.status, data: offline_response.data,
-          warnings: ['OFFLINE INTEGRATION: real agent code, simulated model output'] })) : liveRuntime({env});
+          warnings: ['OFFLINE INTEGRATION: real agent code, simulated model output'] })) : liveRuntime({env, operation: request.operation});
     let result;
     if (request.operation.startsWith('interview.')) result = await runInterview({ request, runtime });
     else if (request.operation === 'negotiate.detect') result = await runNegotiator({ request, runtime });
