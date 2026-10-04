@@ -296,6 +296,12 @@
       else b.removeAttribute("aria-current");
     });
   }
+  function openPrivateInterview() {
+    setView("interview");
+    const view = $("interview-view");
+    view.focus({ preventScroll: true });
+    view.scrollIntoView({ block: "start", behavior: "instant" });
+  }
   $$("[data-view]").forEach((b) => (b.onclick = () => setView(b.dataset.view)));
   function theme(value) {
     document.documentElement.dataset.theme = value;
@@ -1183,9 +1189,7 @@
         "candidate-lead",
       );
       if (v.phase === "interviewing" && v.private)
-        action(tr("Open my interview", "打开我的访谈"), out, async () =>
-          setView("interview"),
-        );
+        action(tr("Open my interview", "打开我的访谈"), out, openPrivateInterview);
     }
     detail(
       tr("Shared discussion history & sources", "共享讨论历史与来源"),
@@ -1223,6 +1227,11 @@
         ),
         out,
         "muted",
+      );
+      action(
+        tr("Go to private interview", "前往私人访谈"),
+        out,
+        openPrivateInterview,
       );
       return;
     }
