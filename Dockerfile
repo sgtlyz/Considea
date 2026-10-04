@@ -14,7 +14,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 RUN apt-get update && apt-get install -y --no-install-recommends libstdc++6 \
     && rm -rf /var/lib/apt/lists/* \
     && useradd --create-home appuser \
-    && mkdir /data && chown appuser:appuser /data
+    && mkdir /data /app && chown appuser:appuser /data /app
 COPY --from=agent-dependencies /usr/local/bin/node /usr/local/bin/node
 WORKDIR /app
 COPY workflow/requirements.txt /app/workflow/requirements.txt
