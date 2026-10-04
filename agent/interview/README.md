@@ -2,6 +2,8 @@
 
 本分支 `agent/interview` 用于单个 Interview Agent 的开发。复用团队 [Pi 基座](../pi-base/README.md)，提供初访、定向追访、摘要草稿，以及可单独运行的本地流程。产品规则见 [设计文档](../interview-agent.md)。
 
+**新版 Workflow 对齐：** 已审阅 `feat/workflow` 的更新，详见 [接口差距与 PreferenceProfile / NegotiationBrief 设计](workflow-alignment.md)。`PreferenceProfile` 统一此前的 `full_profile` 名称；短摘要、人工 Decision gate 和讨论轮次接口仍为待实现设计。下文描述当前运行时，不能视为已接通新版团队循环。
+
 **当前状态：46 项离线测试通过，DeepSeek 两次真实调用通过。** 真实测试覆盖首轮提问和摘要，完整多轮追问质量待人工体验。本地 workflow 只保存进程内状态，退出后清空；它是第四位成员接线的参考，团队服务的登录与数据库仍待实现。
 
 ## 自己体验真实访谈
