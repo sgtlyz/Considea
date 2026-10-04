@@ -4,7 +4,7 @@
 
 ## 安装与运行
 
-在仓库根目录运行，需要 Python 3.10+、Node 22.19+ 和 pnpm：
+在仓库根目录运行，需要 Python 3.10+、Node 24+ 和 pnpm（SpacetimeDB SDK 的 reducer 测试需要 Node 24；部署镜像使用同一版本）：
 
 ```powershell
 python -m pip install -r workflow/requirements.txt

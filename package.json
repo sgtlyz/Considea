@@ -2,7 +2,7 @@
   "name": "considea-deployment",
   "private": true,
   "type": "module",
-  "engines": { "node": ">=22.19.0" },
+  "engines": { "node": ">=24.0.0" },
   "scripts": {
     "build": "node deploy/build-frontend.mjs",
     "test": "node --test deploy/tests/*.test.mjs"

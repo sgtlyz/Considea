@@ -41,7 +41,7 @@ service. The Blueprint retains one free Docker service:
 | `CONCLAVE_WORKERS` | `2` |
 | `CONCLAVE_DB` | `/data/conclave.sqlite3` |
 
-The Linux image includes Python 3.12, Node 22, locked dependencies for all four
+The Linux image includes Python 3.12, Node 24, locked dependencies for all four
 agents, and compiled SpacetimeDB client bindings. It runs as an unprivileged user.
 The Python Negotiator uses rules and does not call an LLM.
 
@@ -116,7 +116,7 @@ HTTP polling; the frontend does not need a direct database credential.
 ## Vercel frontend
 
 Import the repository with the repository root as Root Directory, framework
-**Other**, Node 22 or 24, and production branch **master**.
+**Other**, Node 24, and production branch **master**.
 
 Set `BACKEND_URL` in each intended environment (Production and Preview) to the
 actual Render HTTPS **origin**, without `/api`, credentials, path or query.
