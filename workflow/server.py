@@ -155,7 +155,7 @@ def make_server(workflow, host="127.0.0.1", port=8765):
                     if method == "POST":
                         body = self._body()
                         if parts[3:] == ["translations"]:
-                            return self._send(200, localization.translate(token, rid, body.get("texts")))
+                            return self._send(200, localization.translate(token, rid, body.get("texts"), body.get("language", "zh")))
                         if parts[3:] == ["recovery-code"]:
                             return self._send(200, workflow.recovery_code(token,rid))
                         if parts[3:] == ["invitation"]:

@@ -2,7 +2,7 @@
 
 The integrated live workflow calls `service.mjs` through the existing Node/Pi bridge and the room-selected DeepSeek or OpenAI runtime. Each operation gets an isolated model instance and only authorized shared profiles, history and sources. The Negotiator selects one consequential semantic difference or clarification; it cannot generate candidates, answer for members or decide convergence.
 
-The prompt distinguishes compatible preferences, genuine team differences, missing information and a single member's contradictory statements. A personal clarification targets only its respondent and the workflow enforces its privacy. The model uses the shared discussion's language and must respect earlier human answers and framing corrections.
+The prompt distinguishes compatible preferences, genuine team differences, missing information and a single member's contradictory statements. A personal clarification targets only its respondent and the workflow enforces its privacy. The model generates English prose for the canonical record; the interface translates it into the selected display language and must respect earlier human answers and framing corrections.
 
 ## Validation and limits
 

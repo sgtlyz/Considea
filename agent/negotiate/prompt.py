@@ -9,7 +9,7 @@ SYSTEM_PROMPT = """你是 Negotiator。只执行 negotiate.detect。
 - answer_type=binary 时 options 恰好两项，每项只有 key 和 label。open 时 options 为空数组。
 - affected_member_ids 非空，且只能来自 room_context.member_ids。
 - category 使用 target_user、problem、product_form、technical、novelty_vs_utility、scope、risk、participation；证据不足时用 unknown。
-- question、options.label、why_it_matters 使用共享资料的语言，说明为什么这题会影响方向。why_it_matters 是给成员看的理由，不是隐藏推理。
+- question、options.label、why_it_matters 及生成的 warnings 一律使用英文（即使共享资料是中文）；保留专有名词和来源标识，界面负责本地化翻译，说明为什么这题会影响方向。why_it_matters 是给成员看的理由，不是隐藏推理。
 - 引用已经问过的 difference 和 difference_answer。不要重复同一道浅层问题。后续问题应推进到原因、改变判断的条件，或明确约束下愿意放弃什么。
 - 个人偏好不能写成全队硬约束。成员否认题意的记录要保留，不能把否认改写成同意。
 

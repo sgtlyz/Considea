@@ -170,3 +170,16 @@ test('actual DeepSeek/Pi transport uses this room key, JSON mode and model outpu
   const content = observed.body.messages.at(-1).content;
   assert.equal(typeof content === 'string' ? content : content.map(b => b.text).join(''), JSON.stringify(pair.request.payload));
 });
+
+test('Chinese discussion still instructs the model to generate canonical English', async () => {
+  const req = request();
+  req.payload.room_context.hackathon_context = '请讨论中文资料中的团队分歧。';
+  const runtime = createOfflineRuntime((payload, context) => {
+    const prompt = JSON.stringify(context);
+    assert.match(prompt, /in English, even when the shared discussion is Chinese or mixed-language/);
+    assert.doesNotMatch(prompt, /in the language of the shared discussion/);
+    assert.equal(payload.room_context.hackathon_context, req.payload.room_context.hackathon_context);
+    return result();
+  });
+  assert.equal((await runNegotiator({request:req,runtime})).status, 'ok');
+});

@@ -57,7 +57,9 @@ class Localization:
         self.workflow = workflow
         self.locks = defaultdict(threading.Lock)
 
-    def translate(self, token, room_id, requested):
+    def translate(self, token, room_id, requested, language="zh"):
+        if language not in ("en", "zh"):
+            raise WorkflowError("INVALID_INPUT", "Unsupported display language")
         if (not isinstance(requested, list) or not 1 <= len(requested) <= 16
                 or any(not isinstance(t, str) or not t.strip() or len(t) > 12000 for t in requested)
                 or sum(map(len, requested)) > 24000):
@@ -75,8 +77,8 @@ class Localization:
             with self.workflow.store.transaction() as db:
                 for text in texts:
                     key = hashlib.sha256(text.encode()).hexdigest()
-                    row = db.execute("SELECT translated FROM display_translations WHERE room_id=? AND source_hash=? AND language='zh'",
-                                     (room_id, key)).fetchone()
+                    row = db.execute("SELECT translated FROM display_translations WHERE room_id=? AND source_hash=? AND language=?",
+                                     (room_id, key, language)).fetchone()
                     if row:
                         result[text] = row["translated"]
                     else:
@@ -92,17 +94,19 @@ class Localization:
                 try:
                     runner = self.workflow.runner
                     if hasattr(runner, "translate"):
-                        translated = runner.translate(room_id, batch)
+                        translated = runner.translate(room_id, batch) if language == "zh" else runner.translate(room_id, batch, language=language)
                     elif runner.mode == "mock":
-                        translated = [{"key": x["key"], "text": "练习模式：此处为中文示例内容。"} for x in batch]
+                        translated = [{"key": x["key"], "text": ("练习模式：此处为中文示例内容。" if language == "zh" else "Practice mode: sample English content.")} for x in batch]
                     else:
                         raise ValueError("No translation runtime")
                     if (not isinstance(translated, list) or len(translated) != len(batch)
                             or {x.get("key") for x in translated} != {x["key"] for x in batch}
-                            or any(not isinstance(x.get("text"), str) or not re.search(r"[\u3400-\u9fff]", x["text"]) for x in translated)):
+                            or any(not isinstance(x.get("text"), str) or not x["text"].strip()
+                                   or (language == "zh" and not re.search(r"[\u3400-\u9fff]", x["text"]))
+                                   or (language == "en" and not re.search(r"[A-Za-z]", x["text"])) for x in translated)):
                         raise ValueError("Invalid translation result")
                 except Exception:
-                    raise WorkflowError("TRANSLATION_UNAVAILABLE", "Chinese content could not be prepared", 503) from None
+                    raise WorkflowError("TRANSLATION_UNAVAILABLE", "Display content could not be prepared", 503) from None
                 for item in translated:
                     index, part = map(int, item["key"].split(":"))
                     pieces[index].append((part, item["text"]))
@@ -111,6 +115,6 @@ class Localization:
                 for index, source in enumerate(missing):
                     text = "\n".join(t for _, t in sorted(pieces[index]))
                     result[source] = text
-                    db.execute("INSERT INTO display_translations(room_id,source_hash,language,translated) VALUES(?,?,'zh',?) ON CONFLICT(room_id,source_hash,language) DO NOTHING",
-                               (room_id, hashlib.sha256(source.encode()).hexdigest(), text))
+                    db.execute("INSERT INTO display_translations(room_id,source_hash,language,translated) VALUES(?,?,?,?) ON CONFLICT(room_id,source_hash,language) DO NOTHING",
+                               (room_id, hashlib.sha256(source.encode()).hexdigest(), language, text))
             return {"translations": [{"source": source, "text": result[source]} for source in texts]}

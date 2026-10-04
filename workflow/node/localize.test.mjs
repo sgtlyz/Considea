@@ -25,3 +25,19 @@ test('model schema describes the same envelope that the harness validates',async
   };
   await translate({room_id:'synthetic',texts},{runtime});
 });
+
+test('English display repairs untranslated Chinese and preserves quantities', async () => {
+  const texts = [{key:'0:0',text:'我们只能投入 24 小时，不能做可穿戴设备。'}];
+  let calls = 0;
+  const runtime = createOfflineRuntime((payload, context) => {
+    if (!calls) assert.equal(payload.language, 'en');
+    assert.match(JSON.stringify(context), /natural English/);
+    calls++;
+    return {status:'ok',warnings:[],data:{translations:[{key:'0:0',text:calls === 1 ? '我们只能投入 24 小时。' : 'We can spend only 24 hours and cannot build a wearable.'}]}};
+  });
+  const result = await translate({room_id:'synthetic',texts,language:'en'},{runtime});
+  assert.equal(calls, 2);
+  assert.match(result[0].text, /only 24 hours and cannot/);
+  assert.equal(validTranslation({translations:[{key:'0:0',text:'We can spend 48 hours.'}]},{texts,language:'en'}), false);
+  await assert.rejects(translate({room_id:'synthetic',texts,language:'fr'},{runtime}), /Unsupported/);
+});
