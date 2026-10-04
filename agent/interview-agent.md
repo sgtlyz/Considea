@@ -27,3 +27,5 @@
 验收：输入错成员/未知引用应拒绝；不得超出 max_questions；没有剩余题组不得继续问；输出没有 approved_at；回访实际引用人工回答。Pi 中的模型 turn、个人 interview_turn、团队 discussion_round 分开。
 
 原 example-role.mjs 仅为旧初访示例，不能直接当 v2 实现。按 contracts 第 10 节直接导出新 definition，避免继承旧“7 轮”提示词。
+
+Implementation: [Interview](interview/README.md). Human-diverge and post-review follow-ups use the explicit [v2.1 extension](interview/followup-integration.md); the older standalone CLI contract is not the team workflow contract.

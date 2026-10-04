@@ -119,3 +119,7 @@ Evaluator 检查官方技术文档、API、数据、设备、开发时间约束�
 Workflow 已使用相同契约接线，Agent 负责人按相同字段独立实现。人工回答、批准、收敛投票和审阅有单独事件格式，不混入模型输出。详见 [开发入口](agent/README.md)。
 
 在仓库根目录运行 `python -m unittest discover -s workflow/tests -v` 验证工作流；运行 `python agent/interfaces/validate_contracts.py` 验证协议样例。测试使用 mock，不代表真实 Agent 的问题质量、候选质量或检索效果。
+
+## Interview integration
+
+The Interview implementation and its independent Agentverse entry point are now included. See [Interview](agent/interview/README.md), [Agentverse](agent/interview/agentverse/README.md), and the [v2.1 follow-up contract](agent/interview/followup-integration.md). The standalone Agentverse session is separate from the team workflow.

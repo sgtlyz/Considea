@@ -1,2 +1,8 @@
 __pycache__/
 *.py[cod]
+node_modules/
+.env
+.env.*
+!.env.example
+*.log
+.interview-local/
