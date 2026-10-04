@@ -119,6 +119,7 @@ class IntegratedRunner:
         if evaluator not in ("agent", "stub", "blocked"):
             raise IntegrationError("CONFIG_ERROR")
         self.offline, self.evaluator = offline, evaluator
+        self.credentials_for = lambda room_id: None
         self.mode = "integrated-offline" if offline else "integrated"
         self.bridge = bridge or NodeBridge(spacetime_config)
         self.description = {"model": "fixture" if offline else "live", "interview": "teammate-service",
@@ -134,15 +135,16 @@ class IntegratedRunner:
         if op == "negotiate.detect":
             from agent.negotiate import handle_request
             return handle_request(request)
+        credentials = self.credentials_for(request["room_id"]) if not self.offline else None
         if op == "evaluator.evaluate":
             if self.evaluator == "blocked":
                 raise IntegrationError("EVALUATOR_NOT_READY")
             if self.evaluator == "stub":
                 return EvaluatorStub()(request)
             result = self.bridge.call({"action": "evaluate", "request": request,
-                "context": claim.get("context"), "offline": self.offline})
+                "context": claim.get("context"), "offline": self.offline, "credentials": credentials})
             return EvaluationResult(result["response"], result.get("report"))
-        message = {"action": "agent", "request": request, "attempt": claim.get("attempt", 1)}
+        message = {"action": "agent", "request": request, "attempt": claim.get("attempt", 1), "credentials": credentials}
         if self.offline:
             message["offline_response"] = MockRunner()(copy.deepcopy(request))
         return self.bridge.call(message)

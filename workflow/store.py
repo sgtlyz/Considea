@@ -65,12 +65,24 @@ class Store:
                     outcome TEXT NOT NULL, started_at TEXT NOT NULL,
                     finished_at TEXT, error TEXT, result TEXT,
                     PRIMARY KEY(task_id,attempt));
+                CREATE TABLE IF NOT EXISTS recovery (
+                    room_id TEXT NOT NULL, role TEXT NOT NULL, member_id TEXT NOT NULL,
+                    recovery_hash TEXT NOT NULL, PRIMARY KEY(room_id,role,member_id));
+                CREATE TABLE IF NOT EXISTS room_keys (
+                    room_id TEXT PRIMARY KEY, funding TEXT NOT NULL, encrypted TEXT,
+                    updated_at TEXT NOT NULL);
+                CREATE TABLE IF NOT EXISTS usage_limits (
+                    scope TEXT NOT NULL, period INTEGER NOT NULL, used INTEGER NOT NULL,
+                    PRIMARY KEY(scope,period));
                 CREATE INDEX IF NOT EXISTS task_status ON tasks(status,created_at);
             """
             # Keep schema creation and additive migrations in the same write lock.
             for statement in schema.split(";"):
                 if statement.strip():
                     db.execute(statement.replace("REAL", "DOUBLE PRECISION") if self.backend == "postgres" else statement)
+            if "expires_at" not in self.columns(db, "usage_limits"):
+                db.execute("ALTER TABLE usage_limits ADD COLUMN expires_at DOUBLE PRECISION")
+            db.execute("CREATE INDEX IF NOT EXISTS usage_expiry ON usage_limits(expires_at)")
             columns = self.columns(db, "tasks")
             for name, declaration in (("auto_retries", "INTEGER NOT NULL DEFAULT 0"),
                                       ("next_attempt_at", "REAL NOT NULL DEFAULT 0"),

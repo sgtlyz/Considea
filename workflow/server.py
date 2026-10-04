@@ -13,9 +13,14 @@ from .engine import Workflow, WorkflowError
 from .store import configured_store
 from .integration import IntegratedRunner, SharedSync
 from .environment import load_environment
+from .security import RoomSecurity
 
 
 def make_server(workflow, host="127.0.0.1", port=8765):
+    security = RoomSecurity(workflow)
+    workflow.security = security
+    if hasattr(workflow.runner, "credentials_for"):
+        workflow.runner.credentials_for = security.credentials_for
     class Handler(BaseHTTPRequestHandler):
         def log_message(self, *_):
             pass  # Do not log invitation bodies or credentials.
@@ -67,16 +72,41 @@ def make_server(workflow, host="127.0.0.1", port=8765):
                 if method == "GET" and len(parts) == 1 and parts[0] in assets:
                     data = (Path(__file__).parent / "web" / parts[0]).read_bytes()
                     return self._send(200, data, assets[parts[0]])
+                if method == "GET" and parts == ["api", "capabilities"]:
+                    return self._send(200, {"live":security.live,"own_keys_supported":bool(security.cipher),
+                        "team_access_required":security.live,"storage":workflow.store.backend,
+                        "shared_demo_available":bool(security.access_code)})
+                if method == "POST":
+                    # The global limit remains effective even when clients spoof forwarded addresses.
+                    security.limit("writes-global", 1200, 60)
+                    address = self.client_address[0]
+                    if os.environ.get("CONCLAVE_TRUST_PROXY") == "1":
+                        address = self.headers.get("X-Forwarded-For", address).split(",")[-1].strip()
+                    client = security.client_scope(address)
+                    security.limit("writes:"+client, 180, 60)
                 if method == "GET" and parts == ["api", "health"]:
                     return self._send(200, {"status": "ok", "agent_mode": workflow.runner.mode})
                 if parts == ["api", "rooms"] and method == "POST":
                     body = self._body()
-                    return self._send(201, workflow.create_room(body["room_context"], body.get("config")))
+                    security.limit("create:"+client, 6, 3600)
+                    security.limit("create-global", 40, 86400)
+                    prepared = security.prepare(body.get("credentials"),body.get("access_code"))
+                    config = dict(body.get("config") or {})
+                    if security.live:
+                        config["max_agent_calls"] = min(config.get("max_agent_calls",security.room_limit),security.room_limit)
+                        config["max_search_queries"] = min(config.get("max_search_queries",2),2)
+                    if prepared["keys"] and config.get("search_enabled") and not prepared["keys"]["tavily_api_key"]:
+                        raise WorkflowError("INVALID_INPUT", "Web research requires a Tavily key", 400)
+                    return self._send(201, workflow.create_room(body["room_context"],config,provision=security.provision(prepared)))
                 if len(parts) >= 3 and parts[:2] == ["api", "rooms"]:
                     rid = parts[2]
                     if len(parts) == 4 and parts[3] == "join" and method == "POST":
                         body = self._body()
                         return self._send(200, workflow.join(rid, body["invitation"]))
+                    if len(parts) == 4 and parts[3] == "recover" and method == "POST":
+                        security.limit("recover:"+client, 12, 3600)
+                        body = self._body()
+                        return self._send(200, workflow.recover(rid,body["role"],body.get("member_id", ""),body["recovery_code"]))
                     token = self._token()
                     if len(parts) == 3 and method == "GET":
                         view = workflow.view(token, rid)
@@ -111,6 +141,14 @@ def make_server(workflow, host="127.0.0.1", port=8765):
                         return
                     if method == "POST":
                         body = self._body()
+                        if parts[3:] == ["recovery-code"]:
+                            return self._send(200, workflow.recovery_code(token,rid))
+                        if parts[3:] == ["invitation"]:
+                            return self._send(200, workflow.reissue_invitation(token,rid,body["member_id"]))
+                        if parts[3:] == ["presence"]:
+                            return self._send(200, workflow.set_presence(token,rid,body["available"]))
+                        if parts[3:] == ["keys"]:
+                            return self._send(200, security.set_keys(token,rid,body.get("credentials")))
                         if parts[3:] == ["events"]:
                             if body.get("room_id") != rid:
                                 raise WorkflowError("INVALID_INPUT", "Room ID mismatch")
@@ -119,6 +157,8 @@ def make_server(workflow, host="127.0.0.1", port=8765):
                         if parts[3:] == ["project-time-limit"]:
                             return self._send(200, workflow.set_project_time_limit(token, rid, body["time_limit"]))
                         if parts[3:] == ["budget"]:
+                            if security.live and body["max_agent_calls"] > security.room_limit:
+                                raise WorkflowError("BUDGET_LIMIT", "This deployment has a fixed per-room call limit", 400)
                             return self._send(200, workflow.increase_budget(token, rid, body["max_agent_calls"]))
                         if parts[3:] == ["stop"]:
                             return self._send(200, workflow.stop(token, rid))
@@ -174,6 +214,7 @@ def main():
     workflow.sync = SharedSync(workflow.store, runner.bridge) if args.spacetime_config else None
     if workflow.sync:
         workflow.sync.start()
+    server = make_server(workflow, args.host, args.port)
     stop = threading.Event()
 
     def work():
@@ -188,7 +229,6 @@ def main():
 
     for _ in range(args.workers):
         threading.Thread(target=work, daemon=True).start()
-    server = make_server(workflow, args.host, args.port)
     print(f"Conclave ({args.mode}) http://{args.host}:{server.server_port}", flush=True)
     try:
         server.serve_forever()

@@ -53,7 +53,7 @@ class Workflow:
             raise WorkflowError("NOT_FOUND", "Room not found", 404)
         return state
 
-    def create_room(self, room_context, config=None):
+    def create_room(self, room_context, config=None, *, provision=None):
         protocol.ROOM_CONTEXT.validate(room_context)
         need(len(room_context["member_ids"]) <= 12, "At most 12 members")
         settings = {"question_batches_per_round": 1, "max_questions": 3, "candidate_count": 3,
@@ -84,6 +84,7 @@ class Workflow:
                  "review_revisions": {}, "candidate_history": [], "selected_candidate_ref": None,
                  "calls_started": 0, "paused_reason": None, "created_at": now(), "agent_runtime": getattr(self.runner, "description", {})}
         invitations = {}
+        admin_recovery_code = secrets.token_urlsafe(32)
         with self.store.transaction() as db:
             db.execute("INSERT INTO rooms VALUES(?,?)", (room_id, encode(state)))
             db.execute("INSERT INTO credentials VALUES(?,?,?,?)",
@@ -95,7 +96,10 @@ class Workflow:
                            (token_hash(invitation), room_id, member))
             self._begin_round(db, state, "initial", None, increment=False)
             Store.save(db, state)
-        return {"room_id": room_id, "admin_token": admin_token, "invitations": invitations,
+            db.execute("INSERT INTO recovery VALUES(?,?,?,?)", (room_id, "admin", "", token_hash(admin_recovery_code)))
+            if provision:
+                provision(db, room_id)
+        return {"room_id": room_id, "admin_token": admin_token, "admin_recovery_code": admin_recovery_code, "invitations": invitations,
                 "mode": self.runner.mode}
 
     def join(self, room_id, invitation):
@@ -109,7 +113,56 @@ class Workflow:
             db.execute("UPDATE invitations SET used=1 WHERE token_hash=?", (row["token_hash"],))
             db.execute("INSERT INTO credentials VALUES(?,?,?,?)",
                        (token_hash(token), room_id, "member", row["member_id"]))
-            return {"room_id": room_id, "member_id": row["member_id"], "token": token}
+            recovery_code = secrets.token_urlsafe(32)
+            db.execute("INSERT INTO recovery VALUES(?,?,?,?)", (room_id, "member", row["member_id"], token_hash(recovery_code)))
+            return {"room_id": room_id, "member_id": row["member_id"], "token": token, "recovery_code": recovery_code}
+
+    def recover(self, room_id, role, member_id, recovery_code):
+        need(role in ("admin", "member") and isinstance(member_id, str), "Invalid recovery identity", "INVALID_INPUT")
+        need(isinstance(recovery_code, str) and 20 <= len(recovery_code) <= 200, "Invalid recovery code", "INVALID_INPUT")
+        member_id = "" if role == "admin" else member_id
+        with self.store.transaction() as db:
+            row = db.execute("SELECT recovery_hash FROM recovery WHERE room_id=? AND role=? AND member_id=?",
+                             (room_id, role, member_id)).fetchone()
+            if not row or not secrets.compare_digest(row["recovery_hash"], token_hash(recovery_code)):
+                raise WorkflowError("UNAUTHORIZED", "Recovery details do not match", 403)
+            token, replacement = secrets.token_urlsafe(32), secrets.token_urlsafe(32)
+            db.execute("DELETE FROM credentials WHERE room_id=? AND role=? AND COALESCE(member_id,'')=?", (room_id,role,member_id))
+            db.execute("INSERT INTO credentials VALUES(?,?,?,?)", (token_hash(token),room_id,role,member_id or None))
+            db.execute("UPDATE recovery SET recovery_hash=? WHERE room_id=? AND role=? AND member_id=?",
+                       (token_hash(replacement),room_id,role,member_id))
+            return {"room_id": room_id, "role": role, "member_id": member_id or None,
+                    "token": token, "recovery_code": replacement}
+
+    def recovery_code(self, token, room_id):
+        with self.store.transaction() as db:
+            actor = self._auth(db, token, room_id)
+            code = secrets.token_urlsafe(32)
+            db.execute("INSERT INTO recovery VALUES(?,?,?,?) ON CONFLICT(room_id,role,member_id) DO UPDATE SET recovery_hash=excluded.recovery_hash",
+                       (room_id,actor["role"],actor["member_id"] or "",token_hash(code)))
+            return {"room_id": room_id, "role": actor["role"], "member_id": actor["member_id"], "recovery_code": code}
+
+    def reissue_invitation(self, token, room_id, member_id):
+        with self.store.transaction() as db:
+            self._auth(db, token, room_id, admin=True)
+            state = self._room(db, room_id)
+            need(member_id in state["members"], "Unknown member", "INVALID_INPUT")
+            joined = db.execute("SELECT 1 FROM credentials WHERE room_id=? AND role='member' AND member_id=?", (room_id,member_id)).fetchone()
+            need(not joined, "This person has already joined. They must use their private recovery code; an administrator cannot take over their identity.", "CONFLICT")
+            db.execute("DELETE FROM invitations WHERE room_id=? AND member_id=?", (room_id,member_id))
+            invitation = secrets.token_urlsafe(32)
+            db.execute("INSERT INTO invitations(token_hash,room_id,member_id) VALUES(?,?,?)",(token_hash(invitation),room_id,member_id))
+            return {"room_id": room_id, "member_id": member_id, "invitation": invitation}
+
+    def set_presence(self, token, room_id, available):
+        need(type(available) is bool, "Availability must be true or false", "INVALID_INPUT")
+        with self.store.transaction() as db:
+            actor = self._auth(db, token, room_id)
+            need(actor["role"] == "member", "Only a member can change their availability", "UNAUTHORIZED")
+            state = self._room(db, room_id)
+            state["members"][actor["member_id"]]["available"] = available
+            Store.save(db, state)
+            return {"available": available}
 
     def _shared(self, s):
         return {"profiles": [m["profile"] for m in s["members"].values() if m["profile"] is not None],
@@ -457,10 +510,15 @@ class Workflow:
                 if not self._matches(s, row):
                     self._stale_task(db, row)
                     continue
+                if s["paused_reason"] == "daily_limit" and timestamp >= s.get("quota_reset_at", float("inf")):
+                    s["paused_reason"] = None
                 if s["mode"] != self.runner.mode or s["paused_reason"]:
                     continue
                 if s["calls_started"] >= s["config"]["max_agent_calls"]:
                     s["paused_reason"] = "agent_budget"
+                    Store.save(db, s)
+                    continue
+                if getattr(self, "security", None) and not self.security.reserve(db, s):
                     Store.save(db, s)
                     continue
                 recovered = row["status"] == "running"
@@ -729,7 +787,9 @@ class Workflow:
             public["evaluation_input_required"] = (getattr(self.runner, "evaluator", None) == "agent" and
                 s["phase"] == "evaluating" and evaluation.time_limit(s) is None)
             public["shared_context"] = copy.deepcopy(self._shared(s))
-            public["members"] = {mid: {"stage": m["stage"], "approved_round": m["approved_round"]}
+            joined_ids = {r["member_id"] for r in db.execute("SELECT member_id FROM credentials WHERE room_id=? AND role='member'", (room_id,))}
+            public["members"] = {mid: {"stage": m["stage"], "approved_round": m["approved_round"],
+                                     "joined": mid in joined_ids, "available": m.get("available", True)}
                                  for mid, m in s["members"].items()}
             public["tasks"] = [
                 {"task_id": t["id"], "operation": t["operation"], "status": t["status"], "attempts": t["attempts"],
@@ -738,6 +798,8 @@ class Workflow:
                 for t in tasks if t["member_id"] is None or t["member_id"] == member_id or actor["role"] == "admin"
             ]
             public["actor"] = {"role": actor["role"], "member_id": member_id}
+            if getattr(self, "security", None):
+                public["access"] = self.security.status(db, room_id, actor["role"] == "admin")
             public["private"] = None
             public["event_revisions"] = None
             if member_id:
