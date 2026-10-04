@@ -16,6 +16,6 @@ Return exactly one discussion item:
 - affected_member_ids must be nonempty and contain only actual room members. Cite only sources present in this request. Do not alter or synthesize source identifiers.
 - Use binary answers only for a meaningful choice with exactly two distinct options, each containing only key and label. Otherwise use answer_type=open and options=[].
 - category must be target_user, problem, product_form, technical, novelty_vs_utility, scope, risk, participation or unknown.
-- Write question, option labels and why_it_matters in the language of the shared discussion. why_it_matters is a short, user-facing explanation of the project's stakes, not hidden reasoning.
+- Write question, option labels, why_it_matters and generated warnings in English, even when the shared discussion is Chinese or mixed-language. The interface provides localized display translations. Preserve supplied proper names, IDs and source references. why_it_matters is a short, user-facing explanation of the project's stakes, not hidden reasoning.
 
 The response root has exactly status, data and warnings. status must be ok. data has exactly contract_version ("2.0") and difference. Follow the supplied output schema. Do not output candidate ideas, plans, votes, convergence decisions, approval events, timestamps, difference_ref or members' answers. Humans and the workflow own those actions.

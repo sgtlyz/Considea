@@ -313,6 +313,43 @@ try {
     );
     const v = await view("alice");
     assert.equal(v.discussion_round, round);
+    if (round === 1) {
+      // A saved Chinese discussion must render in English, including a late
+      // English response arriving after the member switches to Chinese.
+      const member = v.difference.content.affected_member_ids[0], p = pages[member];
+      const legacy = await view(member);
+      const original = "我们应该优先做哪个方向？";
+      legacy.difference.content.question = original;
+      legacy.difference.content.why_it_matters = "这个选择决定项目范围。";
+      legacy.difference.content.options.forEach((o, i) => { o.label = i ? "第二个方向" : "第一个方向"; });
+      const viewUrl = base + "/api/rooms/" + room.room_id;
+      let englishRequested = false, releaseEnglish;
+      const gate = new Promise(resolve => { releaseEnglish = resolve; });
+      await p.route(viewUrl, route => route.fulfill({json:legacy}));
+      await p.route(viewUrl + "/translations", async route => {
+        const {texts, language} = route.request().postDataJSON();
+        assert.ok(["en", "zh"].includes(language));
+        if (language === "en") { englishRequested = true; await gate; }
+        await route.fulfill({json:{translations:texts.map(source => ({
+          source, text:language === "en" ? "Which direction should we prioritize?" : "这是中文展示内容。"
+        }))}});
+      });
+      await sync(p);
+      await goTo(p, "studio");
+      await until(() => englishRequested);
+      await p.locator('#workspace [data-language="zh"]').click();
+      releaseEnglish();
+      await until(async () => (await p.locator("#discussion").innerText()).includes(original));
+      assert.ok(!(await p.locator("#discussion").innerText()).includes("Which direction should we prioritize?"));
+      await p.locator('#workspace [data-language="en"]').click();
+      await until(async () => (await p.locator("#discussion").innerText()).includes("Which direction should we prioritize?"));
+      assert.doesNotMatch(await p.locator("#discussion").innerText(), /[\u3400-\u9fff]/u);
+      await p.screenshot({path:join(screenshots,"english-legacy-difference.png"),fullPage:true});
+      await p.unroute(viewUrl);
+      await p.unroute(viewUrl + "/translations");
+      await sync(p);
+    }
+
     for (const member of v.difference.content.affected_member_ids) {
       const p = pages[member];
       await sync(p);

@@ -98,44 +98,47 @@
   let translationRunning = false, translationTimer = null, missingTranslation = false;
   function displayText(value) {
     const text = typeof value === "string" ? value : "";
-    if (lang !== "zh" || !/[A-Za-z]/.test(text)) return text;
-    if (translationCache.has(text)) return translationCache.get(text);
+    if (!(lang === "zh" ? /[A-Za-z]/ : /[\u3400-\u9fff]/u).test(text)) return text;
+    const key = JSON.stringify([lang, text]);
+    if (translationCache.has(key)) return translationCache.get(key);
     missingTranslation = true;
-    if (!translationFailures.has(text)) translationQueue.add(text);
-    return translationFailures.has(text) ? "中文内容暂时无法加载" : "正在准备中文内容……";
+    if (!translationFailures.has(key)) translationQueue.add(key);
+    return translationFailures.has(key) ? tr("English content is temporarily unavailable", "中文内容暂时无法加载") : tr("Preparing English content…", "正在准备中文内容……");
   }
   function applyTranslationState() {
     const view=$(currentView+"-view");
     if (!view || !snapshot) return;
     for (const input of view.querySelectorAll("textarea, select, [data-action]"))
-      input.disabled = busy || (lang === "zh" && missingTranslation);
+      input.disabled = busy || missingTranslation;
     $("translation-status")?.remove();
-    if (lang === "zh" && missingTranslation) {
+    if (missingTranslation) {
       const status=el("div",undefined,$("status"),"notice");status.id="translation-status";status.setAttribute("role","status");
-      el("p",translationFailures.size ? "部分中文内容未能加载，原始内容和已填答案仍然保留。" : "正在准备中文内容，请稍候……",status);
-      if (translationFailures.size) action("重新加载中文内容",status,async()=>{
+      el("p",translationFailures.size ? tr("Some content could not be translated. Your original content and drafts are preserved.", "部分中文内容未能加载，原始内容和已填答案仍然保留。") : tr("Preparing English content, please wait…", "正在准备中文内容，请稍候……"),status);
+      if (translationFailures.size) action(tr("Retry translation", "重新加载中文内容"),status,async()=>{
         translationFailures.clear();render(snapshot);
       },"quiet-button");
     }
   }
   function scheduleTranslations() {
     applyTranslationState();
-    if (lang !== "zh" || !auth || translationRunning || translationTimer || !translationQueue.size) return;
+    if (!auth || translationRunning || translationTimer || !translationQueue.size) return;
     translationTimer=setTimeout(async()=>{
       translationTimer=null;
-      if(lang!=="zh" || !auth || translationRunning) return;
-      const texts=[];let size=0;
-      for(const text of translationQueue){
+      if(!auth || translationRunning) return;
+      const language=lang, texts=[];let size=0;
+      for(const key of translationQueue){
+        const [target,text]=JSON.parse(key);
+        if(target!==language){translationQueue.delete(key);continue;}
         if(texts.length && (size+text.length>3200 || texts.length===8)) break;
-        texts.push(text);size+=text.length;translationQueue.delete(text);
+        texts.push(text);size+=text.length;translationQueue.delete(key);
       }
       if(!texts.length)return;
       const actor={...auth};translationRunning=true;
       try {
-        const result=await api("/rooms/"+actor.room_id+"/translations",{texts},actor.token,100000);
-        if(auth?.token===actor.token) for(const item of result.translations) translationCache.set(item.source,item.text);
+        const result=await api("/rooms/"+actor.room_id+"/translations",{texts,language},actor.token,100000);
+        if(auth?.token===actor.token) for(const item of result.translations) translationCache.set(JSON.stringify([language,item.source]),item.text);
       } catch {
-        if(auth?.token===actor.token) for(const text of texts) translationFailures.add(text);
+        if(auth?.token===actor.token) for(const text of texts) translationFailures.add(JSON.stringify([language,text]));
       } finally {
         translationRunning=false;
         if(auth?.token===actor.token && snapshot) render(snapshot);

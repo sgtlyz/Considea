@@ -157,8 +157,8 @@ class IntegratedRunner:
                 message["offline_response"] = MockRunner()(copy.deepcopy(request))
         return self.bridge.call(message)
 
-    def translate(self, room_id, texts):
-        return self.bridge.call({"action": "translate", "room_id": room_id, "texts": texts,
+    def translate(self, room_id, texts, language="zh"):
+        return self.bridge.call({"action": "translate", "room_id": room_id, "texts": texts, "language": language,
             "offline": self.offline, "credentials": self.credentials_for(room_id) if not self.offline else None}, timeout=100)
 
     def close(self):

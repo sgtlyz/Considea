@@ -82,3 +82,54 @@ class LocalizationTests(unittest.TestCase):
         pieces=list(batches(["x"*5000,"y"*1000]))
         self.assertTrue(all(sum(len(t["text"]) for t in batch)<=3200 for batch in pieces))
         self.assertEqual(''.join(t["text"] for batch in pieces for t in batch),'x'*5000+'y'*1000)
+
+    def test_target_language_separates_cache_and_preserves_authorization(self):
+        self.prepare()
+        calls = []
+        def translate(room, batch, language="zh"):
+            calls.append(language)
+            return [{"key": t["key"], "text": "English content 24" if language == "en" else "中文内容 24"} for t in batch]
+        self.runner.translate = translate
+        for language in ["zh", "en", "zh", "en"]:
+            result = self.localization.translate(self.tokens["alice"], self.room, [self.text], language)
+            self.assertIn("English" if language == "en" else "中文", result["translations"][0]["text"])
+        self.assertEqual(calls, ["zh", "en"])
+        with self.assertRaises(WorkflowError):
+            self.localization.translate(self.tokens["bob"], self.room, [self.text], "en")
+        with self.assertRaises(WorkflowError):
+            self.localization.translate(self.tokens["alice"], self.room, [self.text], "fr")
+
+    def test_english_rejects_untranslated_chinese_and_does_not_cache(self):
+        self.prepare()
+        self.runner.translate = lambda room, batch, language: [{"key": t["key"], "text": "仍然是中文"} for t in batch]
+        with self.assertRaises(WorkflowError) as error:
+            self.localization.translate(self.tokens["alice"], self.room, [self.text], "en")
+        self.assertEqual(error.exception.code, "TRANSLATION_UNAVAILABLE")
+        with self.engine.store.transaction() as db:
+            self.assertEqual(db.execute("SELECT count(*) FROM display_translations").fetchone()[0], 0)
+
+    def test_http_language_reaches_real_node_translation_bridge(self):
+        from urllib.request import Request, urlopen
+        from workflow.server import make_server
+        from workflow.integration import IntegratedRunner
+        self.prepare()
+        runner = IntegratedRunner(offline=True)
+        self.engine.runner = runner
+        server = make_server(self.engine, port=0)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            for language in ["en", "zh"]:
+                request = Request(
+                    f"http://127.0.0.1:{server.server_address[1]}/api/rooms/{self.room}/translations",
+                    data=json.dumps({"texts": [self.text], "language": language}).encode(),
+                    headers={"Authorization": "Bearer " + self.tokens["alice"], "Content-Type": "application/json"})
+                with urlopen(request) as response:
+                    text = json.load(response)["translations"][0]["text"]
+                self.assertIn("English" if language == "en" else "中文", text)
+                self.assertIn("24", text)
+        finally:
+            server.shutdown()
+            server.server_close()
+            thread.join()
+            runner.close()
