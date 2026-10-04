@@ -1,118 +1,22 @@
-# Negotiate Agent 设计
+# Negotiator Agent：并行开发交付说明
 
-负责人：成员 2。目标：从四人的已共享输入生成三个方案，并根据反馈判断该找谁追问、补查什么、怎样修改，最终给出有依据的推荐。
+负责人只实现 `negotiate.detect`。模块约定为 `agent/negotiate/definition.mjs`，name 固定为 `negotiate`（保留现有 Pi 前缀）。
 
-本文使用标准拼写 **Negotiate**；即团队所说的 negociate agent。字段以 [contracts.md](contracts.md) 为准，任务执行见 [workflow.md](workflow.md)。
+输入：contract_version、discussion_round、room_context、shared_context。输出：contract_version 和一个 difference。完整字段见 [契约](contracts.md) 第 5 节及 [schema](interfaces/protocol.schema.json) 的 NegotiateDetectInput/Data、Difference。
 
-## 1. 职责
+## 角色行为
 
-该角色同时承担候选整合和协商：
+从获准共享的画像和历史中选出对最终方向影响最大的一个待讨论问题。比较目标用户、核心问题、产品形态、技术路线、创新与实用性、复杂度、风险与参与条件，不以人数多少直接排序。
 
-- 整理共同目标、个人偏好、硬约束与分歧。
-- 生成三个实质不同的候选，说明各自使用了谁的输入。
-- 阅读 Evaluator 的结果，比较真实重合与未验证条件。
-- 分析成员对具体版本的反馈，提出定向追访、专题核查或修订行动。
-- 更新候选，保留修改理由，并推荐团队可推进的方向。
+输出二元或开放问题、受影响成员、重要性与来源。binary 恰好两个选项，open 没有 options。输出不含候选、动作调度、人工答案或 converge 决定。
 
-只读取已获批准的摘要、共享反馈、候选、评估和 workflow 提供的额度。它不接收原始私人访谈、不亲自执行外部搜索、不启动另一个整合 Agent。
+没有充分证据认定分歧时，输出 kind=clarification，清楚说明需要人核实什么；仍由 Human 回答，不能自动进入生成。成员否认题意后，Workflow 会把真实反馈作为后续上下文传入。
 
-不替成员改 stance，不自行批准共享，不分配用户确认状态，不宣布多数票通过。对主观反对无需先证明合理。
+## 接线
 
-## 2. 五个 operation
+Workflow 保存回包、分配 difference_ref、创建人工任务；答案由 Human 提交。你不负责等待、投票汇总、n 递增或回访执行。
 
-| Operation | 输入 payload | 输出 data |
-| --- | --- | --- |
-| `negotiate.criteria` | room_config、shared_profiles | proposed_criteria、unresolved_tradeoffs |
-| `negotiate.generate` | room_config、shared_profiles、team_criteria | candidates（3 项）、推荐顺序草案、生成中的未知项 |
-| `negotiate.plan` | 上述共享上下文、当前候选、evaluation_reports、member_feedback、iteration_index、剩余额度、任务历史 | NegotiationPlan |
-| `negotiate.revise` | 已批准行动、当前候选、获准共享的追访结果、专题评估、team_criteria | proposed_candidates、change_summary、needs_team_confirmation |
-| `negotiate.recommend` | 当前候选与报告、当前版本反馈、剩余分歧、stop_reason | Recommendation、未解决问题清单 |
+- [分歧样例](interfaces/fixtures/negotiate-difference.json)
+- [澄清样例](interfaces/fixtures/negotiate-clarification.json)
 
-停止条件由 workflow 提供，可能为 `all_supported`、`iteration_limit`、`ended_by_team`。调用 recommend 不代表接受方案。生成候选轮数/版本由 workflow 最终赋值。
-
-前四人摘要都确认之前，不生成声称代表全队的方案。团队修改标准后，按新标准重新分析。共同标准存在分歧时，只能输出取舍，不虚构一个全队权重。
-
-## 3. 候选生成方法
-
-1. 读每个人明确表达的内容，未知项保持未知。
-2. 分开记录已确认的共同约束、个人偏好、可妥协条件。
-3. 找有实际联系的组合：一个人的痛点、另一个人的技能、第三人的限制能够构成什么场景？不得为了归因强行拼接。
-4. 形成三个不同的用户流程或范围选择，每个包含最小 demo、关键依赖、贡献来源、风险与取舍。
-5. 对生成的具体差异注明“待 Evaluator 检索”，不要在研究前声称新颖。
-
-允许某候选不符合某成员偏好，但必须明确说明，且不能把该候选直接定案。若确实不足以生成三个合理候选，返回 `needs_input` 并指出缺少什么，由 workflow 安排允许范围内的追问；不要凑三个换名字的方案。
-
-首版推荐理由使用可读的维度比较：团队兴趣、资源匹配、时间范围、可展示性、已知风险。若没有用户确认的权重，不输出伪精确总分。
-
-## 4. 协商决策方法
-
-每个反对、条件支持或关键未知项形成 open_issue。描述是对共享输入的概括，分类只是工作假设。
-
-| 判断 | 推荐行动 | 何时完成 |
-| --- | --- | --- |
-| 只知道不喜欢，原因未共享 | interview_followup，对该成员开放追问 | 本人批准新增摘要，或表示暂不分享 |
-| 另一成员声称拥有必要资源 | interview_followup，对资源提供者核实 | 取得获准共享的资源说明 |
-| 技术事实争议 | evaluate_question，给 Evaluator 一个具体问题 | 返回有来源结论或 unknown |
-| 原方向可保留，范围过大 | propose_revision | 候选草稿完成并按确认策略发布 |
-| 参与条件是分工变化 | propose_revision，提出职责建议 | 相关成员明确确认后才算接受分工 |
-| 原方向无法满足反对者的重要偏好 | propose_direction_change | 团队确认是否进入新方向 |
-| 没有新的可问或可查信息 | report_unresolved 或提出替代候选 | 保留分歧，不重复同一问题 |
-
-一次 plan 只输出当前最有用的最小行动集合，优先解决会改变候选范围或参与意愿的问题。遵守剩余轮次与追访额度；额度耗尽不再为同一个成员发新任务。
-
-不得用“为什么你还是不接受”进行压力式追问。允许成员不进一步解释；这种情况下可以调整候选、询问其他成员、展示取舍，不能把沉默解释为同意。
-
-## 5. 有依赖的定向协商示例
-
-场景：A 在公开反馈中担心实时语音延迟，B 在共享摘要中说已有相关技术。
-
-第一步找 B：具体接口是什么，已有测试覆盖了什么？Interview 的原始答案私有，只有 B 批准后的摘要可用于后续任务。
-
-第二步让 Evaluator 检查：官方文档支持哪些流式能力，接入是否有访问要求？文档不能证明实际端到端延迟。
-
-第三步找 A：展示允许共享的证据与仍未知的部分，问“文字首版/按键说话等修改是否可接受”，而不是宣布 B 已经证明可行。
-
-第四步形成修订稿。A 必须通过反馈 UI 自己确认态度，其他成员也需对新版本重新反馈。
-
-用 action.depends_on 表达依赖，workflow 校验无循环并等待任务及共享确认完成。涉及新问题时可再次 plan，但不能绕过每轮追访限额；否则留到下一轮或报告未知。
-
-## 6. 修订和推荐
-
-revise 输出是提案，不能直接覆盖成员已经评价过的候选。保持旧版本，列明“为什么改、改了什么、哪些新假设需要检查”。新的关键依赖触发 Evaluator 检查。
-
-方向替换或扩大范围需团队确认；普通内容澄清也必须形成可追溯版本。任意发布的新版本都重新收集态度。
-
-recommend 的内容：当前最推荐哪个版本、依据是什么、牺牲了什么、谁仍有共享反对或条件、还有哪些未知、下一步建议是什么。`decision_status` 只能是 `recommendation_only`。
-
-达到 n 上限时可以提供推荐，但明确“尚未达成共识”。不能建议程序忽略反对、用多数票覆盖，或自行延长轮次。
-
-## 7. 提示词设计
-
-固定指令包含：
-
-- 你承担候选整合和协商，只推荐，不代表人作决定。
-- 只使用获准共享的数据，每个成员观点都应被准确保留。
-- 已有人做过是差异分析的依据，不是自动淘汰规则。
-- 每个候选要包含具体场景、最小流程和 source_refs。
-- 反对和条件支持仍是未解决项，不通过推断修改立场。
-- 区分事实争议、个人偏好和共同标准冲突；先提出能改变决策的信息请求。
-- 输出 operation 对应 JSON，不输出不存在的任务执行结果。
-
-动态上下文包含当前版本、成员反馈、报告、已完成动作和剩余额度。不要仅提供最后一句反馈而丢失前面已获批准的修改条件。
-
-## 8. 验收场景
-
-| 场景 | 应有结果 |
-| --- | --- |
-| 四人摘要有不同偏好 | 三个不同取舍的方案，有可追溯来源 |
-| 某成员技能未知 | 不把他安排为“擅长后端”，保留未知 |
-| 3 人 support、1 人 oppose | 仍提出协商计划，不宣布通过 |
-| 反对原因为空 | 可追访，反对有效 |
-| 有条件支持 | 明确条件未解决，不能视为 support |
-| 已有竞品 | 比较重合与差异，不自动放弃 |
-| 私人追访未获共享批准 | 计划等待或使用其他路径，不引用原话 |
-| 修改了方案 | 新版本重新反馈，保留旧版态度历史 |
-| 达到 n 上限 | 输出推荐与分歧，不分派新修订轮次 |
-| 同一问题已追访且无新增信息 | 不重复追问，提出替代或如实报告未知 |
-
-交付完成的标准：五个 operation 可分别用固定输入调用，能走通三个候选、一条反对、一次定向计划和修订推荐。
+验收：不得输出 room 外成员或未知 source_id；没有 An→Ai 跳过 Human 的动作；不能把个人偏好编成共同约束。旧 negotiate.generate/plan/revise/recommend 不属于当前 v2 接口，候选生成与修订归 Idea Generator。

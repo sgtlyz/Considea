@@ -1,6 +1,6 @@
 # 团队选题助手：框架与 Pi Base 设计 v0.1（旧版）
 
-> 本文保留早期设计作迁移参考；角色拆分、流程、数据库方案和讨论轮次以 [workflow_updated.md](../workflow_updated.md) 为准。当前 Evaluator 接线见 [实现 README](evaluator/README.md)。
+> **历史设计说明。** 本文保留 Pi Base 的背景与早期流程作为迁移参考。当前四角色架构、讨论轮次和状态机以 [workflow_updated.md](../workflow_updated.md) 为准，共享接口以 [contracts.md v2.0](contracts.md) 为准，可运行 Workflow 见 [开发说明](../workflow/README.md)。旧三角色职责、operation 和轮次定义不用于新接线。现有 Evaluator 的独立运行接口见 [实现 README](evaluator/README.md)，与 v2.0 的迁移边界见契约第 12 节。
 
 本文供四位开发者同步实现边界。产品保留 **Interview、Negotiate、Evaluator 三个业务 Agent**；第四位成员开发 workflow、存储、界面与通信。Pi 是三者共享的执行库，不是第四个业务 Agent。
 

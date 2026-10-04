@@ -1,0 +1,16 @@
+[
+  {
+    "event_id": "evt-review",
+    "status": "accepted",
+    "current_revision": 21
+  },
+  {
+    "event_id": "evt-stale",
+    "status": "rejected",
+    "current_revision": 21,
+    "error": {
+      "code": "STALE_INPUT",
+      "message": "The candidate changed; refresh before reviewing."
+    }
+  }
+]

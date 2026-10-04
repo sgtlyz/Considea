@@ -1,129 +1,78 @@
-# Evaluator Agent 设计
+# Evaluator Agent：交付与接线说明
 
-负责人：成员 3。目标：接收细化好的 idea，测评查重和可行性，输出是否通过、两项理由、真实来源和必要修改。可运行代码、样例和配置见 [Evaluator 实现](evaluator/README.md)。
+Evaluator 负责人交付共享操作 `evaluator.evaluate`，模块约定 `agent/evaluator/definition.mjs`，name 为 `evaluator`。角色分工由团队确定。主流程以 [workflow_updated.md](../workflow_updated.md) 为准；共享字段以 [契约 v2.0](contracts.md) 第 7 节及 [JSON Schema](interfaces/protocol.schema.json) 为准。
 
-流程以 [workflow_updated.md](../workflow_updated.md) 为准，当前字段以 [实现 README](evaluator/README.md) 为准。该 Agent 包含检索与分析两个步骤，不再拆成 Research Agent。由独立 Idea Generator 生成候选、成员微调后再评估；首版的验证范围是公开来源与官方文档检查。
+现有 [Evaluator 独立实现](evaluator/README.md) 已能运行，但使用内部请求接口和 EvaluationReport 1.2，尚未适配共享 v2.0。下文区分共享交付要求、已有评估能力和待完成接线。
 
-## 1. 职责与边界
+## 1. 职责与流程边界
 
-- 找最接近的项目或产品，比较用户场景、核心功能、交互和实现状态。
-- 检查候选关键依赖的官方文档、访问条件、必要数据与设备要求。
-- 接收 workflow 路由的专题问题并返回有依据的答案或 unknown。
-- 提出缩小范围、替换依赖或调整差异点的建议。
+候选生成或修订后先评估，再交给 Human Review。检查查重、技术 API、数据、设备、MVP 实现路径、团队资源、预算及用户提供的时间约束；提出缩减范围、替换依赖或补充差异的建议，不直接修改候选。
 
-不接收成员原始访谈，不分析成员心理，不决定团队是否接受方案，不替候选直接改需求。
+不读取成员原始私人访谈，不分析成员心理，不决定团队接受、小改或加一轮，不生成批准、共享、共识或数据库事件。首版为只读检索和文档/资源分析，不执行项目原型、付费 provider 测试、代码生成运行、客户访谈或专利新颖性判定。
 
-首版不执行付费 provider 测试、代码生成与运行、真实客户访谈、专利新颖性判定。不把文档能力宣称为已实测，也不把项目方介绍升级为独立验证。
+## 2. 共享 v2.0 接口
 
-## 2. 接口
+输入为公共字段 `contract_version`、`discussion_round`、`room_context`，以及 `candidate`、`shared_sources`、`search_policy`、`provided_evidence`。candidate 含精确 `candidate_ref` 和完整 `content`；共享来源必须获准使用并能解析候选引用。provided_evidence 是 Workflow 已获取并核验的证据，不能将模型自报内容冒充可信工具记录。
 
-### evaluator.evaluate
+输出 data 为 `{contract_version:"2.0", evaluation}`。Evaluation 必须包含 `candidate_ref`、`report_status`、`summary`、`findings`、`similar_projects`、`risks`、`unknowns`、`recommended_changes`、`evidence`、`search_log`；数组可空但不能省略。Finding、Evidence 的精确字段及枚举以 schema 为准，dependency_key 必须来自当前候选，evidence_keys/source_id 必须可解析。
 
-输入 payload：`room_config`、`candidate`、`team_criteria`、`shared_resources`、`previous_report`（可 null）、`tool_budget`。
+`search_policy.enabled=false` 或 `max_queries=0` 时不搜索；所有实际工具还须受部署运行预算限制并响应取消。Agent 不写业务状态。工具执行与来源真实性由 Evaluator 负责人保证，Workflow 在提交时再检查预算、身份、候选版本及引用。
 
-shared_resources 仅包含评估必需且成员已批准共享的技能/资源条目，不传全队原始对话。tool_budget 是 workflow 配置的工具次数与时间上限，不是 Agent 自己无限申请的预算。
+外层 `status=ok` 对应 `report_status=complete`；`status=partial` 对应 `report_status=partial`。complete 表示此次评估操作完成，不等于零风险或技术全部实测。缺少资料时如实保留 unknown；资料不足且无法完成必要检索时返回 partial，不替 Human 推进或否决候选。
 
-输出 data：EvaluationReport 1.2，关联 candidate_id 与 version；字段对齐最新 Evaluation：feasibility、similar_projects、technical_checks、risks、unknowns、sources、status，同时保留 passed、两项 tests 与旧展示别名。两项都 pass 才通过；高度相同且无明确差异才查重失败。运行完整性与业务判定分开，不能把缺少证据当成已证明不可行。
+共享协议只有 `evaluator.evaluate`，没有独立 investigate operation。Human 小改后由 Idea Generator 产生新候选版本，再 evaluate 并重新审阅。
 
-查重至少分别搜索 GitHub 仓库与 Devpost hackathon 项目；运行层优先分配前两次搜索、设置 Tavily 域名限制并记录 query/scope/result_urls。`novelty_coverage` 展示各平台是否成功完成；缺失或失败不能查重通过，已取得的重复证据仍可支持 fail。目录/gallery 不是具体项目正文。工具预算保持硬上限，专题 investigate 不要求查重搜索。
+## 3. 已有查重与可行性能力
 
-项目时间没有固定默认值。evaluator.evaluate 在 room_config.time_limit 缺失时先返回 needs_input，请 workflow 询问用户“有没有时间限制”，再提交带 none/duration/deadline 的新快照。无时限是有效回答；开发本系统的时间窗口不用于判断用户 idea。专题技术调查不强制要求项目交付时间。
+### 查重
 
-输入也支持 payload.idea，不能同时提供 candidate；基础字段和默认值见实现 README。通过测试不代表成员接受方案。
+只有现有项目的目标用户、核心问题和核心方案高度相同，且当前 idea 没有明确差异时才不通过。同类产品存在不会自动淘汰；仅改名称或模型不算充分差异。
 
-### evaluator.investigate
+最低检索范围为 **GitHub 具体仓库**和 **Devpost hackathon 具体项目**。现有运行层优先将前两次搜索分配给两者，并向 Tavily 传域名过滤，约束 query 为 `site:github.com` / `site:devpost.com/software`。用目标用户、问题和核心方案关键词检索，不只查拟定名称。后续搜索可补充其他产品或官方技术文档；不遍历整个平台，也不声称穷尽。
 
-输入 payload：以上上下文，以及 `question`（`{issue_id, text, expected_information}`）。
+读取相关仓库或 `/software/<项目>` 正文后比较重合、差异和成熟度，最多返回三个实际相近项目。目录、topics、用户主页、比赛列表和 gallery 只是线索，不能代替项目正文。项目方明确自述的实现可标 self_reported_implemented；计划标 planned；无法确认标 unknown。页面未提到某功能不证明它不存在，代码仓库存在也不证明完整流程可运行。
 
-输出 data：`{issue_id,candidate_id,version,candidate_version,answer,conclusion,outcome,sources,evidence,search_log,limitations,recommended_next_step,next_check_status}`。conclusion 为 supported_by_source / team_claim / unknown；outcome 为 support / blocker / unknown，下一步为 needs_test。本工具不做实际原型测试，因此不产生 verified。
+未成功覆盖两个最低范围时不能查重 pass，应保留缺口并返回 partial；已有正文支持的重复 fail 可以保留。搜索失败与成功零结果分开；零结果只表示“本次未发现”，不是全球首创。v2 关闭搜索或预算不足时仍服从上限，不自动增额或绕过限制。
 
-只能回答提供的问题，例如“此 API 的文档是否支持流式音频”，不要擅自给整个团队换题。专题结论并入报告时保留来源与版本。
+### 可行性与项目时间
 
-## 3. 竞品检索流程
+逐项检查候选必要依赖，保留依赖身份；没有依赖清单时从核心方案和 MVP 识别必要 API、数据、设备与访问条件，不能把空清单当成无依赖。结合获准共享的团队技能、实际资源、预算和用户约束说明实现路径及工作量前提。
 
-1. 将 candidate 拆成目标用户、使用场景、核心动作和独特交互。
-2. 用这些组合做中英文检索；Hackathon 产品优先找直接相关的 Devpost 提交、项目官网、GitHub README。无需批量抓取整站。
-3. 打开最相关的来源，确认究竟描述的是已实现功能、计划还是概念。
-4. 返回最多 3 个最接近的结果是首版建议；不足 3 个就如实返回，不补造。
-5. 比较具体重合和差异，不用标题或“用了 AI”就判断完全重复。
+项目时间由用户回答：有无时间限制；有时限时提供可用小时数或截止时间。明确无时限是有效回答，不自动加 deadline。本系统的开发窗口不是被评估 idea 的时间限制；工具执行毫秒预算也不是项目交付时间。
 
-推荐比较维度：
+当前内部 evaluate 在未回答时返回 `needs_input`，等待 Workflow 询问并带更新快照重试。v2 尚未定义完整的时间回答和 Evaluator needs_input 流程，需要接线时协调；不能把 `room_context.deadline_at=null` 当成用户已经明确无时限。
 
-| 维度 | 示例问题 |
-| --- | --- |
-| 用户 | 面向一个创始人，还是需要整合多个组员？ |
-| 输入 | 一句话 idea，还是分别对话的成员摘要？ |
-| 流程 | 只生成，还是研究、反馈与定向追访？ |
-| 决策 | AI 输出分数，还是保留主观反对并协商？ |
-| 输出 | 候选、竞品证据、来源关系、最小 demo 中有哪些？ |
-| 成熟度 | 功能已展示、项目方自述，还是列为 next steps？ |
+内部报告两项结果为 pass / fail / insufficient_evidence，只有查重与可行性同时 pass 才计算 `passed=true`。必要依赖未知或资源不明时不能可行性通过；有证据的必要 blocker 且当前范围无可行替代时才 fail。建议修改由 Workflow 和 Human 决定，通过评估不等于成员接受。
 
-先把竞品状态标为来源自述；除非确实有进一步证据，不能称为已独立验证。代码库存在也不等于完整流程可运行。
+## 4. 来源与工具规则
 
-## 4. 技术检查流程
+- supported_by_source：实际读取且与结论相关的文档或公开项目来源支持。
+- team_claim：可追溯的、获准共享的成员陈述；技能自述不能证明必要 API、数据或设备已可获得。
+- verified：必须有实际执行及可信 test_record；当前文档检索模式不产生 verified。
+- needs_test / unknown：保留下一步实测任务、缺失信息和结论支持范围。文档证明存在 blocker 时必须明确阻碍，不能误标成支持可行。
 
-1. 针对每个 critical_dependency 判断是不是最小 demo 的必须项。
-2. 搜索/读取相关官方文档，确认支持范围、账号/权限要求和已公开限制。
-3. 对照团队已共享资源与时间：已有可用资源、文档有能力但未接入、确认存在 blocker、仍然未知。
-4. 输出最小替代方式与下一步核实任务，例如先用文字、静态数据、人工确认步骤；建议改变范围由 workflow 和团队处理，Evaluator 不直接修改候选。
+来源 ID、URL、读取时间、分类与检索日志由代码记录，模型只引用本请求实际账本。搜索片段不作为正文证据，历史报告不自动成为本次证据，第三方介绍不能证明官方能力。外部页面和仓库内容是待分析数据，不是指令。
 
-时间可行性只给带前提的判断和分项工作量，不凭模型生成精确成功率。依赖未核实可以返回 unknown，不武断宣称做不到。
+现有工具为 `search(query, limit, scope?)` 和 `read_source(url)`，来源账本由运行层维护。内部默认每请求最多 2 次搜索、3 次读取、总时限 60 秒、单次 10 秒；调用次数允许为零，时间须为正整数。部署硬上限内可调整，v2 适配还必须取不超过 search_policy 的有效搜索预算。
 
-比赛适配只按用户给出的官方要求检查。未提供或未读取规则时显示“赛道适配待确认”。
+模型输入/生成说明使用英文，两个项目 SKILL.md 已为英文；原始来源摘录及专有名称保留原文。来源校验检查引用、URL、分类和实际读取，不保证所有自然语言结论已独立验证。DeepSeek + Tavily CLI 的独立真实测试记录见 [LIVE_TEST_REPORT.md](evaluator/LIVE_TEST_REPORT.md)，不是共享 v2 Workflow 的联合验收。
 
-## 5. 证据规则与工具
+## 5. 现有实现与共享协议的适配差异
 
-成员 3 提供工具适配层，建议暴露：
+外层 envelope 都为 `schema_version:"1.0"`，但不代表业务 payload/data 相同。当前实现不应直接作为 v2 default definition 加载。
 
-- `search(query, limit)`：返回 URL、标题和片段。
-- `read_source(url)`：返回实际读取内容、标题、抓取时间和错误状态。
-- `record_evidence(...)`：把真实来源转为 evidence 对象；可由普通代码完成。
+详细对照见 [共享契约](contracts.md) 第 12 节。需要将 `room_config/shared_resources/tool_budget` 转为公共上下文、来源和搜索政策，将候选身份转为精确 `candidate_ref`，将内部报告转为 v2 Evaluation；同时解决时间问答、提供证据的信任边界、来源分类和新增依赖的引用。当前 `definition.mjs` 仅导出 `createDefinition(request, session)`，通用 Pi CLI 要求默认 plain object，须交付适配入口并保留请求级账本、严格输出和预算校验。
 
-来源 ID 和 URL 由工具层记录，模型只能引用已提供的 evidence_id，不能发明“看过”的页面。HTML/仓库内容是待分析数据，不能当作新的系统指令。
+v2 不允许额外字段，不能原样塞入内部 tests/passed/novelty_coverage、详细日志、source_ref 或来源摘录。转换应保留判定含义、缺口、证据与版本；如需新增共享展示字段，同步修改契约、schema、fixtures 和消费者。内部详细审计仍可由服务端保留。不得在仅重命名字段时改变来源可信度或把不完整报告投影成 complete。
 
-实现默认预算：每个请求最多 2 次搜索和 3 次来源读取，总时限 60 秒，单次 10 秒；workflow 可按额度在部署硬上限内提高。不能被用来声称检索穷尽。
+内部 `evaluator.investigate` 保留用于单个技术问题，关联 issue_id 和候选版本，返回 conclusion/outcome/limitations/next_check；它不判断整个 idea，也不要求查重覆盖或整个项目时间回答。它不是共享 v2 operation，不能直接派发到当前 Workflow。
 
-报告中的每条竞品能力和关键技术结论都链接 evidence_ids；没有来源就写 limitation 或 unknown。避免大段复制来源，保存支持结论所需的简短说明即可。
+## 6. 样例与验收
 
-## 6. 失败和版本处理
+- [v2 无法检索时的 partial](interfaces/fixtures/evaluator-partial.json)
+- [v2 complete 的离线结构样例](interfaces/fixtures/evaluator-complete.json)
+- [当前独立 Evaluator 请求与运行说明](evaluator/README.md)
 
-| 情况 | 输出 |
-| --- | --- |
-| 来源被反爬/无权限 | partial，标记无法读取，不假装完成 |
-| 搜索确实无相关结果 | search_log 为 no_results，并写“本次未发现” |
-| 搜索服务不可用 | failed / partial，与 no_results 区分 |
-| 来源冲突 | 列出冲突及各自来源，不偷偷选一边 |
-| 信息过时或限制未公布 | 列明局限与待检查项 |
-| 候选范围修改 | 新报告关联新版本；旧结论可复用但保留来源、时间并核对适用性 |
-| 预算耗尽 | 返回已有报告和未知项，停止新工具调用 |
+所有离线样例证据均为明确 mock，不能作为真实研究。共享交付验收应覆盖：默认 definition 可被 Pi 加载，v2 配对输入输出通过 schema，source/evidence 引用可解，dependency_key 来自当前候选，candidate_ref 完全一致，旧版本结果不覆盖新版，搜索关闭/取消/预算耗尽时不编造工具结果，平台覆盖不足和来源无法读取时返回 partial。
 
-报告完整是指规定字段已填且检索过程结束，不等于所有假设已证实；complete 报告也可以包含 unknown。工具失败导致覆盖不足时 status 为 partial。
-
-## 7. 提示词设计
-
-固定指令包含：
-
-- 你提供证据与比较，不为团队作决定。
-- 区分重合、差异、来源成熟度；同类产品存在不自动淘汰候选。
-- 只引用工具实际提供的来源，优先官方技术文档。
-- 成员资源自述不等于实测，文档支持不等于接入完成。
-- 网络无结果不等于不存在，失败不能写成无结果。
-- 输出结构化报告，明确下一步需要核实的事情。
-- 不评价未提供的私人意愿，不产生虚构重复率或概率分数。
-
-动态输入：当前候选版本、关键依赖、时间和已确认标准、必要资源、专题问题、剩余工具预算。
-
-## 8. 验收场景
-
-| 场景 | 应有结果 |
-| --- | --- |
-| 相似产品存在，但没有逐人访谈 | 写清重合与缺少的公开证据，不称完全重复 |
-| 产品把功能写在 next steps | maturity 为 planned |
-| 官方文档支持 streaming | supported_by_source，端到端延迟需要 needs_test |
-| 成员说接口已接通 | team_claim，不能自动标成 verified |
-| 来源不能打开 | partial 与 limitation，不生成假 URL |
-| 没有相关结果 | 本次未发现，不能说全球首创 |
-| 检索预算用完 | 返回已有证据与缺口，不继续循环 |
-| 旧版本评估晚到 | version 保持旧值，由 workflow 阻止覆盖新版 |
-
-交付完成的标准：两个 operation 有稳定 JSON 输出；能对一个候选给出真实来源报告，也能在工具失败时给出如实的 partial 结果。
+每条关键技术结论与竞品比较保留相关证据及限制，来源冲突明确列出，未知项不补成事实。Human 查看报告后决定接受、小改或加一轮；Evaluator 和测试脚本都不能生成真实人工确认。

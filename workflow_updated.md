@@ -1,944 +1,264 @@
-# Workflow 设计
+# Workflow 设计：人工引导的讨论与候选迭代
 
-负责人：Workflow / 应用层。目标：把多个 Agent 的结果接成一个真实可执行的团队决策流程，管理成员身份、私人访谈、共享摘要、人工决策、轮次、版本、权限、任务状态和最终确认。
+> 本文是白板及后续问答确认后的流程说明，是 README 和 agent/workflow.md 的流程依据。Workflow 已实现于 [workflow/](workflow/README.md)，支持离线 mock 联调和 Pi 适配。下文区分已确认规则、当前实现默认值和未来需求；业务 Agent 的真实质量仍需联合验收。
 
-新的核心流程不是“先生成候选，再不断修改候选”，而是先通过多轮 **Interview → Preference Profile → Divergence Detection → Human Decision → Deeper Interview** 逐步逼近团队共同理解，再由 **Idea Generator** 基于整个讨论过程生成候选方案，最后由 **Evaluator** 做可行性与相似项目验证。
+![Conclave 系统图](docs/assets/conclave-workflow.png)
 
-Workflow 使用普通应用代码实现。它根据程序规则执行 Agent 的行动提案，不作为额外的 LLM Agent。Agent 的判断必须通过结构化输入输出进入 Workflow；LLM 不能直接修改权威状态。
+## 1. 组件与职责
 
----
+| 组件 | 输入与职责 | 输出 |
+| --- | --- | --- |
+| Participants / Human | 私人访谈、分歧回答、收敛判断、候选审阅 | 真实成员输入与决策事件 |
+| Interview Agent（Ai） | 对应成员的私人上下文、获准共享的分歧与人工回答 | 深入问题、Preference Profile 草稿 |
+| Negotiator Agent（An） | 获准共享的 Profiles 和讨论轨迹 | 当前最重要的 difference、证据与可回答的问题 |
+| Idea Generator（Ag） | 获准共享的完整讨论历史；修订时包括人工修改意见 | 有讨论来源与取舍的候选或修订版本 |
+| Evaluator Agent（Ae） | 当前候选版本、必要约束与检索来源 | 可行性、技术条件、相似项目、风险和未知项 |
+| Workflow / 应用层 | 校验角色输出与真实用户事件 | 权威状态、任务、权限、轮次和版本 |
 
-## 1. 系统组件与连接
+Workflow 使用普通应用代码实现，负责调度四个业务 Agent。图中的 Agent 连线表示业务信息流，实际调用与权限检查均经过 Workflow。LLM 不直接修改批准记录、成员回答、收敛决定或最终确认。
 
-```mermaid
-flowchart LR
-    U[四名成员 / Room UI] --> W[Workflow / 权威状态]
-
-    W --> I[Interview Agent]
-    I --> W
-
-    W --> N[Negotiator Agent]
-    N --> W
-
-    W --> ID[Idea Generator Agent]
-    ID --> W
-
-    W --> E[Evaluator Agent]
-    E --> W
-
-    W --> D[持久化数据 / 任务 / 版本]
-    W --> P[私人页面 / 团队工作台]
-```
-
-### 核心循环
+## 2. 已确认的主流程
 
 ```mermaid
 flowchart TD
-    A[四人独立 Interview] --> B[生成每个人的 Preference Profile]
-    B --> C[Negotiator 汇总并找出最大分歧]
-    C --> D{分歧类型}
-
-    D -->|0/1 决策| E[团队成员人工决策]
-    D -->|开放性问题| E
-
-    E --> F[记录真实人工决定]
-    F --> G[LLM 根据决定结果生成更深入的 Interview 问题]
-    G --> H[各成员继续回答]
-    H --> I[更新个人 Preference Profile]
-    I --> J{是否大致收敛？}
-
-    J -->|否，继续| C
-    J -->|是，3–5轮内| K[Idea Generator]
-    K --> L[生成多个 Idea Candidates]
-    L --> M[成员人工提出建议 / 微调]
-    M --> N[Evaluator]
-    N --> O[最终方案 + 可行性报告 + 未解决风险]
+    P["成员"] --> I["Ai：私人 Interview"]
+    I --> PR["Preference Profiles：本人确认共享"]
+    PR --> N["An：提取最大 difference"]
+    N --> H["Human：回答 difference"]
+    H --> R{"当前讨论轮次 n"}
+    R -->|"n ≤ 3：使用人工回答继续深挖"| I
+    R -->|"n ≥ 4"| C{"Human：diverge / converge"}
+    C -->|"diverge"| I
+    C -->|"converge"| G["Ag：Idea Generator"]
+    G --> E["Ae：Evaluator"]
+    E --> V{"Human Review"}
+    V -->|"接受"| O["Final Output"]
+    V -->|"小改：修改意见"| G
+    V -->|"加一轮：新问题与反馈"| I
 ```
 
-### 设计原则
+### 讨论阶段
 
-1. **AI 负责发现问题和组织讨论，不负责替成员作最终价值判断。**
-2. **每一轮的人工决策都是真实用户事件，不能由模型预测或补全。**
-3. **Interview 应该越来越深，而不是重复问“你喜欢什么”。**
-4. **Idea Generator 必须使用整个讨论历史，而不是只看最后一轮摘要。**
-5. **Evaluator 放在候选产生以后，避免过早用“可行性”压制还没有成形的团队想法。**
-6. **任何私人回答在被本人批准共享之前，都不能进入公共团队上下文。**
+1. 成员分别接受 Interview，形成个人偏好画像。
+2. 本人确认共享后，Negotiator 比较 Profiles，提出当前最大 difference。
+3. 相关成员亲自回答该 difference；回答可以是二元选择或开放文本。
+4. 当 `n ≤ 3`，把人工回答交回 Interview，深入访谈并更新 Profiles，再进入下一轮分歧识别与人工回答。
+5. 当 `n ≥ 4`，在人工回答后，由 Human 决定 `diverge` 或 `converge`。
+6. `diverge` 返回 Interview，继续上述讨论循环；`converge` 才进入 Idea Generator。
 
----
+**任何一轮都不允许 Negotiator 绕过 Human 直接返回 Interview。** 前三轮用于充分澄清分歧；达到第 4 轮只开放人工收敛选择，不自动生成，也不自动结束。之后继续讨论仍须有人回答新的 difference。
 
-## 2. 首版状态机
+### 生成与审阅阶段
 
-| 房间状态 | 动作与转移 |
-| --- | --- |
-| `setup` | 设置成员、比赛背景、硬约束和讨论轮数 |
-| `interview_round_0` | 四名成员分别进行初始 Interview |
-| `profile_confirmation` | 每个人确认自己的 Preference Profile 是否准确 |
-| `detecting_divergence` | Negotiator 汇总所有已授权 Profile，识别最大分歧 |
-| `awaiting_decision` | 将分歧转成 0/1 或开放性人工决策题 |
-| `decision_recorded` | 所有相关成员完成真实人工选择 |
-| `generating_followup` | LLM 根据决策结果生成更深入的问题 |
-| `interview_round_n` | 成员回答本轮深挖问题并确认新增共享信息 |
-| `checking_convergence` | 判断讨论是否已经大致收敛，或是否需要下一轮 |
-| `idea_generating` | Idea Generator 基于完整讨论历史生成多个候选 |
-| `candidate_refinement` | 成员对候选进行人工建议、删改和方向微调 |
-| `evaluating` | Evaluator 做可行性、相似项目和技术条件检查 |
-| `final_review` | 团队查看最终方案、证据和剩余风险 |
-| `completed` | 团队确认最终结果 |
-| `unresolved` | 达到最大讨论轮数仍存在关键分歧，保存讨论成果并停止 |
+1. Idea Generator 基于获准共享的讨论历史生成候选。
+2. Evaluator 对当前候选进行评估。
+3. Human 查看候选与评估，然后选择：
 
-> 建议讨论轮数设置为 `3–5`，其中首轮为基础 Interview，后续轮次均由前一轮人工决策动态生成问题。首版可以默认 `4` 轮。
+| Human Review 动作 | 路径 | 需要带回的内容 |
+| --- | --- | --- |
+| 接受 | 输出 Final Output | 被接受的候选及版本、对应评估、真实确认 |
+| 小改 | Idea Generator → Evaluator → Human Review | 修改意见、当前候选版本及相关评估 |
+| 加一轮 | Interview → Profile → Negotiator → Human → 轮次与收敛节点 | 未解决问题、人工反馈、候选与评估中相关的新信息 |
 
----
+小改不启动完整访谈，修订后仍需重新评估和审阅。加一轮重新进入讨论路径，不能直接从访谈跳到生成。这里没有“生成后先人工微调再首次评估”的独立阶段。
 
-## 3. 调用主流程
+## 3. Preference Profile 与共享边界
 
-### 3.1 创建 Room
+Interview 的初访覆盖真实问题、目标用户、兴趣、已有想法、技能与资源、期望体验、限制和比赛目标。成员没有现成 idea 也可以提供信息。
 
-创建 `RoomConfig`：
-
-- 团队成员数量；
-- Hackathon 背景、主题或赛道；
-- 已知硬约束；
-- 目标用户 / 场景（如果团队已经有）；
-- discussion rounds，范围建议为 `3–5`；
-- 最多生成多少个 Idea Candidates；
-- 是否允许外部搜索，以及调用预算。
-
-创建完成后，每个成员获得独立身份。
-
----
-
-### 3.2 Round 0：独立 Interview
-
-四名成员并行进入自己的私人 Interview。
-
-首轮问题主要覆盖：
-
-- 我最近真正遇到的生活 / 学习 / 工作问题是什么；
-- 哪些问题让我最想解决；
-- 我最想做什么、最不想做什么；
-- 我有什么技术、经验、资源或数据；
-- 我希望这次 Hackathon 得到什么；
-- 我对“有趣、实用、创新、技术挑战、比赛表现”等目标分别重视什么；
-- 有没有已有 idea，以及什么部分最想保留。
-
-首轮的目标不是让模型直接生成产品，而是建立每个人自己的 **Preference Profile**。
-
----
-
-### 3.3 生成 Preference Profile
-
-Interview Agent 根据个人回答生成一个结构化的个人画像。
-
-建议结构：
+画像包含以下内容维度。实际 JSON 使用契约中的 items/category 结构；下表用于解释内容，不另定义一套并行字段：
 
 | 字段 | 含义 |
 | --- | --- |
-| `problems` | 想解决的问题 / 痛点 |
+| `problems` | 想解决的问题与痛点 |
 | `target_users` | 倾向关注的用户群体 |
 | `interests` | 兴趣与偏好 |
-| `skills` | 技术、领域知识、资源 |
-| `desired_experience` | 希望产品给用户带来的体验 |
-| `constraints` | 不愿接受的限制 |
-| `tradeoffs` | 可以妥协、可以交换的部分 |
-| `goals` | 对比赛 / 项目的主要目标 |
-| `confidence` | Agent 对这一条总结的置信程度 |
-| `evidence` | 来自哪些原始回答 |
+| `skills` | 技术、领域知识与资源 |
+| `desired_experience` | 希望产品提供的体验 |
+| `constraints` | 不能接受的条件 |
+| `tradeoffs` | 可以交换或妥协的部分 |
+| `goals` | 比赛与项目目标 |
+| `confidence` | 对总结的置信描述，不等于真实成员认可 |
+| `evidence` | 支持条目的对应回答引用 |
 
-Profile 必须由本人确认。
+画像草稿由本人修改、删除和确认。成员可以区分“我的陈述”和“AI 的推断”；Agent 不能自行写入共享批准。
 
-成员可以：
+原始回答的引用保留私人访问边界。公共来源只能指向获准共享的内容，不能通过 evidence、候选理由或“为什么追问”间接公开原文。当前实现把每次批准记录为一个新的共享版本，并保留已批准历史供后续讨论使用；编辑新画像不会自动撤销旧版本授权。独立的撤回授权及依赖刷新接口尚未实现，新增该接口时必须同时清除历史来源的失效授权。
 
-- 修改措辞；
-- 删除不准确内容；
-- 标记“这是我说过的”；
-- 标记“这是 AI 推断的，我不同意”。
+## 4. difference 的定义
 
-只有确认后的字段才能进入团队共享上下文。
+沿用此前 workflow 的含义：**当前团队最值得优先解决、会实质影响最终方向的偏好或约束分歧。**
 
----
+比较维度包括：
 
-## 4. Negotiator：从 Preference Profile 中找“最大分歧”
-
-初始 Profile 准备完成后，进入 Negotiator。
-
-Negotiator 不直接生成 idea，而是回答：
-
-> **“现在团队最应该先解决的分歧是什么？”**
-
-它需要比较成员之间的：
-
-- 用户群体偏好；
-- 痛点优先级；
-- 产品形态；
+- 用户群体与痛点优先级；
+- 产品形态和已有 idea 的方向；
 - 技术路线；
 - 对创新与实用性的重视程度；
 - 可接受的开发复杂度；
-- 对风险的容忍度；
-- 已有 idea 的方向。
+- 风险容忍与成员参与条件。
 
-### 4.1 分歧输出格式
+“最大”综合考虑对最终方向的影响、受影响成员、信息是否不足、不解决是否阻碍方案形成，以及不同选择是否导向不同产品路径。不单纯按意见不同的人数排序。
 
-建议：
+二元问题可以是“我们是否愿意将主要用户限定为大学生”；开放问题可以是“AI 应该替用户做什么，哪些决定必须由用户保留”。二元选项也不能阻止成员说明“这个问题没有准确表达我的分歧”。
+
+建议输出：
 
 ```json
 {
   "type": "binary",
-  "question": "我们是否愿意把主要目标用户限定为大学生？",
-  "why_it_matters": "不同成员对目标用户的选择会直接改变后续产品方向。",
-  "affected_members": ["member_1", "member_2", "member_3"],
+  "question": "我们是否愿意将主要目标用户限定为大学生？",
+  "why_it_matters": "用户选择会改变后续产品方向。",
+  "affected_members": ["member_1", "member_2"],
   "supporting_preferences": [],
   "conflicting_preferences": [],
   "decision_options": ["是", "否"]
 }
 ```
 
-开放问题则使用：
+开放问题使用 `type: "open"`，保留问题、重要性、受影响成员和来源。条目必须引用真实获准共享的内容，不能为了凑讨论轮数捏造分歧。
 
-```json
-{
-  "type": "open",
-  "question": "什么样的 AI 参与方式才能在帮助用户的同时保留用户自己的决策权？",
-  "why_it_matters": "成员对 AI 应该自动执行多少工作存在明显差异。",
-  "affected_members": ["member_1", "member_2", "member_4"]
-}
-```
+## 5. Human 回答与收敛判断
 
-### 4.2 “最大分歧”的含义
+这是两个分别记录的人工事件：
 
-不要简单按照“有多少人意见不同”排序。
+| 人工事件 | 发生时机 | 含义 |
+| --- | --- | --- |
+| Answer Difference | 每轮 Negotiator 提出 difference 后 | 成员说明自身选择、原因、条件或对问题的纠正 |
+| Diverge / Converge | `n ≥ 4` 且本轮所需人工回答已收到后 | 人决定继续讨论或进入候选生成 |
 
-可以综合：
+Workflow 保存真实答案、成员身份、关联分歧及时间戳。未回复、超时、模型推测均不能替代回答。不同人的相反答案应原样保留，不自动合成一个虚构的“共同决定”。
 
-- 对最终方向的影响；
-- 有多少成员被影响；
-- 当前信息是否不足；
-- 如果不解决该分歧，后续是否很难形成方案；
-- 不同选择会不会产生完全不同的产品路径。
+Agent 可以解释差异是否减少，但 `stable`、分歧评分或任何模型标签都不能触发进入生成。Human 作出 converge 决定才可放行。已确认：全员 converge 才进入生成；任何成员 diverge 立即进入下一轮 Interview。未回复始终保持等待。
 
-因此一个两人之间的关键方向分歧，可能比四个人对一个次要功能的分歧更重要。
+供人参考的收敛迹象沿用原设计：关键用户和核心问题基本明确，价值主张不再大幅漂移，剩余差异主要是实现细节或可以用候选取舍表达。这里不要求所有偏好完全相同，也不以“分歧必须清零”作为已确认规则。
 
----
+## 6. 轮数与深挖
 
-## 5. 人工决策 Gate
+`n` 在图中表示团队讨论轮次，采用 `n ≤ 3` 和 `n ≥ 4` 两个分支。前三轮必须包含 Human 对 difference 的回答；从第 4 轮起由 Human 选择是否收敛。
 
-这是整个 Workflow 的关键人工节点。
+需要分别维护的计数是：
 
-Negotiator 只能提出：
-
-> “这是当前最重要的分歧。”
-
-不能直接决定：
-
-> “所以团队应该选 A。”
-
-Workflow 将其转换成成员可以真正回答的问题。
-
-### 5.1 0/1 决策
-
-例如：
-
-> “我们是否愿意把目标用户限定为大学生？”
-
-- Yes
-- No
-
-### 5.2 开放性决策
-
-例如：
-
-> “如果必须在创新性与实现难度之间做取舍，你更愿意牺牲哪一边？”
-
-或：
-
-> “你认为 AI 在这个产品里最应该替用户做什么、最不应该替用户做什么？”
-
-### 5.3 决策规则
-
-- 相关成员必须亲自回答；
-- `missing`、超时、未回复不等于支持；
-- Agent 不得代替成员补答案；
-- Workflow 保存原始决策和时间戳；
-- 成员可以看到这是一个由 AI 挑出的“关键分歧”，但不必接受 AI 对分歧的解释；
-- 所有重要方向变化都通过真实用户事件确认。
-
----
-
-## 6. 根据人工决定生成更深入的 Interview
-
-人工决策完成后，Negotiator / Interview Agent 根据：
-
-1. 原始 Preference Profile；
-2. 当前最大分歧；
-3. 所有成员刚刚做出的决定；
-4. 前几轮已经问过的问题；
-5. 仍然没有解释清楚的原因；
-
-生成下一轮 Interview。
-
-### 6.1 “越来越深”的原则
-
-后续问题不应该继续停留在：
-
-> “你喜欢什么？”
-
-而应该进入：
-
-> “为什么？”
-
-再进入：
-
-> “什么条件会让你的判断发生变化？”
-
-最后进入：
-
-> “在明确约束下，你愿意牺牲什么？”
-
-例如：
-
-**Round 0：**
-> “你最想解决的生活问题是什么？”
-
-**Round 1：**
-> “为什么这个问题对你来说比其他问题更值得解决？”
-
-**Round 2：**
-> “如果解决它必须牺牲 50% 的自动化程度，你还愿意做吗？为什么？”
-
-**Round 3：**
-> “如果团队已经决定采用这个方向，你认为最不能妥协的用户体验是什么？”
-
-这样每一轮是在解释和验证前一轮的判断，而不是重新做一次浅层问卷。
-
----
-
-## 7. 迭代与收敛
-
-每一轮完整流程：
-
-```text
-已有 Preference Profiles
-        ↓
-Negotiator 找最大分歧
-        ↓
-人工回答关键决策问题
-        ↓
-生成更深入的 Interview
-        ↓
-成员回答并确认共享内容
-        ↓
-更新 Preference Profiles
-        ↓
-检查是否大致收敛
-```
-
-### 7.1 收敛不等于“所有人完全相同”
-
-建议把收敛定义为：
-
-- 关键用户群体已经基本一致；
-- 核心问题基本一致；
-- 产品价值主张不再发生大幅漂移；
-- 剩余差异主要属于实现细节或可在候选方案中解决的 trade-off；
-- 连续一轮没有新的高影响分歧产生。
-
-### 7.2 不自动宣布共识
-
-系统可以标记：
-
-- `high_divergence`
-- `medium_divergence`
-- `low_divergence`
-- `stable`
-
-但最终的团队选择仍由成员完成。
-
-首版可以用简单规则：
-
-- 最少完成 3 轮；
-- 最多 5 轮；
-- 第 3 轮后如果已经 `stable`，允许提前结束；
-- 第 5 轮结束时无论是否完全一致，都进入 Idea Generation；
-- 如果仍存在关键分歧，在最终结果中显式展示，不伪造“全员一致”。
-
----
-
-## 8. Idea Generator Agent
-
-当团队经过 3–5 轮讨论、关键分歧已经明显减少后，才进入 Idea Generation。
-
-Idea Generator 的输入不是一张最终摘要，而是：
-
-- 每个成员最终 Preference Profile；
-- 每轮分歧；
-- 每个分歧对应的人工决定；
-- 每轮新增的解释；
-- 哪些偏好被保留；
-- 哪些偏好被放弃或妥协；
-- 团队最终共同方向；
-- Hackathon 的背景与约束。
-
-因此它生成的不是“AI 突然想到的 idea”，而是：
-
-> **从整个团队协商轨迹中合成出来的候选方案。**
-
-### 8.1 Candidate 数量
-
-首版建议生成 `3–5` 个候选。
-
-每个候选应包含：
-
-| 字段 | 内容 |
+| 计数 | 用途 |
 | --- | --- |
-| `title` | 简洁名称 |
-| `target_user` | 具体用户群体 |
-| `problem` | 解决的核心问题 |
-| `solution` | 核心产品机制 |
-| `why_team` | 为什么适合这个团队 |
-| `discussion_trace` | 来自哪些讨论与决定 |
-| `key_tradeoffs` | 为了形成该方案牺牲了什么 |
-| `mvp` | Hackathon 最小 Demo |
-| `open_questions` | 仍然未知的部分 |
+| 团队讨论轮次 `n` | 决定是否开放人工 diverge/converge 选择 |
+| 私人访谈问答次数 | 限制单次讨论内的问题量 |
+| Pi 模型 / tool turns | 限制一次 Agent 调用的执行预算 |
+| 候选版本 | 追踪生成、人工修改与重新评估 |
 
-候选之间必须有真正不同的 trade-off，而不是只换名字。
+现有初访示例中的“最多 7 轮”和 Base 的模型 turn 限额均不能直接解释成团队讨论轮数。实现从 n=1 开始。前三轮所需 difference 回答收齐、n≥4 有人 diverge、或生成后全员要求加一轮时，在事务中递增 n 并排入新访谈。失败重试、重复提交和小改候选均不增加 n；加一轮沿用原编号。
 
----
+回到 Interview 时，传入当前画像、本轮 difference、人工回答、已问过的问题和仍未解释清楚的原因。问题逐步从“你想解决什么”走向“为什么”“什么条件会改变判断”“在约束下愿意牺牲什么”。本人继续确认新增共享信息。
 
-## 9. Candidate Refinement：成员人工微调
+团队讨论没有自动收敛的硬上限。当前调用预算默认 200 次，耗尽只暂停派发；管理员可以增加预算或结束房间。失败任务需显式重试，不能以预算耗尽或超时为由伪造 converge 或接受。
 
-Idea Generator 生成候选后，不直接进入 Evaluator。
+## 7. Idea Generator、Evaluator 与最终结果
 
-先让成员逐个看候选，并提出：
+### Idea Generator
 
-- 保留；
-- 删除；
-- 合并；
-- 修改目标用户；
-- 修改功能；
-- 修改 AI 的参与程度；
-- 缩小 / 扩大 MVP；
-- 增加限制条件。
+读取获准共享的完整讨论轨迹：历轮画像、difference、真实回答、新增解释、保留和放弃的偏好、人工收敛选择、比赛背景与约束。
 
-### 9.1 Refinement 的原则
+当前实现默认生成 **3 个候选**，通过 candidate_count 配置为 1–5 个，全部送评估后再开启审阅。候选字段建议包括 `title`、`target_user`、`problem`、`solution`、`why_team`、`discussion_trace`、`key_tradeoffs`、`mvp` 和 `open_questions`。各候选应有真实不同的取舍。
 
-成员此时不需要再次经历完整 Interview。
+小改时输入人工意见、当前候选与评估，输出新版本；保留旧版本和修改理由。修改不自动继承旧确认。
 
-这一阶段是：
+### Evaluator
 
-> **“已经产生一个具体 idea，我希望把它改成更像我们真正愿意做的东西。”**
+候选生成或修订后，先评估再交给 Human Review。检查技术 API、数据、设备、时间内完成 MVP 的条件、相似公开项目、重合点与具体差异。
 
-Workflow 为每个修改保存版本：
+结论区分：
 
-```text
-Idea v1
-  ↓
-Member Suggestions
-  ↓
-Idea v2
-  ↓
-Member Confirmation
-```
+- `supported_by_source`：有实际来源支持；
+- `team_claim`：成员自述；
+- `needs_test`：仍需实际测试；
+- `unknown`：信息不足；
+- `verified`：仅在存在可追溯的实际验证记录时使用，不能只凭文档或模型判断。
 
-旧版本保留为历史记录，不能让旧版的支持状态自动迁移到新版。
+首版仍以只读检索和文档核查为主，不承诺自动运行原型。每条结论保留来源、支持范围和限制。搜索失败可输出 `partial`，明确未知项后交给人审阅；Evaluator 不替人选小改、加一轮或接受。
 
----
+### Final Output
 
-## 10. Evaluator Agent
+Human 接受当前候选后，输出方案、候选演化、关键偏好、人工决定、技术与相似项目来源、已知风险及未解决问题。
 
-只有在候选经过成员微调后，才进入 Evaluator。
+进入生成时的 converge 和最终方案的接受是不同事件。最终确认绑定当前候选版本及实际展示的评估；后续修改需要重新评估、重新确认。当前实现默认要求全员对同一候选当前版本及报告选择接受，才产生最终输出。小改及加一轮也等待全员相同动作；小改文字不一致时等待成员协商并重新提交，不让 Agent 代判。
 
-Evaluator 负责验证：
+## 8. 已实现状态机
 
-### 10.1 可行性
+权威转换位于 [workflow/engine.py](workflow/engine.py)。`awaiting_profile_approval` 是成员子状态，房间仍处于 interviewing；轮次路由是同一事务中的判断，没有单独持久化 routing_round 状态。
 
-- 技术 API 是否存在；
-- 数据是否可以获得；
-- 是否有关键设备依赖；
-- 时间内是否能做出 MVP；
-- 是否存在明显的技术阻塞。
-
-### 10.2 相似项目检查
-
-- 是否存在高度相似的公开项目；
-- 重合点在哪里；
-- 我们具体差异在哪里；
-- 哪些说法有公开来源支持。
-
-
-### 10.3 风险
-
-Evaluator 将结论分成：
-
-- `verified`
-- `supported_by_source`
-- `team_claim`
-- `needs_test`
-- `unknown`
-
-避免把 Agent 推测写成事实。
-
----
-
-## 11. Final Output
-
-最终输出由：
-
-1. 当前选中的 Idea；
-2. Candidate 演化过程；
-3. 成员最终的关键偏好；
-4. 团队已经做出的关键人工决定；
-5. Evaluator 的可行性结论；
-6. 相似项目与差异；
-7. 当前已知风险；
-8. 仍未解决的问题；
-
-组成。
-
-建议最终展示：
-
-### Final Idea
-
-> 一句话解释产品是什么。
-
-### Why This Team
-
-> 为什么这个方案和本团队的兴趣、能力、限制匹配。
-
-### What We Decided
-
-> 哪些关键问题经过真实成员决策。
-
-### Why It Is Feasible
-
-> Evaluator 验证了什么，还有什么未知。
-
-### Remaining Risks
-
-> 不能被 AI 假装解决的问题。
-
----
-
-## 12. Action 调度规则
-
-| Action | Workflow 行为 |
+| 状态 | 下一步与条件 |
 | --- | --- |
-| `start_interview` | 为指定成员创建私人 Interview session |
-| `generate_profile` | 根据已完成回答生成 Preference Profile 草稿 |
-| `approve_profile` | 保存本人确认的共享 Profile |
-| `detect_divergence` | Negotiator 分析共享 Profiles，输出最大分歧 |
-| `request_decision` | 向成员展示人工决策题 |
-| `record_decision` | 保存成员真实选择，不允许 LLM 代填 |
-| `generate_followup` | 根据当前决策生成更深入的问题 |
-| `start_next_round` | 开启下一轮 Interview |
-| `check_convergence` | 计算讨论状态，不直接宣布共识 |
-| `generate_ideas` | Idea Generator 生成 3–5 个候选 |
-| `refine_candidate` | 成员提交修改意见并产生新版本 |
-| `evaluate_candidate` | Evaluator 做可行性、技术和相似项目检查 |
-| `finalize` | 团队确认最终方案 |
-| `report_unresolved` | 输出仍未解决的问题并允许团队接手 |
+| `setup` | 建立成员身份、比赛背景和约束 |
+| `interviewing` | 私人回答与画像草稿 |
+| `awaiting_profile_approval` | 等待本人批准共享 |
+| `detecting_difference` | Negotiator 使用获准共享的输入 |
+| `awaiting_difference_answers` | 等待所需真实人工回答，未齐时保持等待 |
+| `awaiting_convergence_decision` | diverge 回访；converge 生成 |
+| `idea_generating` / `revising` | 首次生成 / 根据全员人工意见小改 |
+| `evaluating` | 评估当前版本，成功或明确 partial 后进入审阅 |
+| `awaiting_review` | 接受则输出；小改回生成；加一轮回访 |
+| `completed` | 保存人工接受的方案、评估与剩余风险 |
+| `ended` | 管理员停止，取消未完成任务；不生成虚构的最终结果 |
 
-每个 task 保存：
+等待人工回答、等待共享批准和等待收敛选择必须能够区分。失败不触发成功转移。人工停止进入 ended；预算中断记录 paused_reason 并保留当前阶段，增加预算后恢复派发；均不能自动转换成 completed。
 
-- `task_id`
-- `request_id`
-- `operation`
-- `input_version`
-- `depends_on`
-- `visibility`
-- `status`
-- `result`
-- `created_at`
-- `completed_at`
+## 9. 数据、权限与任务
 
-建议状态：
+六个 Agent operation、精确字段和人工事件接口已统一到 [contracts.md](agent/contracts.md)，机器可读定义见 [JSON Schema](agent/interfaces/protocol.schema.json)，配对请求/返回见 [fixtures](agent/interfaces/fixtures)。下表说明概念对象，不作为另一套字段定义。
 
-```text
-queued
-running
-awaiting_member
-awaiting_share
-awaiting_team
-done
-failed
-cancelled
-```
-
----
-
-## 13. 权限与状态校验
-
-### 13.1 LLM 不允许直接写入
-
-以下字段必须由应用逻辑控制：
-
-- `approved_at`
-- `decision`
-- `actual_stance`
-- `round_index`
-- `candidate.version`
-- `final_status`
-- `consensus`
-- `member confirmation`
-
-### 13.2 私人信息隔离
-
-数据库层面将：
-
-```text
-Private Interview
-Private Profile Draft
-Approved Shared Profile
-Team Discussion
-```
-
-分开存储。
-
-Agent 可以看到其被授权的数据，但不能通过：
-
-- 公共候选；
-- 来源标签；
-- “为什么追问”；
-- 状态事件；
-
-间接泄露未授权的私人回答。
-
-### 13.3 版本规则
-
-任何候选修改都会产生新版本：
-
-```text
-candidate_A_v1
-candidate_A_v2
-candidate_A_v3
-```
-
-新版本必须重新收集相关成员的确认。
-
-旧版：
-
-- 可以展示为历史；
-- 不计入新版共识；
-- 旧报告不能覆盖新版；
-- 旧支持状态不能自动继承。
-
----
-
-## 14. 建议的数据对象
-
-### Room
-
-```text
-room_id
-members[]
-hackathon_context
-constraints[]
-discussion_round_limit
-idea_candidate_limit
-status
-```
-
-### PrivateInterview
-
-```text
-member_id
-round_index
-questions[]
-answers[]
-profile_draft
-profile_version
-approved_at
-```
-
-### Divergence
-
-```text
-divergence_id
-round_index
-type
-question
-why_it_matters
-affected_members[]
-evidence[]
-status
-```
-
-### Decision
-
-```text
-decision_id
-divergence_id
-member_id
-answer
-timestamp
-```
-
-### DiscussionRound
-
-```text
-round_index
-input_profiles
-divergence
-decisions[]
-followup_questions[]
-profile_updates[]
-convergence_status
-```
-
-### IdeaCandidate
-
-```text
-candidate_id
-version
-title
-target_user
-problem
-solution
-discussion_trace[]
-tradeoffs[]
-mvp
-member_suggestions[]
-status
-```
-
-### Evaluation
-
-```text
-candidate_id
-version
-feasibility[]
-similar_projects[]
-technical_checks[]
-risks[]
-unknowns[]
-sources[]
-status
-```
-
----
-
-## 15. 三个主要页面 + 一个结果页
-
-### 页面 1：Room
-
-展示：
-
-- Hackathon 背景；
-- 成员；
-- 讨论轮数；
-- 当前阶段；
-- 整体进度。
-
-### 页面 2：Private Interview
-
-展示：
-
-- 当前问题；
-- 回答区域；
-- Preference Profile 草稿；
-- “确认共享 / 修改 / 删除”；
-- 当前已经完成第几轮。
-
-### 页面 3：Team Workbench
-
-集中展示：
-
-| 区域 | 内容 |
+| 对象 | 建议保存的内容 |
 | --- | --- |
-| Team Preferences | 每个成员已经确认共享的核心偏好 |
-| Current Divergence | 当前最大的分歧 |
-| Human Decision | 当前等待团队回答的问题 |
-| Discussion History | 每轮决定与讨论轨迹 |
-| Agent Progress | 当前 Agent 在做什么 |
+| Room | 成员、比赛背景、约束、当前阶段和团队讨论轮次 |
+| PrivateInterview | 成员、私人问题与答案、会话 revision、画像草稿 |
+| ApprovedProfile | 成员批准的条目、版本、批准事件及来源 |
+| Difference | 所属讨论、问题类型、重要性、相关成员与获准共享的证据 |
+| DifferenceAnswer | 成员、分歧、原始人工回答与时间戳 |
+| ConvergenceDecision | 所属讨论、真实人工 diverge/converge 记录 |
+| DiscussionRound | 输入画像版本、分歧、人工回答、追问与共享更新 |
+| IdeaCandidate | ID、版本、内容、讨论来源与修改轨迹 |
+| Evaluation | 候选版本、证据、发现、风险、未知项与 complete/partial |
+| HumanReview | 候选和报告版本、接受/小改/加一轮、人工意见与身份 |
+| Task | request_id、operation、输入 revision、依赖、可见性、状态与结果 |
 
-### 页面 4：Final Idea
+Agent 调用的上下文由 Workflow 按权限构造。Interview 只能看到对应成员的私人信息；其他角色使用获准共享的必要信息。
 
-展示：
+`approved_at`、真实回答、收敛选择、审阅动作和最终确认来自用户事件；轮次、候选版本和任务状态由程序校验后写入。模型不生成权威批准事件。
 
-- 3–5 个候选；
-- 成员修改；
-- 最终版本；
-- Evaluator 报告；
-- 风险与未知项；
-- 最终确认。
+保留原有工程约束：持久化请求去重；同 ID 不同输入拒绝；回包提交前检查 revision；旧结果不覆盖新回答或新版；不同成员的私人会话分别检查版本；公共进度仅展示允许共享的信息。
 
----
+## 10. 页面与失败恢复
 
-## 16. 18 小时 Hackathon 交付计划
+目标页面为 Room、Private Interview、Team Workbench 和 Final Idea。Team Workbench 展示共享偏好、当前 difference、人工回答、收敛选择与讨论历史。Final Idea 展示当前候选、评估和三种 Human Review 动作。
 
-| 时间 | 必须完成 |
-| --- | --- |
-| 0–1h | 定义 Room、Member、Profile、Divergence、Decision、Idea、Evaluation 数据结构 |
-| 1–4h | 完成四人并行 Interview + Profile 确认 |
-| 4–7h | 完成 Negotiator：Profile 汇总 + 最大分歧生成 |
-| 7–9h | 完成人工 Decision Gate + 下一轮深度 Interview |
-| 9–11h | 打通 3–5 轮循环和 convergence 状态 |
-| 11–13h | 接入 Idea Generator，生成多个候选 |
-| 13–15h | 接入成员 refinement + 版本管理 |
-| 15–17h | 接入 Evaluator + 来源展示 |
-| 17–18h | 完整演练 Demo，重点检查权限、轮数、版本和失败恢复 |
+模型输出不合法、搜索失败、成员未回答、共享未批准、服务重启和并发更新均需有明确等待或错误状态。部分评估可以交给人审阅；任务失败不得增加讨论轮数、补全人工答案或跳过必需节点。模拟来源和示例数据必须标明。
 
----
+实现采用 Python 标准库 HTTP 服务、SQLite 和浏览器工作台；通过现有 Pi Base 的 Python bridge 接入真实 Agent。默认关闭搜索，搜索服务及工具由 Evaluator 负责人提供。启动、配置和失败恢复见 [开发说明](workflow/README.md)。
 
-## 17. Demo 故事
+## 11. 验收
 
-四个人首先分别回答：
+[自动化测试](workflow/tests/test_workflow.py) 覆盖轮次路由、真实人工门控、共享隔离、版本、幂等、失败重试、租约恢复和 HTTP 权限。使用确定性 mock 验证应用逻辑；访谈深度、difference 质量、方案质量与搜索准确性仍需真实 Agent 联合验收。
 
-> “你最近最想解决的一个真实问题是什么？”
+1. 私人访谈隔离；未批准内容不进入 Profiles 的共享投影、候选、来源或进度。
+2. Negotiator 支持二元和开放 difference，并引用获准共享的证据。
+3. 每轮先收到所需真实人工回答，才允许后续路由；没有 An → Ai 的跳过 Human 路径。
+4. 分别验证 `n = 1、2、3` 的回访路径，不进入生成。
+5. `n = 4` 时停在人工收敛选择；diverge 回 Interview，converge 进入 Idea Generator。
+6. `n > 4` 继续遵守相同人工门槛，不按固定最大轮次自动生成。
+7. 下一轮问题使用前轮人工回答，不重复浅层问卷，不编造成员选择。
+8. 生成后严格进入 Evaluator，再进入 Human Review。
+9. 小改回 Idea Generator，产生新版本、重新评估、重新审阅。
+10. 加一轮回 Interview，保留相关人工反馈与证据，并重新经过 An 和 Human。
+11. 接受只输出被人工接受的当前候选版本；旧确认与旧报告不能覆盖新版本。
+12. partial 评估展示未知项；重复请求、旧回包和重启不跳过人工节点。
 
-系统不会马上生成 idea。
+## 12. 当前默认值与未实现边界
 
-它先得到四份 Preference Profile。
+- 已确认收敛政策：全员 converge 才生成，任何人 diverge 回访；房主不能代成员投票。
+- 实现默认每轮所有成员重新 Interview 并批准画像；difference 等待 affected_member_ids 中所有成员的真实回答。
+- 每人每轮默认 1 组问题，每组最多 3 个；可配置 1–7 组。模型可提前进入总结，但必须等待本人批准共享。
+- kind=clarification 仍须人工回答。成员可选择“问题没有准确表达分歧”并填写解释，后续按正常轮次路由携带反馈。
+- 审阅默认全员同一动作；小改还需相同修改文字。候选默认 3 个，全部先评估。这些是应用当前默认值，不声称白板已规定所有细节。
+- 搜索默认关闭；四个 Agent definition 及搜索工具仍由角色负责人交付。生产登录、授权撤回、邀请补发和公网部署未实现。本服务面向本地开发联调。
+- operation/schema 保持 v2.0；字段变更应同时更新契约、schema 和样例。
 
-接着 Negotiator 发现：
-
-> “三个人希望产品高度自动化，但一名成员认为 AI 不应该替用户做关键决策。”
-
-系统把这个分歧转换成一个所有相关成员都必须回答的人工问题：
-
-> “你是否接受 AI 在产品中自动替用户做关键决策？”
-
-成员回答后，模型继续追问：
-
-> “为什么？”
-
-再下一轮追问：
-
-> “什么条件下你会改变这个判断？”
-
-经过 3–5 轮之后，团队逐渐明确：
-
-- 谁是目标用户；
-- 到底要解决什么问题；
-- AI 应该做多少；
-- 哪些功能不能妥协；
-- 什么是可以牺牲的。
-
-这时 Idea Generator 才生成多个候选。
-
-成员可以说：
-
-> “这个 idea 的用户很好，但是 MVP 太大，去掉实时功能。”
-
-Workflow 产生新版本，再送入 Evaluator。
-
-最终团队看到的不是：
-
-> “AI 告诉你应该做什么。”
-
-而是：
-
-> **“这是我们自己讨论、决定和修改出来的东西；AI 帮我们发现了最值得讨论的问题，并把讨论不断推进到更深层。”**
-
----
-
-## 18. 联合验收
-
-### Interview / Profile
-
-1. 四个独立身份可以同时完成 Interview。
-2. 私人回答在未批准前不会进入公共上下文。
-3. 每个 Profile 都能追溯到对应回答。
-4. 成员可以修改或删除不准确的 Profile。
-
-### Divergence / Decision
-
-5. Negotiator 能从 Profiles 中生成至少一个明确的高影响分歧。
-6. 分歧既支持 0/1，也支持开放问题。
-7. 相关成员必须人工回答。
-8. 模型不能预测或补全未回答的决定。
-9. 人工决定被记录后才能触发下一轮 Interview。
-
-### Adaptive Interview
-
-10. 下一轮问题能引用前一轮人工决定。
-11. 后续问题明显比前一轮更深入，而不是简单重复。
-12. 讨论轮数实际限制在 3–5 轮。
-13. 达到收敛后不再无限追访。
-
-### Idea Generation
-
-14. Idea Generator 使用完整讨论历史，而不只是最后一个 Profile。
-15. 输出多个有真实 trade-off 的候选。
-16. 每个候选可以追溯到具体讨论或决定。
-
-### Refinement
-
-17. 成员可以对候选提出修改。
-18. 修改产生新的版本。
-19. 新版本不能继承旧版的最终确认。
-20. 成员可以删掉或合并候选。
-
-### Evaluation
-
-21. Evaluator 对技术可行性、相似项目和风险做结构化检查。
-22. 搜索结果附带来源。
-23. `unknown` 和 `needs_test` 不会被写成已验证事实。
-24. 搜索失败时允许返回 `partial`，不阻塞整个 Workflow。
-
-### 最终结果
-
-25. Final Idea 能展示讨论、决定、修改和评估之间的关系。
-26. 未解决的关键分歧仍然保留。
-27. 系统不会因为多数人同意、某人沉默或轮数结束而伪造“全员共识”。
-
----
-
-## 19. MVP 成功标准
-
-首先验证流程正确：
-
-- 每个人都先被独立理解；
-- AI 能找到真正影响方向的分歧；
-- 关键决定由人完成；
-- 每一轮问题都能基于前一轮继续深入；
-- 3–5 轮后团队对核心方向明显收敛；
-- Idea Generator 能利用完整讨论历史；
-- 成员能对候选进行真实修改；
-- Evaluator 能说明“已经验证什么”和“还不知道什么”。
-
-再验证产品价值：
-
-- 成员是否觉得自己的偏好被准确理解；
-- 团队是否更容易发现真正的分歧；
-- 是否减少了“一个人提出 idea，其他人立刻反驳”的低效循环；
-- 最终方案是否更容易被所有成员接受并开始实现。
-
----
-
-## 20. 与原 Workflow 相比的核心变化
-
-原流程更接近：
-
-```text
-Interview
-→ Profile
-→ 生成 Candidate
-→ Evaluator
-→ Feedback
-→ Negotiation
-→ Revision
-```
-
-新版流程改成：
-
-```text
-Interview
-→ Preference Profile
-→ 最大分歧
-→ 人工决策
-→ 更深 Interview
-→ 更新 Profile
-→ 最大分歧
-→ 人工决策
-→ ...
-→ 3–5轮收敛
-→ Idea Generator
-→ Member Refinement
-→ Evaluator
-→ Final Idea
-```
-
-这使产品的核心不再只是“AI 帮团队选一个 idea”，而是：
-
-> **AI 帮团队先发现彼此真正不同的地方，让人做关键决定，再通过连续追问把隐性的偏好变成清晰的共同方向，最后才生成并验证 idea。**
-
+旧文档里的“3–5 轮自动结束”“Negotiate 生成候选”“候选先微调再评估”和“n 表示候选展示上限”已被本文流程替代。
