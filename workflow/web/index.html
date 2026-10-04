@@ -28,7 +28,7 @@
         >
         <nav aria-label="Main navigation">
           <a href="#cover-about">How it works</a
-          ><button type="button" data-demo-login>Test login</button>
+          ><button type="button" data-demo-login>Open workspace</button>
         </nav>
       </header>
       <div class="cover-content">
@@ -36,11 +36,11 @@
         <p>
           Think through different ideas.<br />Find a project your whole team
           wants to build.<br /><small
-            >Test login · no account authentication yet.</small
+            >Private interviews. Shared decisions.</small
           >
         </p>
         <button class="cover-login" type="button" data-demo-login>
-          Enter test workspace
+          Open workspace
         </button>
       </div>
       <div class="cover-footer">
@@ -139,13 +139,13 @@
         <main id="desk" class="desk" tabindex="-1">
           <p
             class="test-banner"
-            data-en="Test login · Room invitations are still required. Your private interview is only visible to you."
-            data-zh="测试登录 · 加入房间仍需邀请码。私人访谈仅本人可见。"
+            data-en="Join with your personal invitation. Your private interview is only visible to you."
+            data-zh="使用个人邀请加入。私人访谈仅本人可见。"
           >
-            Test login · Room invitations are still required. Your private
-            interview is only visible to you.
+            Join with your personal invitation. Your private interview is only visible to you.
           </p>
           <p id="error" role="alert" hidden></p>
+          <p id="connection-status" class="notice" role="status">Connecting to the workspace… The free demo may take a moment to wake up.</p>
           <div id="entry" class="entry-grid">
             <section>
               <h2 data-en="Start a conversation." data-zh="开始一次讨论。">
@@ -177,6 +177,7 @@
                   searches)</span
                 ></label
               >
+              <div id="create-access"></div>
               <button
                 id="create"
                 class="primary-button"
@@ -208,6 +209,14 @@
               >
                 Join with invitation
               </button>
+              <details id="recover-panel">
+                <summary data-en="Recover with your private code" data-zh="使用私人恢复码恢复">Recover with your private code</summary>
+                <label>Role<select id="recover-role"><option value="member">Participant</option><option value="admin">Administrator</option></select></label>
+                <label>Member ID (participants only)<input id="recover-member" autocomplete="off" /></label>
+                <label>Private recovery code<input id="recover-code" type="password" autocomplete="off" /></label>
+                <button id="recover" class="primary-button">Recover access</button>
+                <p class="muted">This signs out older sessions. Download the new recovery card after recovery.</p>
+              </details>
               <details>
                 <summary
                   data-en="Restore an existing session"
@@ -258,6 +267,10 @@
               </div>
             </div>
             <section id="status" class="status-panel"></section>
+            <details id="account-panel" class="activity-panel">
+              <summary>Access, invitations &amp; API keys</summary>
+              <div id="room-access"></div>
+            </details>
             <section id="interview-view" class="other-view" hidden>
               <div id="private"></div>
               <aside>

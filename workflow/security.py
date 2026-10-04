@@ -128,7 +128,7 @@ class RoomSecurity:
     def status(self, db, room_id, admin):
         row = db.execute("SELECT funding,encrypted FROM room_keys WHERE room_id=?",(room_id,)).fetchone()
         result = {"funding":row["funding"] if row else "team", "keys_configured":bool(row and row["encrypted"]),
-                  "can_manage_keys":admin, "own_keys_supported":bool(self.cipher)}
+                  "can_manage_keys":admin, "own_keys_supported":bool(self.cipher), "room_call_limit":self.room_limit if self.live else 10000}
         if admin and result["funding"] == "team":
             used=db.execute("SELECT used FROM usage_limits WHERE scope='shared-agent-calls' AND period=?",(int(time.time())//86400,)).fetchone()
             result.update(shared_calls_remaining=max(0,self.daily_limit-(used["used"] if used else 0)),
