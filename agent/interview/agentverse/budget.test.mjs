@@ -2,6 +2,17 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { budgetedFetch } from './budget.mjs';
 const url = 'https://api.deepseek.com/v1/chat/completions';
+test('approved cumulative 40-call cap preserves ledger and stops at either limit', async () => {
+  let ledger = { calls: 39, reserved_micros: 975_000 }, calls = 0;
+  const store = { read: () => ledger, write: (_, value) => { ledger = value; } };
+  const config = { store, maxCalls: 40, maxUsd: 1, fetch: async () => { calls++; return {}; } };
+  await budgetedFetch(config)(url, request());
+  await assert.rejects(budgetedFetch(config)(url, request()), /exhausted/);
+  assert.deepEqual(ledger, { calls: 40, reserved_micros: 1_000_000 });
+  assert.equal(calls, 1);
+  assert.throws(() => budgetedFetch({ ...config, maxCalls: 41 }));
+  assert.throws(() => budgetedFetch({ ...config, maxUsd: 1.01 }));
+});
 const request = extra => ({ body: JSON.stringify({ model: 'deepseek-flash', thinking: { type: 'disabled' }, max_tokens: 2048, messages: [{ role: 'user', content: 'JSON test' }], ...extra }) });
 function setup() {
   let ledger = null, calls = 0;

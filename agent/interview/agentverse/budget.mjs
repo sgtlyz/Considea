@@ -3,8 +3,8 @@
  * <=48KB request + 16K token framing allowance + 2048 output < $0.025.
  */
 export function budgetedFetch({ store, maxCalls, maxUsd, fetch = globalThis.fetch }) {
-  if (!Number.isSafeInteger(maxCalls) || maxCalls < 1 || maxCalls > 32 ||
-      !Number.isFinite(maxUsd) || maxUsd < 0.025 || maxUsd > 0.8) throw new Error('Set finite approved call and USD limits');
+  if (!Number.isSafeInteger(maxCalls) || maxCalls < 1 || maxCalls > 40 ||
+      !Number.isFinite(maxUsd) || maxUsd < 0.025 || maxUsd > 1) throw new Error('Set finite approved call and USD limits');
   const capMicros = Math.floor(maxUsd * 1_000_000);
   return async (url, init) => {
     if (String(url) !== 'https://api.deepseek.com/v1/chat/completions' ||
