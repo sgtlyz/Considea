@@ -4,7 +4,7 @@ Verified on October 4, 2026 before promotion. At that checkpoint, all work was i
 
 - [Direct live workspace](https://considea-dev-api.onrender.com)
 - [Public recorded walkthrough](https://considea-dev-api.onrender.com/demo.html)
-- [83-second video](../workflow/web/demo.mp4)
+- [Current demo video](../workflow/web/demo.mp4)
 
 ## Delivered scope
 

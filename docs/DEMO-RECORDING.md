@@ -1,4 +1,10 @@
-# Recorded walkthrough
+# Demo video
+
+Current demo: [YouTube](https://youtu.be/d4RyloKY-rE) · [Website](https://considea.vercel.app/demo.html). Updated from the supplied `demo.mp4` on October 4, 2026.
+
+The notes below document the earlier recorded run, not the current replacement video.
+
+## Original recorded walkthrough
 
 [Watch the saved walkthrough](https://considea-dev-api.onrender.com/demo.html) or [download the MP4](../workflow/web/demo.mp4).
 

@@ -91,7 +91,8 @@ python, javascript, html5, css3, node.js, postgresql, deepseek, tavily, webgl, v
 ## Project media
 
 - Gallery image: docs/assets/considea-devpost-cover.png (1536 x 1024, PNG, 3:2, 1,960,487 bytes).
-- Demo video source: workflow/web/demo.mp4 (83 seconds).
+- Demo video source: workflow/web/demo.mp4.
+- Current YouTube demo: https://youtu.be/d4RyloKY-rE
 - Video demo link: requires uploading the MP4 to YouTube or Vimeo and using the resulting URL. No supported video URL is currently recorded in this project.
 
 ## Preparation notes
