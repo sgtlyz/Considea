@@ -346,6 +346,30 @@ try {
     await until(() => pages[member].locator("#refresh").isEnabled());
   }
   await until(async () => (await view("alice")).phase === "awaiting_review");
+  // Display a failed generation without changing the real room or calling an agent.
+  const generationFailure = await view("alice");
+  generationFailure.phase = "idea_generating";
+  generationFailure.candidates = {};
+  generationFailure.evaluations = {};
+  generationFailure.tasks = generationFailure.tasks.map(task => task.operation === "idea.generate"
+    ? { ...task, status: "failed", error: { code: "BUDGET_EXCEEDED", recovery: "manual_retry" } }
+    : task);
+  const roomViewUrl = base + "/api/rooms/" + room.room_id;
+  await a.route(roomViewUrl, route => route.fulfill({ json: generationFailure }));
+  await sync(a);
+  assert.ok((await a.locator("#candidates").innerText()).includes("Your answers and the team’s convergence decision are saved."));
+  assert.equal(await a.getByRole("button", { name: "Go to private interview", exact: true }).count(), 0);
+  assert.equal(await a.getByText("No candidates yet.", { exact: false }).count(), 0);
+  const recoveryPanel = a.locator("details").filter({ has: a.locator("#tasks") });
+  await recoveryPanel.evaluate(panel => { panel.open = false; });
+  await a.getByRole("button", { name: "Open Activity & recovery", exact: true }).click();
+  assert.equal(await recoveryPanel.evaluate(panel => panel.open), true);
+  assert.ok(await a.getByRole("button", { name: "Retry this task", exact: true }).isVisible());
+  await a.locator('#workspace [data-language="zh"]').click();
+  assert.ok((await a.locator("#candidates").innerText()).includes("你的回答和团队的收敛决定已保存。"));
+  assert.ok(await a.getByRole("button", { name: "打开运行进度与恢复", exact: true }).isVisible());
+  await a.locator('#workspace [data-language="en"]').click();
+  await a.unroute(roomViewUrl);
   await sync(a);
   await sync(b);
   await sync(admin);

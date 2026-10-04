@@ -8,6 +8,56 @@ const env = { PI_PROVIDER: 'openai', OPENAI_MODEL: 'gpt-4.1-mini', OPENAI_API_KE
   DEEPSEEK_MODEL: 'deepseek-flash', DEEPSEEK_API_KEY: 'unused-deepseek-key' };
 const context = { systemPrompt: 'Return JSON.', messages: [{ role: 'user', content: 'Return JSON.', timestamp: 1 }] };
 
+const deepseekResponse = () => new Response('data: ' + JSON.stringify({
+  id: 'mock', object: 'chat.completion.chunk', created: 1, model: 'deepseek-flash',
+  choices: [{ index: 0, delta: { role: 'assistant', content: '{"ok":true}' }, finish_reason: 'stop' }],
+}) + '\n\ndata: [DONE]\n\n', { headers: { 'Content-Type': 'text/event-stream' } });
+
+test('Idea gets an operation-specific bounded output allowance on both provider wires', async () => {
+  for (const provider of ['deepseek', 'openai']) {
+    for (const [operation, configured, explicit, expected] of [
+      ['idea.generate', undefined, undefined, 8192],
+      ['idea.revise', undefined, undefined, 8192],
+      ['idea.generate', '6144', undefined, 6144],
+      ['idea.revise', '6144', 512, 512],
+      ['idea.generate', 'invalid-but-overridden', 512, 512],
+      ['interview.turn', '6144', undefined, 4096],
+      ['negotiate.detect', 'invalid-and-irrelevant', undefined, 4096],
+      [undefined, '6144', undefined, 4096],
+      ['idea.other', '6144', undefined, 4096],
+    ]) {
+      const payloads = [];
+      const runtime = liveRuntime({ env: { ...env, PI_PROVIDER: provider,
+        ...(configured === undefined ? {} : { IDEA_MAX_OUTPUT_TOKENS: configured }) }, operation,
+        ...(explicit === undefined ? {} : { maxTokens: explicit }),
+        fetch: async (_url, init) => {
+          payloads.push(JSON.parse(init.body));
+          return provider === 'openai' ? openaiResponse() : deepseekResponse();
+        } });
+      assert.equal(runtime.requestCount, 0);
+      assert.equal((await runtime.streamFn(runtime.model, context).result()).stopReason, 'stop');
+      assert.equal(payloads.length, 1);
+      assert.equal(payloads[0][provider === 'openai' ? 'max_output_tokens' : 'max_tokens'], expected);
+      assert.equal(Object.hasOwn(payloads[0], 'operation'), false);
+      assert.equal(Object.hasOwn(payloads[0], 'IDEA_MAX_OUTPUT_TOKENS'), false);
+    }
+  }
+});
+
+test('Idea rejects malformed or out-of-bound output limits before any request', () => {
+  for (const provider of ['deepseek', 'openai']) {
+    const fetch = () => assert.fail('invalid Idea budget must fail before transport');
+    for (const configured of ['', ' ', '15', '8193', '-1', '1.5', '8e3', '8192junk', 'Infinity', 'NaN']) {
+      assert.throws(() => liveRuntime({ env: { ...env, PI_PROVIDER: provider,
+        IDEA_MAX_OUTPUT_TOKENS: configured }, operation: 'idea.generate', fetch }), { code: 'CONFIG_ERROR' });
+    }
+    for (const maxTokens of [0, 15, 8193, 1.5, Infinity, NaN, true]) {
+      assert.throws(() => liveRuntime({ env: { ...env, PI_PROVIDER: provider },
+        operation: 'idea.revise', maxTokens, fetch }), { code: 'CONFIG_ERROR' });
+    }
+  }
+});
+
 test('OpenAI uses explicit per-room configuration and the official Responses endpoint', async () => {
   const requests = [];
   const runtime = liveRuntime({ env, maxTokens: 500, maxModelRequests: 2,

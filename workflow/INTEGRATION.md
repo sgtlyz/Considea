@@ -44,6 +44,10 @@ The Python workflow owns authentication, state transitions and task leases. Node
 
 Interview, Negotiator and the no-tool Idea path have strict output validation and at most one model correction within their original deadline. Negotiator permits at most two model turns within 60 seconds, receives only authorized shared context and uses the room's isolated credentials. Its difference evidence must cite human statements from at least two affected members; one-person contradictions remain clarifications. The harness permits only narrow syntactic repairs; it does not invent missing facts, sources or approval. Invalid output remains a failed task. The UI retains answers and exposes retry controls.
 
+Integrated `idea.generate` and `idea.revise` allow up to 8192 output tokens by default. Set `IDEA_MAX_OUTPUT_TOKENS` to an integer from 16 to 8192 to lower that cap, then restart the backend. Interview and Negotiator keep their existing 4096-token transport cap. The output cap is a maximum, not a target; Idea prompts request compact JSON and concise candidates while retaining all required fields and citations. The 60-second transport timeout and 90-second Idea operation deadline remain unchanged.
+
+If the provider stops with `length`, the harness discards the incomplete result and returns non-retryable `BUDGET_EXCEEDED`. Workflow does not automatically repeat a truncated generation at the same limit. Human answers and convergence decisions stay saved for an explicit retry after adjustment. Raising the output cap does not fix authentication failures, rate limits, server errors or timeouts; those require the corresponding provider diagnostics. A malformed completed response still receives at most the existing single correction.
+
 Evaluator uses real Pi tool calls with a source ledger, finite searches/reads and validated report submission. The integrated HTTP retrieval adapter uses Tavily. Reports may honestly return `partial` or `insufficient_evidence`. This is distinct from a failed API call.
 
 ## Storage

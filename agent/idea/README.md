@@ -89,6 +89,8 @@ Mem0 synchronization is a trusted background operation, not an Agent tool. It st
 
 Copy `.env.example` to a local `.env` or configure the server environment. The CLI uses `createIdeaRuntime`: choose `PI_PROVIDER=deepseek` (default) with `DEEPSEEK_API_KEY` / `DEEPSEEK_MODEL`, or `PI_PROVIDER=openai` with `OPENAI_API_KEY` / `OPENAI_MODEL` (or `PI_MODEL`). Model choice is explicit. Existing `createDeepSeekRuntime` callers remain supported. Real keys stay server-side. Search still uses `TAVILY_API_KEY` for either model provider; optional memory needs `MEM0_API_KEY`.
 
+The integrated Workflow selects an 8192-token output cap for Idea generation and revision, configurable with server-side `IDEA_MAX_OUTPUT_TOKENS` (16..8192). Direct runtime callers keep their existing 4096-token default, and the CLI still requires an explicit `--max-output-tokens` argument. Output marked `length` is discarded with `BUDGET_EXCEEDED`, without automatic correction or Workflow retry. No partial candidate is published.
+
 ```powershell
 node --env-file=agent/idea/.env agent/idea/cli.mjs --live --input authorized-request.json --max-model-requests 6 --max-output-tokens 4096
 ```

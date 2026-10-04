@@ -1509,6 +1509,22 @@
       entries = Object.entries(v.candidates);
     if (v.final_output) action(tr("View project brief", "查看项目简报"), out, () => openWorkflowStep("brief"));
     if (!entries.length) {
+      const generationFailed = v.phase === "idea_generating" &&
+        v.tasks.some(task => task.operation === "idea.generate" && task.status === "failed");
+      if (generationFailed) {
+        el("h3", tr("Direction generation needs attention.", "候选生成需要处理。"), out);
+        el("p", tr(
+          "Your answers and the team’s convergence decision are saved. Open Activity & recovery to retry generation.",
+          "你的回答和团队的收敛决定已保存。请打开“运行进度与恢复”重试生成。",
+        ), out, "muted");
+        action(tr("Open Activity & recovery", "打开运行进度与恢复"), out, () => {
+          const panel = $("tasks").closest("details");
+          panel.open = true;
+          panel.scrollIntoView({ block: "start", behavior: "instant" });
+          panel.querySelector("summary").focus();
+        });
+        return;
+      }
       el(
         "h3",
         tr("Directions come after the discussion.", "讨论之后，再形成候选。"),
