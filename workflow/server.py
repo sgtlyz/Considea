@@ -15,12 +15,14 @@ from .integration import IntegratedRunner, SharedSync
 from .environment import load_environment
 from .security import RoomSecurity
 from .localization import Localization
+from .agentverse import Agentverse
 
 
 def make_server(workflow, host="127.0.0.1", port=8765):
     security = RoomSecurity(workflow)
     workflow.security = security
     localization = Localization(workflow)
+    agentverse = Agentverse.configured(workflow, security)
     if hasattr(workflow.runner, "credentials_for"):
         workflow.runner.credentials_for = security.credentials_for
     class Handler(BaseHTTPRequestHandler):
@@ -93,6 +95,10 @@ def make_server(workflow, host="127.0.0.1", port=8765):
                     security.limit("writes:"+client, 180, 60)
                 if method == "GET" and parts == ["api", "health"]:
                     return self._send(200, {"status": "ok", "agent_mode": workflow.runner.mode})
+                if method == "GET" and parts == ["agentverse", "status"]:
+                    return self._send(200, agentverse.status() if agentverse else {"enabled": False})
+                if method == "POST" and len(parts) == 3 and parts[0] == "agentverse" and parts[2] == "chat" and agentverse:
+                    return self._send(200, agentverse.receive(parts[1], self._body()))
                 if parts == ["api", "rooms"] and method == "POST":
                     body = self._body()
                     security.limit("create:"+client, 6, 3600)
@@ -189,6 +195,7 @@ def make_server(workflow, host="127.0.0.1", port=8765):
 
     server = ThreadingHTTPServer((host, port), Handler)
     server.daemon_threads = True
+    server.agentverse = agentverse
     return server
 
 
@@ -246,6 +253,7 @@ def main():
     finally:
         stop.set()
         server.server_close()
+        if server.agentverse: server.agentverse.close()
         if workflow.sync: workflow.sync.close()
         if hasattr(runner, "close"): runner.close()
         workflow.store.close()

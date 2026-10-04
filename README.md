@@ -9,6 +9,7 @@ Considea helps a small team choose a project together. Each person talks private
 - [83-second walkthrough and saved results](https://considea.vercel.app/demo.html): no account, keys or live calls required. [Download the video](workflow/web/demo.mp4).
 - Development previews use a separate labelled mock backend.
 - [Setup and deployment](DEPLOYMENT.md), [workflow and HTTP API](workflow/README.md), [agent integration](workflow/INTEGRATION.md).
+- [Agentverse / ASI:One adapter](docs/AGENTVERSE.md): optional chat access to the same workflow; new shared endpoints await deployment and registration.
 
 The free live server can take a moment to wake up. The database is a 30-day Render PostgreSQL instance that expires on **November 3, 2026**. Export accepted briefs and migrate the database before expiry if you need to keep using it.
 

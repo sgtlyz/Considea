@@ -9,5 +9,6 @@ node_modules/
 !.env.example
 *.log
 .interview-local/
+.agentverse-local/
 
 .venv-dev/

@@ -38,6 +38,9 @@ class NodeBridge:
             return
         env = dict(os.environ)
         env.pop("CONCLAVE_SPACETIME_CONFIG", None)
+        # ACP identities and registry credentials are unrelated to model tasks.
+        env.pop("CONCLAVE_AGENTVERSE_SEEDS", None)
+        env.pop("AGENTVERSE_API_KEY", None)
         if self.config:
             env["CONCLAVE_SPACETIME_CONFIG"] = self.config
         process = subprocess.Popen(["node", str(ROOT / "workflow/node/worker.mjs")], cwd=ROOT,
