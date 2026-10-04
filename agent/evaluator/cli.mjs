@@ -9,7 +9,6 @@ import { runOffline } from './offline.mjs';
 async function main() {
   const args = process.argv.slice(2), fixture = args.includes('--fixture');
   if (args.some(v => v !== '--fixture')) { process.stderr.write('Usage: node cli.mjs [--fixture]\n'); process.exitCode = 2; return; }
-  let deployment;
   for await (const line of createInterface({ input: process.stdin, crlfDelay: Infinity })) {
     if (!line.trim()) continue;
     let request, result;
@@ -20,7 +19,7 @@ async function main() {
       result = requiredInputResponse(normalized);
       if (!result) {
         if (fixture) result = await runOffline(normalized);
-        else { deployment ??= createDeployment(); result = await runEvaluator({ request: normalized, ...deployment }); }
+        else { result = await runEvaluator({ request: normalized, ...createDeployment() }); }
       }
     } catch (e) {
       result = errorResponse(request, ['INVALID_INPUT', 'CONFIG_ERROR'].includes(e?.code) ? e.code : 'MODEL_ERROR',

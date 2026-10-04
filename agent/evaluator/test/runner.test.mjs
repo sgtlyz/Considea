@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import { createModels, fauxProvider, fauxAssistantMessage, fauxToolCall } from '@earendil-works/pi-ai';
 import { runEvaluator, evaluateIdea } from '../runner.mjs';
 import { request, draft, investigation, retrieval, source, idea } from './fixtures.mjs';
+import { createModelRuntime } from '../models.mjs';
+import { openaiResponse } from '../../pi-base/test-fixtures/openai.mjs';
 function fixture(responses) {
   const p = fauxProvider(); const models = createModels(); models.setProvider(p.provider); p.setResponses(responses);
   return { model: p.getModel(), streamFn: models.streamSimple.bind(models) };
@@ -17,6 +19,29 @@ const researchOnly = (investigate = false) => [
 const research = data => [...researchOnly(Boolean(data.issue_id)), final(data)];
 const run = (req, messages, options = {}) => runEvaluator({ request: req, retrieval,
   officialDomains: ['docs.example.com'], ...fixture(messages), ...options });
+
+test('OpenAI evaluator requires research and completes through actual evidence tools and report submission', async () => {
+  const calls = [];
+  const steps = [
+    { name: 'search', arguments: { query: 'team planning realtime projects' } },
+    { name: 'search', arguments: { query: 'team planning hackathon projects' } },
+    { name: 'read_source', arguments: { url: source.url } },
+    { name: 'submit_report', arguments: { data: draft(), warnings: [] } },
+  ];
+  const runtime = createModelRuntime({ EVALUATOR_PROVIDER: 'openai', OPENAI_MODEL: 'gpt-4.1-mini',
+    OPENAI_API_KEY: 'sk-offline-evaluator' }, { fetch: async (_url, init) => {
+    calls.push(JSON.parse(init.body));
+    assert.ok(calls.length <= steps.length, 'submission needs no extra model call');
+    return openaiResponse('', { ...steps[calls.length - 1], id: String(calls.length) });
+  } });
+  const result = await runEvaluator({ request: request(), retrieval, officialDomains: ['docs.example.com'], ...runtime });
+  assert.equal(result.status, 'ok');
+  assert.equal(result.data.passed, true);
+  assert.equal(result.data.search_log.length, 2);
+  assert.equal(result.data.evidence.find(e => e.evidence_id === 'web-1').url, source.url);
+  assert.deepEqual(calls[0].tool_choice, { type: 'function', name: 'search' });
+  assert.ok(calls.slice(1).every(call => call.tool_choice === 'required'));
+});
 
 test('evaluate executes real Pi tools and returns server-generated verdict and source records', async () => {
   const result = await run(request(), research(draft()));

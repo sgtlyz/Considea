@@ -1,7 +1,15 @@
 import { streamSimple } from '@earendil-works/pi-ai/api/openai-completions';
+import { createOpenAIRuntime } from '../pi-base/openai.mjs';
 
 const configError = message => Object.assign(new Error(message), { code: 'CONFIG_ERROR', baseError: true });
 const bounded = (n, max) => Number.isSafeInteger(n) && n > 0 && n <= max;
+
+export function createIdeaRuntime({ env = process.env, ...options } = {}) {
+  const provider = env.PI_PROVIDER ?? 'deepseek';
+  if (provider === 'deepseek') return createDeepSeekRuntime({ env, ...options });
+  if (provider === 'openai') return createOpenAIRuntime({ env, ...options });
+  throw configError('PI_PROVIDER must be deepseek or openai');
+}
 
 /** Construction is offline. Model choice and finite transport budget are explicit. No automatic retry. */
 export function createDeepSeekRuntime({ env = process.env, maxModelRequests = 6, maxTokens = 4096,

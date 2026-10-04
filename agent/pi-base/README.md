@@ -22,6 +22,10 @@ A role specifies operations, input validation, output validation, output instruc
 
 ## Limits and failure
 
+Select an OpenAI model that supports Responses, JSON mode and function calling (for example `gpt-4.1-mini`) and is available to your API project. Catalog membership alone does not verify remote capabilities or account access. Provider tests use offline wire fixtures; they do not establish live service acceptance. Official references: [Responses migration](https://developers.openai.com/api/docs/guides/migrate-to-responses), [function calling](https://developers.openai.com/api/docs/guides/function-calling).
+
+Live Interview/Idea entry points and the workflow support `PI_PROVIDER=deepseek` (default) or `PI_PROVIDER=openai`. DeepSeek requires `DEEPSEEK_API_KEY` / `DEEPSEEK_MODEL`; OpenAI requires `OPENAI_API_KEY` / `OPENAI_MODEL` (`PI_MODEL` is also accepted). Model choice is explicit. `createOpenAIRuntime` uses the pinned Pi catalog and official Responses endpoint with JSON text output, function tools, server-owned authentication, finite request/token/deadline limits and no automatic transport retries. Tavily remains the search/read provider. See the [environment template](../../.env.example) and [room key API](../../docs/ACCESS-AND-KEYS.md).
+
 Each call creates a new Pi instance with supplied context. The default harness has finite model turns, tool executions and a total deadline. It copies envelope identity from the validated request. Public progress reports event types and request IDs, not private conversation text, tool bodies or internal reasoning.
 
 `maxOutputRepairs` defaults to zero. The integrated Interview and no-tool Idea services opt into one correction with a shared deadline and turn budget. This corrects invalid JSON/output protocol only; it does not retry the entire business operation or provider errors. Tool-enabled operations cannot use this repair path, avoiding side-effect replay.

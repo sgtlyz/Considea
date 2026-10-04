@@ -29,9 +29,10 @@ Build the root `Dockerfile` with repository root as context. It runs Python 3.12
 | CONCLAVE_MODE / CONCLAVE_MODEL / CONCLAVE_EVALUATOR | integrated / live / agent |
 | DATABASE_URL | Render PostgreSQL internal connection string |
 | CONCLAVE_WORKERS | 2 |
-| PI_PROVIDER / EVALUATOR_PROVIDER | deepseek / deepseek |
+| PI_PROVIDER / EVALUATOR_PROVIDER | deepseek / deepseek, or openai / openai; omit EVALUATOR_PROVIDER to follow PI_PROVIDER |
 | DEEPSEEK_MODEL | deepseek-flash |
 | DEEPSEEK_API_KEY / TAVILY_API_KEY | Existing private team keys |
+| OPENAI_API_KEY / OPENAI_MODEL | Required when selecting OpenAI; model identifier is explicit |
 | EVALUATOR_RETRIEVAL | api |
 | CONCLAVE_SECRET_KEY | Persistent Fernet encryption key |
 | CONCLAVE_DEMO_ACCESS_CODE | Private team/judge demo access code |
@@ -40,6 +41,8 @@ Build the root `Dockerfile` with repository root as context. It runs Python 3.12
 | CONCLAVE_TRUST_PROXY | 1 only behind the trusted deployment proxy |
 
 Keep secrets in the hosting environment. `.env`, workflow data and private connection files are excluded from Git and Docker. Preserve the encryption key independently from database backups. Losing it means stored user keys must be entered again.
+
+Switching the shared model provider does not change Tavily or existing room credentials. Update or clear explicit evaluator provider/model/base-URL overrides; a DeepSeek base URL cannot be used with OpenAI. A room may select either provider independently of the shared demo. The creation and key-management forms expose provider selection and an OpenAI model field.
 
 `DATABASE_URL` takes precedence over `CONCLAVE_DB`. Without it, SQLite is stored at the configured local path. SQLite on a free ephemeral web-service filesystem does not survive service replacement or spin-down. Optional SpacetimeDB does not replace the private workflow database.
 

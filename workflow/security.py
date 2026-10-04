@@ -6,6 +6,7 @@ Neither room snapshots, task payloads, logs nor browser responses contain them.
 import hashlib
 import json
 import os
+import re
 import secrets
 import time
 from datetime import datetime, timezone
@@ -59,16 +60,31 @@ class RoomSecurity:
     def validate(self, keys):
         if not self.cipher:
             raise WorkflowError("KEY_STORAGE_UNAVAILABLE", "Encrypted key storage is not configured", 503)
-        if not isinstance(keys, dict) or set(keys) - {"deepseek_api_key", "tavily_api_key"}:
-            raise WorkflowError("INVALID_INPUT", "Only DeepSeek and Tavily keys are supported", 400)
+        if not isinstance(keys, dict) or set(keys) - {"provider", "model", "deepseek_api_key", "openai_api_key", "tavily_api_key"}:
+            raise WorkflowError("INVALID_INPUT", "Use DeepSeek or OpenAI credentials with a Tavily key", 400)
+        provider = keys.get("provider", "deepseek")
+        if provider not in ("deepseek", "openai"):
+            raise WorkflowError("INVALID_INPUT", "Choose DeepSeek or OpenAI", 400)
         normalized = {}
-        for name in ("deepseek_api_key", "tavily_api_key"):
+        for name in ("deepseek_api_key", "openai_api_key", "tavily_api_key"):
             value = keys.get(name, "")
             if not isinstance(value,str) or (value and (not 10 <= len(value) <= 512 or any(c.isspace() or ord(c)<33 or ord(c)>126 for c in value))):
                 raise WorkflowError("INVALID_INPUT", "Enter a valid key without spaces", 400)
             normalized[name] = value
-        if not normalized["deepseek_api_key"]:
-            raise WorkflowError("INVALID_INPUT", "A DeepSeek API key is required", 400)
+        key_name = provider + "_api_key"
+        if not normalized[key_name]:
+            raise WorkflowError("INVALID_INPUT", "An API key for the selected model provider is required", 400)
+        if provider == "openai" and not normalized[key_name].startswith("sk-"):
+            raise WorkflowError("INVALID_INPUT", "Enter an OpenAI API key", 400)
+        model = keys.get("model", "")
+        if provider == "openai" and not model:
+            model = self.env.get("OPENAI_MODEL") or (self.env.get("PI_MODEL") if self.env.get("PI_PROVIDER") == "openai" else None)
+        if (provider == "openai" or model) and (not isinstance(model, str) or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,127}", model)):
+            raise WorkflowError("INVALID_INPUT", "Enter an explicit model identifier for the selected provider", 400)
+        normalized["provider"] = provider
+        normalized["model"] = model or ""
+        # Persist only the selected model provider's key.
+        normalized["openai_api_key" if provider == "deepseek" else "deepseek_api_key"] = ""
         return normalized
 
     def provision(self, prepared):
@@ -106,9 +122,23 @@ class RoomSecurity:
             keys = data["keys"]
         except Exception:
             raise WorkflowError("ROOM_KEYS_UNAVAILABLE", "Room keys could not be unlocked; save them again", 503) from None
-        # Both keys are explicitly overridden, including an empty optional search key.
-        return {"PI_PROVIDER":"deepseek", "EVALUATOR_PROVIDER":"deepseek",
-                "DEEPSEEK_API_KEY":keys["deepseek_api_key"], "TAVILY_API_KEY":keys["tavily_api_key"]}
+        # Legacy encrypted rows have no provider/model fields and remain DeepSeek rooms.
+        provider = keys.get("provider", "deepseek")
+        model = keys.get("model") or (self.env.get("DEEPSEEK_MODEL", "deepseek-flash") if provider == "deepseek" else "")
+        configured_evaluator = self.env.get("EVALUATOR_PROVIDER", self.env.get("PI_PROVIDER", "deepseek"))
+        evaluator_model = model
+        evaluator_base_url = ""
+        if provider == "deepseek" and configured_evaluator == "deepseek":
+            evaluator_model = keys.get("model") or self.env.get("EVALUATOR_MODEL") or model
+            evaluator_base_url = self.env.get("EVALUATOR_BASE_URL", "")
+        # Explicit overrides prevent a room from inheriting the shared provider's key/model.
+        return {"PI_PROVIDER":provider, "EVALUATOR_PROVIDER":provider,
+                "PI_MODEL":model, "EVALUATOR_MODEL":evaluator_model,
+                "OPENAI_MODEL":model if provider == "openai" else "",
+                "DEEPSEEK_MODEL":model if provider == "deepseek" else "",
+                "OPENAI_API_KEY":keys.get("openai_api_key", "") if provider == "openai" else "",
+                "DEEPSEEK_API_KEY":keys.get("deepseek_api_key", "") if provider == "deepseek" else "",
+                "EVALUATOR_BASE_URL":evaluator_base_url, "TAVILY_API_KEY":keys.get("tavily_api_key", "")}
 
     def reserve(self, db, state):
         if not self.live:

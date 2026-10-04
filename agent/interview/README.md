@@ -17,6 +17,8 @@ For the standalone live CLI, configure `agent/interview/.env` from its example a
 
 ## Team interface
 
+The integrated workflow and standalone CLI/worker choose `PI_PROVIDER=deepseek` (default) or `PI_PROVIDER=openai`. Configure the selected key and explicit model using `DEEPSEEK_API_KEY` / `DEEPSEEK_MODEL` or `OPENAI_API_KEY` / `OPENAI_MODEL` (`PI_MODEL` is also accepted). Call limits remain finite. The separate legacy Agentverse adapter retains its DeepSeek-only dollar-budget policy. Offline commands make no model API calls.
+
 `interview.turn` receives one member's authorized private messages, current approved profile, shared context, mode, follow-up context and question limits. It returns questions or readiness to summarize. `interview.summarize` returns a private draft with items and unknowns. See [shared contracts](../contracts.md) and [follow-up details](followup-integration.md).
 
 The workflow owns identity, discussion rounds, summary approval and persistence. An agent's readiness to summarize is not a team convergence decision. A private inference must not become a shared fact before the member approves it.

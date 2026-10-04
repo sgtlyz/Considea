@@ -53,7 +53,7 @@ sample stance buttons are replaced by the existing workflow decisions.
 
 ## Access and next actions
 
-The workspace shows live/practice mode, current discussion steps and a next action. Live rooms can use a team access code or room-specific DeepSeek/Tavily keys. Keys are masked, cleared on success and never copied into browser storage.
+The workspace shows live/practice mode, current discussion steps and a next action. Live rooms can use a team access code or choose room-specific DeepSeek/OpenAI credentials with Tavily keys. OpenAI model IDs are configurable. Keys are masked, cleared on success or provider change and never copied into browser storage.
 
 Invite links use a URL fragment and are cleared from the address bar when read. A new unused invitation replaces its predecessor. Joined people recover with a private card; recovery rotates the session token and code. Administrators cannot take over a joined identity. Away status is visible and never replaces the person's required consent.
 

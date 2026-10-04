@@ -122,8 +122,10 @@ export async function runWorkflowEvaluation({ request, context, offline = false 
     let result;
     if (offline) result = await workflowFixture(native);
     else {
-      const settings = { ...env, EVALUATOR_RETRIEVAL: env.EVALUATOR_RETRIEVAL ?? 'api',
-        EVALUATOR_MODEL: env.EVALUATOR_MODEL ?? (env.EVALUATOR_PROVIDER === 'gemini' ? undefined : env.DEEPSEEK_MODEL) };
+      const provider = env.EVALUATOR_PROVIDER ?? env.PI_PROVIDER ?? 'deepseek';
+      const settings = { ...env, EVALUATOR_PROVIDER: provider, EVALUATOR_RETRIEVAL: env.EVALUATOR_RETRIEVAL ?? 'api',
+        EVALUATOR_MODEL: env.EVALUATOR_MODEL ?? (provider === 'openai' ? env.OPENAI_MODEL ?? env.PI_MODEL
+          : provider === 'gemini' ? undefined : env.DEEPSEEK_MODEL) };
       // Disabled search means no retrieval credentials or requests are needed.
       const runtime = deployment ?? (native.payload.tool_budget.max_searches ? createDeployment(settings) : {
         ...createModelRuntime(settings), retrieval: { search: async () => { throw Error('Retrieval disabled'); }, read: async () => { throw Error('Retrieval disabled'); } } });

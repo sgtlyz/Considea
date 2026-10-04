@@ -71,7 +71,7 @@ try {
   }
   const errors = [],
     contexts = [];
-  async function page() {
+  async function page(configure) {
     const context = await browser.newContext({
       viewport: { width: 1440, height: 1000 },
       reducedMotion: "reduce",
@@ -79,6 +79,7 @@ try {
     contexts.push(context);
     const p = await context.newPage();
     p.on("pageerror", (e) => errors.push(e.message));
+    await configure?.(p);
     await p.goto(base);
     return p;
   }
@@ -177,6 +178,20 @@ try {
   await until(()=>admin.locator("#key-status").innerText().then(t=>t.includes("Using your room keys")));
   assert.equal(await admin.locator("#room-deepseek").inputValue(),"");
   assert.equal(await admin.evaluate(()=>JSON.stringify({...sessionStorage,...localStorage}).includes("test-browser-private")),false);
+  await admin.locator("#room-provider").selectOption("openai");
+  assert.equal(await admin.locator("#room-deepseek").isVisible(), false);
+  await admin.locator("#room-openai").fill("sk-test-browser-private-openai");
+  await admin.locator("#room-model").fill("gpt-4.1-mini");
+  await admin.locator("#room-tavily").fill("test-browser-private-tavily");
+  const openaiSaved = admin.waitForResponse(r => r.url().endsWith("/keys") && r.request().method() === "POST");
+  await admin.getByRole("button", {name:"Save room keys",exact:true}).click();
+  assert.equal((await openaiSaved).status(), 200);
+  assert.equal(await admin.locator("#room-openai").inputValue(), "");
+  assert.equal(await admin.locator("#room-tavily").inputValue(), "");
+  assert.equal(await admin.evaluate(()=>JSON.stringify({...sessionStorage,...localStorage}).includes("test-browser-private")),false);
+  await admin.locator("#room-provider").selectOption("deepseek");
+  assert.equal(await admin.locator("#room-openai").isVisible(), false);
+  assert.equal(await admin.locator("#room-deepseek").isVisible(), true);
   await a.getByRole("button",{name:"Mark myself away",exact:true}).click();
   await until(async()=>!(await view("alice")).members.alice.available);
   await a.getByRole("button",{name:"I'm back",exact:true}).click();
@@ -429,6 +444,36 @@ try {
     ),
     false,
   );
+  // Exercise live key-entry controls against the mock backend, without paid model calls.
+  const creator = await page(async p => {
+    await p.route("**/api/capabilities", async route => {
+      const response = await route.fetch();
+      await route.fulfill({ response, json: { ...await response.json(), live: true, shared_demo_available: false } });
+    });
+  });
+  await creator.locator(".cover-login").click();
+  await creator.locator("#create-provider").selectOption("openai");
+  assert.equal(await creator.locator("#create-deepseek").isVisible(), false);
+  assert.equal(await creator.locator("#create-openai").isVisible(), true);
+  await creator.locator("#create-model").fill("gpt-4.1-mini");
+  await creator.setViewportSize({width:375,height:900});
+  assert.ok(await creator.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
+  await creator.screenshot({path:join(screenshots,"openai-creation-mobile.png"),fullPage:true});
+  await creator.locator("#memberIds").fill("alice,bob");
+  await creator.locator("#context").fill("Synthetic OpenAI room creation");
+  await creator.locator("#create-openai").fill("sk-test-create-private-openai");
+  await creator.locator("#create-tavily").fill("test-create-private-tavily");
+  const openaiCreated = creator.waitForResponse(r => r.url().endsWith("/api/rooms") && r.request().method() === "POST");
+  await creator.locator("#create").click();
+  const creation = await openaiCreated;
+  assert.equal(creation.status(), 201);
+  const posted = creation.request().postDataJSON();
+  assert.equal(posted.credentials.provider, "openai");
+  assert.equal(posted.credentials.model, "gpt-4.1-mini");
+  assert.equal(posted.credentials.deepseek_api_key, undefined);
+  assert.equal(await creator.locator("#create-openai").inputValue(), "");
+  assert.equal(await creator.locator("#create-tavily").inputValue(), "");
+  assert.equal(await creator.evaluate(() => JSON.stringify({...sessionStorage,...localStorage}).includes("test-create-private")), false);
   // The saved replay must work without a room, credentials or API requests.
   const replayContext = await browser.newContext({viewport:{width:1440,height:1000}});
   contexts.push(replayContext);

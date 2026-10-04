@@ -558,6 +558,38 @@
     action(tr("Save a text copy","保存文字副本"),row,()=>downloadText(fileName,text),"quiet-button");
     return card;
   }
+  function modelKeyFields(parent, prefix) {
+    const provider = el("select", undefined, el("label", tr("Model provider", "模型供应商"), parent));
+    provider.id = prefix + "-provider";
+    el("option", "DeepSeek", provider).value = "deepseek";
+    el("option", "OpenAI", provider).value = "openai";
+    const deepseek = passwordInput(parent, tr("DeepSeek API key", "深度求索服务密钥"), prefix + "-deepseek");
+    const openai = passwordInput(parent, tr("OpenAI API key", "OpenAI 服务密钥"), prefix + "-openai");
+    const model = el("input", undefined, el("label", tr("OpenAI model", "OpenAI 模型"), parent));
+    model.id = prefix + "-model";
+    model.autocomplete = "off";
+    model.placeholder = "e.g. gpt-4.1-mini";
+    model.value = capabilities?.openai_model || "";
+    provider.onchange = () => {
+      const useOpenAI = provider.value === "openai";
+      deepseek.parentElement.hidden = useOpenAI;
+      openai.parentElement.hidden = !useOpenAI;
+      model.parentElement.hidden = !useOpenAI;
+      // Clear inactive credentials when switching providers.
+      if (useOpenAI) deepseek.value = ""; else openai.value = "";
+    };
+    provider.onchange();
+  }
+  function modelCredentials(prefix) {
+    const provider = $(prefix + "-provider").value;
+    const credentials = {provider, tavily_api_key: $(prefix + "-tavily").value.trim()};
+    credentials[provider + "_api_key"] = $(prefix + "-" + provider).value.trim();
+    if (provider === "openai") credentials.model = $(prefix + "-model").value.trim();
+    return credentials;
+  }
+  function clearModelKeys(prefix) {
+    for (const suffix of ["deepseek", "openai", "tavily"]) $(prefix + "-" + suffix).value = "";
+  }
   function invitationUrl(room, invitation) {
     const url = new URL(location.origin + location.pathname);
     url.hash = new URLSearchParams({room, invitation}).toString();
@@ -568,7 +600,7 @@
     catch { const input = el("textarea", text, parent); input.readOnly = true; input.select(); }
   }
   function renderCreateAccess() {
-    const saved=Object.fromEntries(["funding","demo-code","create-deepseek","create-tavily"].map(id=>[id,$(id)?.value]));
+    const saved=Object.fromEntries(["funding","demo-code","create-provider","create-model","create-deepseek","create-openai","create-tavily"].map(id=>[id,$(id)?.value]));
     const out = $("create-access"); out.replaceChildren();
     if (!capabilities?.live) return;
     const select = el("select", undefined, el("label", tr("How will this room use AI?", "房间如何调用智能助手？"), out));
@@ -578,19 +610,20 @@
     own.disabled = !capabilities.own_keys_supported;
     const code = passwordInput(out, tr("Demo access code", "演示访问码"), "demo-code");
     const keys = el("div", undefined, out); keys.id = "create-key-fields";
-    passwordInput(keys,tr("DeepSeek API key","深度求索服务密钥"),"create-deepseek");
+    modelKeyFields(keys, "create");
     passwordInput(keys,tr("Tavily API key (required for web research)","网页检索服务密钥（检索时必填）"),"create-tavily");
     note(tr("Your keys pay for this room. They are encrypted on the server and are not saved in browser storage. You can replace or remove them later.","你的密钥为此房间付费，在服务器加密保存，不写入浏览器存储，可随时替换或删除。"),keys);
     select.onchange = () => { keys.hidden = select.value !== "own"; code.parentElement.hidden = select.value !== "team"; };
     if (!capabilities.shared_demo_available && capabilities.own_keys_supported) select.value = "own";
     for(const [id,value] of Object.entries(saved)) if(value !== undefined && $(id)) $(id).value=value;
+    $("create-provider").onchange();
     select.onchange();
   }
   function creationAccess() {
     if (!capabilities) throw Error(tr("The workspace is connecting. Wait a moment and try again.","工作区正在连接，请稍后重试。"));
     if (!capabilities.live) return {};
     return $("funding").value === "own"
-      ? {credentials:{deepseek_api_key:$("create-deepseek").value.trim(),tavily_api_key:$("create-tavily").value.trim()}}
+      ? {credentials:modelCredentials("create")}
       : {access_code:$("demo-code").value.trim()};
   }
   function renderConnection() {
@@ -622,7 +655,7 @@
   function renderRoomAccess(v) {
     const out = $("room-access"), identity = v.room_id + ":" + v.actor.role + ":" + (v.actor.member_id || "") + ":" + lang;
     if (out.dataset.identity !== identity) {
-      const keyDraft={deepseek:$("room-deepseek")?.value || "",tavily:$("room-tavily")?.value || ""};
+      const keyDraft=Object.fromEntries(["provider","model","deepseek","openai","tavily"].map(key=>[key,$("room-"+key)?.value]));
       out.dataset.identity = identity; out.replaceChildren();
       el("p",tr("Your access","你的访问权限"),out,"tag");
       note(tr("Keep a private recovery card so you can return to this room.","保存私人恢复卡，方便之后回到这个房间。"),out);
@@ -635,17 +668,18 @@
         el("h3",tr("Room API keys","房间服务密钥"),out);
         el("p","",out).id="key-status";
         if (v.access?.own_keys_supported) {
-          const deepseek=passwordInput(out,tr("DeepSeek API key","深度求索服务密钥"),"room-deepseek");
-          const tavily=passwordInput(out,tr("Tavily API key","网页检索服务密钥"),"room-tavily");
-          deepseek.value=keyDraft.deepseek;tavily.value=keyDraft.tavily;
+          modelKeyFields(out, "room");
+          passwordInput(out,tr("Tavily API key","网页检索服务密钥"),"room-tavily");
+          for(const [key,value] of Object.entries(keyDraft)) if(value !== undefined) $("room-"+key).value=value;
+          $("room-provider").onchange();
           note(tr("Saved keys are never shown again. These keys fund the whole room.","已保存的密钥不再显示，将用于整个房间。"),out);
           action(tr("Save room keys","保存房间密钥"),out,async()=>{
-            await api("/rooms/"+auth.room_id+"/keys",{credentials:{deepseek_api_key:deepseek.value.trim(),tavily_api_key:tavily.value.trim()}});
-            deepseek.value="";tavily.value="";await refresh(true);
+            await api("/rooms/"+auth.room_id+"/keys",{credentials:modelCredentials("room")});
+            clearModelKeys("room");await refresh(true);
           });
           action(tr("Remove room keys and pause","删除房间密钥并暂停"),out,async()=>{
             if (!confirm(tr("Remove the saved keys? New AI calls will pause until replacement keys are entered.","删除已保存的密钥？新的调用会暂停，直到输入替换密钥。"))) return;
-            await api("/rooms/"+auth.room_id+"/keys",{credentials:null});deepseek.value="";tavily.value="";await refresh(true);
+            await api("/rooms/"+auth.room_id+"/keys",{credentials:null});clearModelKeys("room");await refresh(true);
           },"quiet-button");
         }
       }
@@ -733,7 +767,7 @@
       },
       null,
     );
-    for (const id of ["demo-code","create-deepseek","create-tavily"]) if ($(id)) $(id).value="";
+    for (const id of ["demo-code","create-deepseek","create-openai","create-tavily"]) if ($(id)) $(id).value="";
     renderCredentials(createdRoom);
     $("roomId").value = createdRoom.room_id;
   });

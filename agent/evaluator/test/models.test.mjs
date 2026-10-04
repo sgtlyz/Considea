@@ -1,6 +1,39 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createModelRuntime } from '../models.mjs';
+import { openaiResponse } from '../../pi-base/test-fixtures/openai.mjs';
+
+test('OpenAI evaluator uses its own key/model and retains Tavily tools', async () => {
+  let body, endpoint, headers;
+  const runtime = createModelRuntime({ PI_PROVIDER: 'openai', OPENAI_API_KEY: 'sk-evaluator-fixture',
+    OPENAI_MODEL: 'gpt-4.1-mini', DEEPSEEK_API_KEY: 'unused-key', DEEPSEEK_MODEL: 'deepseek-flash' },
+  { fetch: async (url, init) => {
+    endpoint = String(url); body = JSON.parse(init.body); headers = new Headers(init.headers);
+    return openaiResponse('', { name: 'tavily_search', arguments: { query: 'official docs' } });
+  } });
+  assert.equal(runtime.model.provider, 'openai');
+  const result = await runtime.streamFn(runtime.model, { systemPrompt: 'Return JSON.',
+    messages: [{ role: 'user', content: 'Search official docs and return JSON.', timestamp: 1 }],
+    tools: [{ name: 'tavily_search', description: 'Search sources', parameters: {
+      type: 'object', properties: { query: { type: 'string' } }, required: ['query'] } }] },
+  { toolChoice: 'required' }).result();
+  assert.equal(endpoint, 'https://api.openai.com/v1/responses');
+  assert.equal(headers.get('authorization'), 'Bearer sk-evaluator-fixture');
+  assert.equal(body.model, 'gpt-4.1-mini');
+  assert.equal(body.tools[0].name, 'tavily_search');
+  assert.equal(body.tool_choice, 'required');
+  assert.equal(body.thinking, undefined);
+  assert.equal(result.stopReason, 'toolUse');
+});
+
+test('OpenAI evaluator rejects missing provider keys and models and respects an explicit override', () => {
+  for (const config of [ { EVALUATOR_PROVIDER: 'openai', OPENAI_MODEL: 'gpt-4.1-mini', DEEPSEEK_API_KEY: 'unused' },
+    { EVALUATOR_PROVIDER: 'openai', OPENAI_API_KEY: 'sk-fixture' } ])
+    assert.throws(() => createModelRuntime(config), { code: 'CONFIG_ERROR' });
+  const runtime = createModelRuntime({ EVALUATOR_PROVIDER: 'openai', EVALUATOR_MODEL: 'gpt-4.1',
+    OPENAI_API_KEY: 'sk-fixture', OPENAI_MODEL: 'gpt-4.1-mini' });
+  assert.equal(runtime.model.id, 'gpt-4.1');
+});
 
 test('DeepSeek and Gemini configurations produce Pi models without making remote calls', () => {
   const d = createModelRuntime({ EVALUATOR_PROVIDER: 'deepseek', DEEPSEEK_API_KEY: 'fixture', EVALUATOR_MODEL: 'deepseek-flash' });
