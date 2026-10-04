@@ -17,6 +17,15 @@ test('question status is derived from strictly validated question content', asyn
   const result = await runInterview({ request:x.request, runtime:createOfflineRuntime(() => ({status:'ok', data:x.response.data, warnings:[]})) });
   assert.equal(result.status,'needs_input'); assert.deepEqual(result.data,x.response.data);
 });
+test('structured unknowns retain text and inference labels, but foreign evidence remains invalid', async () => {
+  const x=pair('interview-summary-v2');
+  const raw={status:'ok',data:structuredClone(x.response.data),warnings:[]};
+  raw.data.profile_draft.unknowns=[{category:'unknown',text:'Future scope is unknown',basis:'agent_inference',private_message_ids:[]}];
+  const r=await runInterview({request:x.request,runtime:createOfflineRuntime(()=>raw)});
+  assert.equal(r.status,'ok'); assert.deepEqual(r.data.profile_draft.unknowns,['[AI推断，待确认] Future scope is unknown']);
+  raw.data.profile_draft.unknowns[0].private_message_ids=['foreign'];
+  assert.equal((await runInterview({request:x.request,runtime:createOfflineRuntime(()=>raw)})).error.code,'INVALID_OUTPUT');
+});
 test('normalization never launders extra approvals, foreign evidence, IDs or unsupported categories', async () => {
   for (const change of [r=>{r.approved=true;}, r=>{r.data.profile_draft.approved=true;},
     r=>{r.data.member_id='outsider';},r=>{r.data.profile_draft.items[0].private_message_ids=['foreign'];},
