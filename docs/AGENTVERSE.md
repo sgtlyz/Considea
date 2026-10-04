@@ -7,10 +7,22 @@ listing an address does not make an unhosted agent usable.
 
 ## Current rollout
 
-The new shared-workflow endpoints are implemented but have not yet been deployed
-or registered. Do not claim they are available until the final checks below pass.
-The older standalone Interview registration uses a different adapter and private
-identity; this change does not replace its address or recover its missing seed.
+All four shared-workflow agents were registered on October 4, 2026. Agentverse
+shows **Active / ASI Available** for each. Each agent returned its own `/help`
+response through an actual ASI:One conversation. The live backend is
+`https://considea-dev-api.onrender.com`; all four endpoints reject unsigned messages.
+This verifies registration and chat transport, not a new complete live-model run.
+The 14 adapter tests include a complete workflow using the teammate services with
+model fixtures, privacy checks, replay handling and recovery revocation.
+
+The Interview below is a new identity. The older standalone Interview is excluded
+from this rollout. Public addresses and profile links are also saved in
+[`agentverse-agents.json`](agentverse-agents.json).
+
+- [Interview on ASI:One](https://asi1.ai/ai/agent1qw3qhrta68sgnem5n7mtfww5hdwputwe3tyk2k6hlyyechmwel6dwprvrpx)
+- [Negotiator on ASI:One](https://asi1.ai/ai/agent1qtwrt2gpl7h5dmd5ly7dml0fzzp0re7kn720sp8n9wswr2xvj7x3q852ajd)
+- [Idea Generator on ASI:One](https://asi1.ai/ai/agent1qg6yne74nlfye99qx0lxck8kjtfj9yqqykqqjve7z7ncz7dfa8j4xu330xy)
+- [Evaluator on ASI:One](https://asi1.ai/ai/agent1q20juau5judmygjz8wv25sjqt4nwt9jnwpz8dl5zz2rhgsg69h3d6hmhw62)
 
 | Agent role | Public endpoint | Existing implementation |
 | --- | --- | --- |

@@ -1,0 +1,34 @@
+{
+  "interview": {
+    "name": "Considea Interview",
+    "address": "agent1qw3qhrta68sgnem5n7mtfww5hdwputwe3tyk2k6hlyyechmwel6dwprvrpx",
+    "endpoint": "https://considea-dev-api.onrender.com/agentverse/interview/chat",
+    "profile_url": "https://agentverse.ai/agents/details/agent1qw3qhrta68sgnem5n7mtfww5hdwputwe3tyk2k6hlyyechmwel6dwprvrpx/profile",
+    "asi_url": "https://asi1.ai/ai/agent1qw3qhrta68sgnem5n7mtfww5hdwputwe3tyk2k6hlyyechmwel6dwprvrpx",
+    "registration_confirmed": true
+  },
+  "negotiate": {
+    "name": "Considea Negotiator",
+    "address": "agent1qtwrt2gpl7h5dmd5ly7dml0fzzp0re7kn720sp8n9wswr2xvj7x3q852ajd",
+    "endpoint": "https://considea-dev-api.onrender.com/agentverse/negotiate/chat",
+    "profile_url": "https://agentverse.ai/agents/details/agent1qtwrt2gpl7h5dmd5ly7dml0fzzp0re7kn720sp8n9wswr2xvj7x3q852ajd/profile",
+    "asi_url": "https://asi1.ai/ai/agent1qtwrt2gpl7h5dmd5ly7dml0fzzp0re7kn720sp8n9wswr2xvj7x3q852ajd",
+    "registration_confirmed": true
+  },
+  "idea": {
+    "name": "Considea Idea Generator",
+    "address": "agent1qg6yne74nlfye99qx0lxck8kjtfj9yqqykqqjve7z7ncz7dfa8j4xu330xy",
+    "endpoint": "https://considea-dev-api.onrender.com/agentverse/idea/chat",
+    "profile_url": "https://agentverse.ai/agents/details/agent1qg6yne74nlfye99qx0lxck8kjtfj9yqqykqqjve7z7ncz7dfa8j4xu330xy/profile",
+    "asi_url": "https://asi1.ai/ai/agent1qg6yne74nlfye99qx0lxck8kjtfj9yqqykqqjve7z7ncz7dfa8j4xu330xy",
+    "registration_confirmed": true
+  },
+  "evaluator": {
+    "name": "Considea Evaluator",
+    "address": "agent1q20juau5judmygjz8wv25sjqt4nwt9jnwpz8dl5zz2rhgsg69h3d6hmhw62",
+    "endpoint": "https://considea-dev-api.onrender.com/agentverse/evaluator/chat",
+    "profile_url": "https://agentverse.ai/agents/details/agent1q20juau5judmygjz8wv25sjqt4nwt9jnwpz8dl5zz2rhgsg69h3d6hmhw62/profile",
+    "asi_url": "https://asi1.ai/ai/agent1q20juau5judmygjz8wv25sjqt4nwt9jnwpz8dl5zz2rhgsg69h3d6hmhw62",
+    "registration_confirmed": true
+  }
+}
