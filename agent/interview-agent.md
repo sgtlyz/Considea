@@ -1,116 +1,29 @@
-# Interview Agent 设计
+# Interview Agent：并行开发交付说明
 
-负责人：成员 1。目标：让没有现成 idea 的成员也能表达真实经历、资源和参与条件，并给协商过程补充缺失信息。
+负责人实现 `interview.turn` 和 `interview.summarize`。交付模块约定为 `agent/interview/definition.mjs`，default-export 的 name 为 `interview`。模块尚未实现。
 
-共享字段以 [contracts.md](contracts.md) 为准；状态与共享动作由 [workflow.md](workflow.md) 实现。本文中的问题是示例，不能机械地给所有人同一套题。
+输入/输出精确定义以 [contracts.md](contracts.md) 第 4 节和 [schema](interfaces/protocol.schema.json) 的 InterviewTurnInput/Data、InterviewSummarizeInput/Data 为准。
 
-## 1. 职责与边界
+## 每次调用做什么
 
-负责两种访谈：
+- turn 接收当前成员 messages、current_profile、shared_context、followup_context、interview_turn 和 limits；生成下一组 1–3 问，或说明可以总结。
+- summarize 接收同一授权上下文和 stop_reason；输出 profile_draft，不输出批准。
+- initial 的 followup_context=null；followup 必须包含上一 difference 和真实 answers；reopened 还带加一轮 review。
+- ready=false 时 status=needs_input；ready=true 时 status=ok 且没有问题。剩余题组预算为 0 时必须停止。
+- 根据人工回答追问原因、改变条件和取舍，不把此前已经问过的问题重新当初访。
+- 不保存全局会话、不访问其他人的私人消息、不生成团队候选、不判断 converge、不替成员回答。
 
-1. **Initial interview**：理解某一成员的痛点、想法、技能、资源、偏好、顾虑。
-2. **Targeted follow-up**：针对 Negotiate 提出的一个具体疑问，与指定成员追访，生成待确认的新摘要。
+题目 question_key、草稿 item_key 在本次回包内唯一。private_message_ids 只引用输入中的本人消息。共享画像的 ID、版本、批准与私人引用剥离由 Workflow 处理。
 
-只读取当前成员的原始访谈。不同成员使用独立会话；其他成员的内容只通过 workflow 提供的已共享摘要进入。
+## 可立即使用的样例
 
-不生成团队最终候选、不执行外部竞品研究、不替成员改变反馈，不宣布共识。访谈结束只输出摘要草稿；成员本人编辑并确认之后才能共享。
+- [初访问题](interfaces/fixtures/interview-turn.json)
+- [预算停止](interfaces/fixtures/interview-ready.json)
+- [根据人工答案追访](interfaces/fixtures/interview-followup.json)
+- [画像总结](interfaces/fixtures/interview-summary.json)
 
-## 2. 接口
+这些是离线假数据。Workflow 可先据此展示题目和草稿，你独立替换模型输出。
 
-### interview.turn
+验收：输入错成员/未知引用应拒绝；不得超出 max_questions；没有剩余题组不得继续问；输出没有 approved_at；回访实际引用人工回答。Pi 中的模型 turn、个人 interview_turn、团队 discussion_round 分开。
 
-输入 payload：
-
-| 字段 | 用途 |
-| --- | --- |
-| `room_config` | 比赛背景、时间约束、轮数限制 |
-| `private_interview` | 当前成员的对话、mode、round_index、覆盖情况 |
-| `shared_context` | 仅追访需要的候选、公开证据和获准共享的摘要，可空 |
-| `followup_task` | action 的 goal、expected_information、issue_id；初访为空 |
-
-输出 data：`InterviewTurnResult`，包括最多 3 个问题、已知/未知主题、是否可以总结、停止原因。由 workflow 分配题目 ID 并计数，避免模型自由增长轮数。
-
-调用方式：进入会话时生成第一组问题；成员提交这一组回答之后，生成下一组或返回总结条件。一个组回答可以包含三问的答案，不要求拆成三次模型调用。未提交回答前不连续自动追问。
-
-### interview.summarize
-
-输入 payload：`room_config`、当前 `private_interview`、可选的上一版已共享 `profile`。
-
-输出 data：`{member_id, draft_profile, changes, unknowns}`。draft_profile 使用 SharedProfile 内容结构，省略批准时间；changes 是对上一版的变化说明，仅给本人。草稿条目可使用临时 ID，由 workflow 在批准保存时生成稳定 ID。
-
-状态：可正常输出草稿用 `ok`；缺少个人回答需用 `needs_input`，不得补写虚构能力。用户拒绝某问题时仍可正常总结，并将该字段保留 unknown/declined。
-
-## 3. 初访策略
-
-以下是主题覆盖建议，最多 7 轮，不要求问满：
-
-| 阶段 | 要挖掘的信息 | 示例 |
-| --- | --- | --- |
-| 真实经历 | 具体片段、当前 workaround、影响 | 最近哪件事让你反复浪费时间？当时怎么处理？ |
-| 动机 | 为什么想做某 idea，想保留的体验 | 如果不做狼人杀，你最想保留的是游戏、实时互动还是多 Agent 博弈？ |
-| 能力与资源 | 自述经验、现成代码、数据、设备 | 哪种功能你能独立完成？是否已有能复用的接口？ |
-| 偏好 | 对有趣、实用、学习、展示的取舍 | 两个方案都能做，你会更愿意做哪个，为什么？ |
-| 顾虑 | 不愿做的方向、风险、个人限制 | 哪些方案让你不想参与？是主题、范围还是分工？ |
-| 条件 | 怎样改变才愿意参与，哪些不能妥协 | 缩成文字交互后能接受吗？如果仍不能，也可以直接说明。 |
-| 确认 | 摘要是否准确、还有哪些未知 | 这些是你愿意给团队看的内容吗？有什么需要改写？ |
-
-回答含糊时问具体例子；回答明确时沿着新信息追问，不重复询问已经回答的主题。成员同时给出多个观点时拆成独立条目，避免摘要只保留最容易整合的一项。
-
-“我不知道”可以转向生活经历、技术和已有提案的顾虑。承认“不想做”是完整态度，不必把它改写成技术风险。
-
-## 4. 提前结束与 7 轮上限
-
-当 pain/idea 至少有一项可理解，技能资源和偏好/顾虑都已问过或被明确拒答，且关键歧义不影响摘要，就可以提前建议总结。这是工程建议，不是必须取得所有答案的门槛。
-
-到第 7 轮回答结束后直接总结，不再生成第 8 轮。成员主动点击“先提交摘要”也可以结束。缺失字段保留未知，不用额外长问卷弥补。
-
-摘要编辑与共享确认是 UI 动作，不计入新的访谈轮次。访谈 Agent 不能自行写入 approved_at。
-
-## 5. 定向追访
-
-Negotiate 选择追访对象与问题目的，Interview 决定具体怎么问。首版建议每个成员在一轮选题中最多一组 1–3 问，额度由 workflow 执行。
-
-追访步骤：
-
-1. 理解任务对应的候选版本和缺失信息，不读全队原始访谈。
-2. 简短说明为什么找该成员，例如“你担心延迟，我想确认什么体验对你可接受”。
-3. 用开放问题确认实际原因，允许“都不是”；最多提出一个具体修改供比较。
-4. 将回答写成摘要变更草稿，交给成员确认共享。
-5. 通过已批准的新摘要把信息交回 workflow。用户可在反馈 UI 中更新 stance；模型不能自动从“似乎接受”推成 support。
-
-成员明确不想继续解释时，保留反对和未知原因，将任务结束为“未取得新增共享信息”；不要进入无限说服。其他成员仍可被追访，方案仍可修改，协商整体可持续到 n 上限。
-
-## 6. 提示词设计
-
-固定系统指令至少包含：
-
-- 你的对象是当前一名成员，目标是理解，不是说服接受某方案。
-- 只用提供的信息，区分成员自述和你的推断。
-- 每轮最多 3 个简洁问题，尽量有具体场景，允许不知道和拒答。
-- 主观偏好也是有效输入，不因多数人支持而否定个人反对。
-- 不预测队友想法，不给“固执/懒惰”等人格标签。
-- 仅输出规定 JSON；公开内容必须等待本人确认。
-
-每次动态输入提供：访谈 mode、剩余额度、当前成员历史、已覆盖主题、当前任务目的。初访不提前塞入一个“最优方案”，以免所有人都围绕同一方向回答。
-
-## 7. 18 小时内的主路径
-
-先实现 turn 与 summarize，通过一位成员完整初访；再做多成员上下文隔离；随后接入 followup_task；最后完善摘要变更与错误情况。
-
-先提供一份固定结构样例给 workflow 开发者，确保页面不用等真实模型接通后才开发。语音将来转录为同样的成员回答，继续走相同流程。
-
-## 8. 验收场景
-
-| 输入 / 场景 | 应有结果 |
-| --- | --- |
-| 没有 idea，只有生活经历 | 追问实际痛点与 workaround，能产生真实摘要 |
-| “我就是不喜欢这个方向” | 有效记录，问允许的澄清问题，不强行合理化 |
-| “后端不会，但想学” | 区分已掌握能力和学习意愿 |
-| 第 7 轮已回答 | 输出摘要，不生成第 8 轮 |
-| 摘要被成员删除一句 | 后续共享输出不包含被删内容 |
-| A 和 B 并发回答 | A 的会话不能出现 B 的原始回答 |
-| followup 只问延迟 | 聚焦延迟与可接受条件，不重新做七轮初访 |
-| 回答未批准共享 | Negotiate 和公共看板收到的是等待状态，不是原文 |
-| 成员不再解释 | 任务可结束但反对保持有效，等待其他协商路径 |
-
-交付完成的标准：两个 operation 返回契约一致的数据，可由 workflow 跑完一次初访和一次指定成员追访。
+原 example-role.mjs 仅为旧初访示例，不能直接当 v2 实现。按 contracts 第 10 节直接导出新 definition，避免继承旧“7 轮”提示词。

@@ -1,0 +1,192 @@
+{
+  "description": "OFFLINE MOCK: fabricated team, evidence and approvals; no API calls.",
+  "request": {
+    "schema_version": "1.0",
+    "request_id": "req-negotiate-difference",
+    "room_id": "room-demo",
+    "operation": "negotiate.detect",
+    "input_revision": 8,
+    "payload": {
+      "contract_version": "2.0",
+      "discussion_round": 1,
+      "room_context": {
+        "member_ids": [
+          "member-a",
+          "member-b",
+          "member-c",
+          "member-d"
+        ],
+        "hackathon_context": "Offline fixture: four-person hackathon team.",
+        "deadline_at": null,
+        "constraints": []
+      },
+      "shared_context": {
+        "profiles": [
+          {
+            "profile_ref": {
+              "id": "profile-1",
+              "version": 1
+            },
+            "member_id": "member-a",
+            "items": [
+              {
+                "item_id": "item-1",
+                "category": "desired_experience",
+                "text": "保留用户对重要决定的控制。",
+                "basis": "member_statement",
+                "confidence": "high",
+                "source_id": "profile-1-v1-item-1"
+              }
+            ],
+            "unknowns": []
+          },
+          {
+            "profile_ref": {
+              "id": "profile-2",
+              "version": 1
+            },
+            "member_id": "member-b",
+            "items": [
+              {
+                "item_id": "item-1",
+                "category": "desired_experience",
+                "text": "通过 AI 减少规划中的重复操作。",
+                "basis": "member_statement",
+                "confidence": "high",
+                "source_id": "profile-2-v1-item-1"
+              }
+            ],
+            "unknowns": []
+          },
+          {
+            "profile_ref": {
+              "id": "profile-3",
+              "version": 1
+            },
+            "member_id": "member-c",
+            "items": [
+              {
+                "item_id": "item-1",
+                "category": "desired_experience",
+                "text": "通过 AI 减少规划中的重复操作。",
+                "basis": "member_statement",
+                "confidence": "high",
+                "source_id": "profile-3-v1-item-1"
+              }
+            ],
+            "unknowns": []
+          },
+          {
+            "profile_ref": {
+              "id": "profile-4",
+              "version": 1
+            },
+            "member_id": "member-d",
+            "items": [
+              {
+                "item_id": "item-1",
+                "category": "desired_experience",
+                "text": "通过 AI 减少规划中的重复操作。",
+                "basis": "member_statement",
+                "confidence": "high",
+                "source_id": "profile-4-v1-item-1"
+              }
+            ],
+            "unknowns": []
+          }
+        ],
+        "discussion_history": [],
+        "sources": [
+          {
+            "source_id": "profile-1-v1-item-1",
+            "kind": "profile_item",
+            "object_ref": {
+              "id": "profile-1",
+              "version": 1
+            },
+            "member_id": "member-a",
+            "discussion_round": 1,
+            "text": "保留用户对重要决定的控制。"
+          },
+          {
+            "source_id": "profile-2-v1-item-1",
+            "kind": "profile_item",
+            "object_ref": {
+              "id": "profile-2",
+              "version": 1
+            },
+            "member_id": "member-b",
+            "discussion_round": 1,
+            "text": "通过 AI 减少规划中的重复操作。"
+          },
+          {
+            "source_id": "profile-3-v1-item-1",
+            "kind": "profile_item",
+            "object_ref": {
+              "id": "profile-3",
+              "version": 1
+            },
+            "member_id": "member-c",
+            "discussion_round": 1,
+            "text": "通过 AI 减少规划中的重复操作。"
+          },
+          {
+            "source_id": "profile-4-v1-item-1",
+            "kind": "profile_item",
+            "object_ref": {
+              "id": "profile-4",
+              "version": 1
+            },
+            "member_id": "member-d",
+            "discussion_round": 1,
+            "text": "通过 AI 减少规划中的重复操作。"
+          }
+        ]
+      }
+    }
+  },
+  "response": {
+    "schema_version": "1.0",
+    "request_id": "req-negotiate-difference",
+    "room_id": "room-demo",
+    "operation": "negotiate.detect",
+    "input_revision": 8,
+    "status": "ok",
+    "data": {
+      "contract_version": "2.0",
+      "difference": {
+        "kind": "difference",
+        "category": "product_form",
+        "question": "是否让 AI 自动执行重要决定？",
+        "answer_type": "binary",
+        "options": [
+          {
+            "key": "yes",
+            "label": "是"
+          },
+          {
+            "key": "no",
+            "label": "否"
+          }
+        ],
+        "affected_member_ids": [
+          "member-a",
+          "member-b",
+          "member-c",
+          "member-d"
+        ],
+        "why_it_matters": "执行权限影响产品形态。",
+        "source_ids": [
+          "profile-1-v1-item-1",
+          "profile-2-v1-item-1",
+          "profile-3-v1-item-1",
+          "profile-4-v1-item-1"
+        ]
+      }
+    },
+    "warnings": [
+      "Offline fixture — not a real agent result"
+    ],
+    "error": null
+  }
+}
