@@ -20,7 +20,7 @@
 .replay-film { max-width: 1100px; margin: 0 auto; scroll-margin-top: 24px; }
 .film-bar { display: flex; justify-content: space-between; gap: 18px; padding: 14px 20px; border: 1px solid #383d40; border-bottom: 0; border-radius: 10px 10px 0 0; background: #151719; color: #c0c5c3; font-size: 12px; }
 .film-bar span:last-child { color: #9da69f; }
-.replay-film video { display: block; width: 100%; max-height: 610px; aspect-ratio: 1.6; object-fit: contain; background: #101214; border: 1px solid #383d40; }
+.replay-film video { display: block; width: 100%; max-height: 610px; aspect-ratio: 16 / 9; object-fit: contain; background: #101214; border: 1px solid #383d40; }
 .replay-film figcaption { text-align: center; font-size: 12px; color: #929a96; line-height: 1.6; max-width: 650px; margin: 18px auto 0; }
 .replay-conversation { max-width: 1440px; margin: auto; padding: 86px max(28px, 8vw) 64px; scroll-margin-top: 28px; }
 .conversation-heading { display: grid; grid-template-columns: 1.3fr 1fr; gap: 50px; align-items: end; }
@@ -77,7 +77,7 @@ html[lang="zh-CN"] .replay-opening h1, html[lang="zh-CN"] .conversation-heading 
   .replay-intro p { margin-bottom: 16px; }
   .film-bar { padding: 12px; font-size: 10px; gap: 10px; }
   .film-bar span:last-child { display: none; }
-  .replay-film video { aspect-ratio: 1.28; }
+  .replay-film video { aspect-ratio: 16 / 9; }
   .replay-film figcaption { font-size: 11px; text-align: left; }
   .replay-conversation { padding: 52px 24px 40px; }
   .conversation-heading { display: block; }
