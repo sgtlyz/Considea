@@ -5,7 +5,7 @@ The workflow calls six operations across four teammate implementations. It owns 
 | Role | Operations | Entry point |
 | --- | --- | --- |
 | Interview | interview.turn, interview.summarize | interview/service.mjs |
-| Negotiator | negotiate.detect | negotiate Python package |
+| Negotiator | negotiate.detect | negotiate/service.mjs (LLM, validated shared evidence) |
 | Idea Generator | idea.generate, idea.revise | idea/service.mjs |
 | Evaluator | evaluator.evaluate | evaluator/workflow.mjs adapter |
 

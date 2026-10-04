@@ -5,6 +5,8 @@ COPY agent/pi-base/package.json agent/pi-base/pnpm-lock.yaml agent/pi-base/pnpm-
 RUN pnpm --dir agent/pi-base install --frozen-lockfile --prod
 COPY agent/interview/package.json agent/interview/pnpm-lock.yaml ./agent/interview/
 RUN pnpm --dir agent/interview install --frozen-lockfile --prod
+COPY agent/negotiate/package.json agent/negotiate/pnpm-lock.yaml ./agent/negotiate/
+RUN pnpm --dir agent/negotiate install --frozen-lockfile --prod
 COPY agent/idea/package.json agent/idea/pnpm-lock.yaml agent/idea/pnpm-workspace.yaml ./agent/idea/
 RUN pnpm --dir agent/idea install --frozen-lockfile --prod
 COPY agent/evaluator/package.json agent/evaluator/pnpm-lock.yaml agent/evaluator/pnpm-workspace.yaml ./agent/evaluator/

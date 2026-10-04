@@ -1,6 +1,7 @@
 import { createInterface } from 'node:readline';
 import { runInterview } from '../../agent/interview/service.mjs';
 import { runIdea } from '../../agent/idea/service.mjs';
+import { runNegotiator } from '../../agent/negotiate/service.mjs';
 import { createOfflineRuntime } from '../../agent/pi-base/offline.mjs';
 import { liveRuntime } from '../../agent/pi-base/integration-runtime.mjs';
 
@@ -37,6 +38,7 @@ async function handle(message) {
           warnings: ['OFFLINE INTEGRATION: real agent code, simulated model output'] })) : liveRuntime({env});
     let result;
     if (request.operation.startsWith('interview.')) result = await runInterview({ request, runtime });
+    else if (request.operation === 'negotiate.detect') result = await runNegotiator({ request, runtime });
     else if (request.operation.startsWith('idea.')) result = space
       ? await space.idea({ request, attempt, runtime }) : await runIdea({ request, runtime });
     else throw Object.assign(new Error(), { code: 'INVALID_OPERATION' });

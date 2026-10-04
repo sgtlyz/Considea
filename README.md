@@ -12,6 +12,12 @@ Considea helps a small team choose a project together. Each person talks private
 
 The free live server can take a moment to wake up. The database is a 30-day Render PostgreSQL instance that expires on **November 3, 2026**. Export accepted briefs and migrate the database before expiry if you need to keep using it.
 
+## Architecture
+
+![Considea architecture: private interviews, LLM-based deliberation, evidence-grounded proposals and workflow execution](docs/assets/considea-architecture.svg)
+
+All four roles use LLMs in integrated live mode. The Negotiator interprets approved shared evidence to identify a consequential difference or clarification; code validates its output, member identities and citations. Human gates control disclosure, generation and acceptance. The workflow orchestrator mediates every transition, keeps personal clarifications private and persists state in PostgreSQL. The diagram shows the deployed stack with the LLM Negotiator introduced on this branch; it excludes inactive optional integrations.
+
 ## The conversation
 
 ```mermaid
@@ -55,7 +61,7 @@ For real calls, copy `.env.example` to `.env` without overwriting existing keys.
 | Component | Responsibility |
 | --- | --- |
 | Interview | Private questions, follow-up and a summary the member can edit |
-| Negotiator | Rank differences in approved shared information; currently Python rules |
+| Negotiator | Use an LLM to identify semantic differences and clarifications in approved shared evidence |
 | Idea Generator | Generate or revise candidates from the authorized discussion history |
 | Evaluator | Research similar projects and technical feasibility with a source ledger |
 | Workflow | Authentication, human decisions, versions, task leases, limits and persistence |

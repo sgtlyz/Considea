@@ -125,7 +125,7 @@ class IntegratedRunner:
         self.mode = "integrated-offline" if offline else "integrated"
         self.bridge = bridge or NodeBridge(spacetime_config)
         self.description = {"model": "fixture" if offline else "live", "interview": "teammate-service",
-            "negotiator": "teammate-python-rule-ranking", "idea": "teammate-service", "evaluator": evaluator,
+            "negotiator": "teammate-llm", "idea": "teammate-service", "evaluator": evaluator,
             "idea_storage": "spacetimedb" if spacetime_config else "sqlite", "mem0": "disabled"}
 
     def __call__(self, request):
@@ -134,9 +134,6 @@ class IntegratedRunner:
 
     def run_task(self, request, claim):
         op = request["operation"]
-        if op == "negotiate.detect":
-            from agent.negotiate import handle_request
-            return handle_request(request)
         credentials = self.credentials_for(request["room_id"]) if not self.offline else None
         if op == "evaluator.evaluate":
             if self.evaluator == "blocked":
@@ -148,7 +145,13 @@ class IntegratedRunner:
             return EvaluationResult(result["response"], result.get("report"))
         message = {"action": "agent", "request": request, "attempt": claim.get("attempt", 1), "credentials": credentials}
         if self.offline:
-            message["offline_response"] = MockRunner()(copy.deepcopy(request))
+            if op == "negotiate.detect":
+                # The baseline supplies an explicit offline model fixture only.
+                # Live requests always use the same Pi LLM service as this fixture.
+                from agent.negotiate import handle_request
+                message["offline_response"] = handle_request(copy.deepcopy(request))
+            else:
+                message["offline_response"] = MockRunner()(copy.deepcopy(request))
         return self.bridge.call(message)
 
     def translate(self, room_id, texts):
