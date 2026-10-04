@@ -1,6 +1,6 @@
 import { createInterface } from 'node:readline';
 import { normalizeRequest, error } from './contracts.mjs';
-import { runEvaluator, errorResponse } from './runner.mjs';
+import { runEvaluator, errorResponse, requiredInputResponse } from './runner.mjs';
 import { createModelRuntime } from './models.mjs';
 import { createTavilyApi, createTavilyCli } from './retrieval.mjs';
 import { runOffline } from './offline.mjs';
@@ -10,7 +10,7 @@ export function createDeployment(env = process.env) {
   const transport = env.EVALUATOR_RETRIEVAL ?? 'cli';
   if (!['cli', 'api'].includes(transport)) throw error('CONFIG_ERROR', 'EVALUATOR_RETRIEVAL must be cli or api');
   const retrieval = transport === 'api' ? createTavilyApi({ apiKey: env.TAVILY_API_KEY }) :
-    createTavilyCli({ executable: env.TVLY_PATH || 'tvly' });
+    createTavilyCli({ executable: env.TVLY_PATH || 'tvly', pythonExecutable: env.TVLY_PYTHON });
   const officialDomains = (env.EVALUATOR_OFFICIAL_DOMAINS ??
     'spacetimedb.com,fetch.ai,agentverse.ai,api-docs.deepseek.com,ai.google.dev,docs.tavily.com')
     .split(',').map(v => v.trim()).filter(Boolean);
@@ -27,9 +27,12 @@ async function main() {
     try {
       if (Buffer.byteLength(line, 'utf8') > 512000) throw error('INVALID_INPUT', 'Request exceeds the 512 KB input limit');
       try { request = JSON.parse(line); } catch { throw error('INVALID_INPUT', 'Expected one JSON request per line'); }
-      normalizeRequest(request); // Invalid inputs take precedence over missing deployment credentials.
-      if (fixture) result = await runOffline(request);
-      else { deployment ??= createDeployment(); result = await runEvaluator({ request, ...deployment }); }
+      const normalized = normalizeRequest(request); // Validate and ask for missing context before deployment credentials.
+      result = requiredInputResponse(normalized);
+      if (!result) {
+        if (fixture) result = await runOffline(normalized);
+        else { deployment ??= createDeployment(); result = await runEvaluator({ request: normalized, ...deployment }); }
+      }
     } catch (e) {
       result = errorResponse(request, ['INVALID_INPUT', 'CONFIG_ERROR'].includes(e?.code) ? e.code : 'MODEL_ERROR',
         ['INVALID_INPUT', 'CONFIG_ERROR'].includes(e?.code) ? e.message : 'Evaluator entry failed');

@@ -8,8 +8,13 @@ function fixture(responses) {
   return { model: p.getModel(), streamFn: models.streamSimple.bind(models) };
 }
 const final = data => fauxAssistantMessage(JSON.stringify({ status: 'ok', data, warnings: [] }));
-const research = data => [fauxAssistantMessage(fauxToolCall('search', { query: '协作 realtime' }), { stopReason: 'toolUse' }),
-  fauxAssistantMessage(fauxToolCall('read_source', { url: source.url }), { stopReason: 'toolUse' }), final(data)];
+const submit = data => fauxAssistantMessage(fauxToolCall('submit_report', { data, warnings: [] }), { stopReason: 'toolUse' });
+const researchOnly = (investigate = false) => [
+  fauxAssistantMessage(fauxToolCall('search', { query: investigate ? 'realtime subscription documentation' : 'team planning realtime projects' }), { stopReason: 'toolUse' }),
+  ...(investigate ? [] : [fauxAssistantMessage(fauxToolCall('search', { query: 'team planning hackathon projects' }), { stopReason: 'toolUse' })]),
+  fauxAssistantMessage(fauxToolCall('read_source', { url: source.url }), { stopReason: 'toolUse' }),
+];
+const research = data => [...researchOnly(Boolean(data.issue_id)), final(data)];
 const run = (req, messages, options = {}) => runEvaluator({ request: req, retrieval,
   officialDomains: ['docs.example.com'], ...fixture(messages), ...options });
 
@@ -18,7 +23,7 @@ test('evaluate executes real Pi tools and returns server-generated verdict and s
   assert.equal(result.status, 'ok'); assert.equal(result.data.passed, true);
   assert.equal(result.data.candidate_id, 'idea-1'); assert.equal(result.request_id, 'req-1');
   assert.equal(result.data.evidence.find(e => e.evidence_id === 'web-1').url, source.url);
-  assert.equal(result.data.search_log.length, 1); assert.ok(result.data.report_id);
+  assert.equal(result.data.search_log.length, 2); assert.ok(result.data.report_id);
 });
 test('business rejection is an ok response rather than runtime error', async () => {
   const d = draft(); d.tests.novelty.result = 'fail'; d.tests.novelty.reason = '目标用户、问题和核心方案高度相同且无差异。';
@@ -29,10 +34,39 @@ test('investigate preserves issue identity and evidence', async () => {
   const r = await run(request('evaluator.investigate'), research(investigation()));
   assert.equal(r.status, 'ok'); assert.equal(r.data.issue_id, 'issue-1'); assert.equal(r.data.evidence.length, 2);
 });
+
+test('investigation correction explicitly repairs a missing envelope warnings array', async () => {
+  const data = investigation();
+  const messages = research(data);
+  messages[messages.length - 1] = fauxAssistantMessage(JSON.stringify({ status: 'ok', data }));
+  messages.push(context => {
+    assert.ok(context.messages.some(m => m.role === 'user' && JSON.stringify(m.content).includes('warnings')));
+    return final(data);
+  });
+  const out = await run(request('evaluator.investigate'), messages);
+  assert.equal(out.status, 'ok');
+  assert.deepEqual(out.warnings, []);
+});
+
+test('repair feedback identifies unsupported check fields instead of asking the model to guess', async () => {
+  const invalid = draft(); invalid.technical_checks[0].next_check_type = 'needs_test';
+  const messages = research(invalid);
+  messages.push(context => {
+    assert.ok(context.messages.some(m => m.role === 'user' && JSON.stringify(m.content).includes('next_check_type')));
+    return final(draft());
+  });
+  assert.equal((await run(request(), messages)).status, 'ok');
+});
+
+test('malformed check types still return INVALID_OUTPUT rather than throwing in the correction callback', async () => {
+  const invalid = draft(); invalid.technical_checks[0].conclusion = 42;
+  const out = await run(request(), [...research(invalid), final(invalid)]);
+  assert.equal(out.error.code, 'INVALID_OUTPUT');
+});
 test('rejects invented evidence and a passing output without actual research', async () => {
   const d = draft(); d.tests.novelty.evidence_ids = ['fiction'];
-  assert.equal((await run(request(), research(d))).error.code, 'INVALID_OUTPUT');
-  assert.equal((await run(request(), [final(draft())])).error.code, 'INVALID_OUTPUT');
+  assert.equal((await run(request(), [...research(d), final(d)])).error.code, 'INVALID_OUTPUT');
+  assert.equal((await run(request(), [final(draft()), final(draft())])).error.code, 'INVALID_OUTPUT');
 });
 test('failed reads and hard turn budget preserve partial report with unknown tests', async () => {
   const d = draft(); for (const t of Object.values(d.tests)) {
@@ -62,10 +96,130 @@ test('parallel requests bind their own candidate version and never reuse old rep
   assert.deepEqual(results.map(r => r.data.candidate_version), [1, 2]);
   assert.notEqual(results[0].data.report_id, results[1].data.report_id);
   const old = request(); old.payload.previous_report = { evidence: [source] };
-  assert.equal((await run(old, [final(draft())])).error.code, 'INVALID_OUTPUT');
+  assert.equal((await run(old, [final(draft()), final(draft())])).error.code, 'INVALID_OUTPUT');
 });
 test('standalone idea interface returns the same envelope as workflow calls', async () => {
   const r = request(); const out = await evaluateIdea({ idea, context: r.payload, request_id: 'req-standalone',
     room_id: r.room_id, retrieval, officialDomains: ['docs.example.com'], ...fixture(research(draft())) });
   assert.equal(out.request_id, 'req-standalone'); assert.equal(out.data.passed, true);
+});
+test('invalid feasibility gets one corrective turn without accepting an unknown necessary dependency as pass', async () => {
+  const invalid = draft(); invalid.technical_checks.push({ dependency_id: 'new-essential-path', finding: 'Not checked',
+    conclusion: 'unknown', evidence_ids: [], next_check: 'Read its documentation' });
+  const corrected = structuredClone(invalid); corrected.tests.feasibility.result = 'insufficient_evidence';
+  corrected.tests.feasibility.missing_information = ['Verify new-essential-path'];
+  const out = await run(request(), [...research(invalid), context => {
+    assert.ok(context.messages.some(m => m.role === 'user' && JSON.stringify(m.content).includes('new-essential-path')));
+    return final(corrected);
+  }]);
+  assert.equal(out.status, 'ok'); assert.equal(out.data.passed, false);
+  assert.equal(out.data.tests.feasibility.result, 'insufficient_evidence');
+});
+test('correction is bounded to one turn and cannot grant invented sources on a second invalid output', async () => {
+  const invalid = draft(); invalid.tests.novelty.evidence_ids = ['invented']; let calls = 0;
+  const f = fixture([...research(invalid), final(invalid), final(draft())]);
+  const out = await runEvaluator({ request: request(), retrieval, officialDomains: ['docs.example.com'],
+    model: f.model, streamFn: (...args) => { calls++; return f.streamFn(...args); } });
+  assert.equal(out.error.code, 'INVALID_OUTPUT'); assert.equal(calls, 5);
+});
+
+test('DeepSeek requires initial research only when the request has a usable tool budget', async () => {
+  for (const enabled of [true, false]) {
+    const req = request('evaluator.investigate');
+    if (!enabled) Object.assign(req.payload.tool_budget, { max_searches: 0, max_reads: 0 });
+    const data = investigation();
+    if (!enabled) Object.assign(data, { conclusion: 'unknown', evidence_ids: [] });
+    const f = fixture(enabled ? research(data) : [final(data)]), choices = [];
+    const out = await runEvaluator({ request: req, retrieval, officialDomains: ['docs.example.com'],
+      model: { ...f.model, provider: 'deepseek' }, streamFn: (_model, context, options) => {
+        choices.push(options?.toolChoice);
+        return f.streamFn(f.model, context, options);
+      } });
+    assert.equal(out.status, 'ok');
+    assert.deepEqual(choices[0], enabled ? { type: 'function', function: { name: 'search' } } : 'required');
+    assert.ok(choices.slice(1).every(v => v === 'required'));
+  }
+});
+
+test('typed report submission finishes after tools without generating free-form final JSON', async () => {
+  const out = await run(request(), [...researchOnly(), submit(draft())]);
+  assert.equal(out.status, 'ok'); assert.equal(out.data.passed, true);
+  assert.equal(out.data.candidate_id, 'idea-1'); assert.equal(out.data.evidence.length, 2);
+});
+
+test('investigation submission maps capability availability independently of its official source basis', async () => {
+  for (const [capability_outcome, outcome] of [['available', 'support'], ['blocked', 'blocker']]) {
+    const { conclusion: _legacy, ...data } = investigation();
+    Object.assign(data, { capability_outcome, evidence_basis: 'official_documentation' });
+    const out = await run(request('evaluator.investigate'), [...researchOnly(true), submit(data)]);
+    assert.equal(out.status, 'ok'); assert.equal(out.data.outcome, outcome);
+    assert.equal(out.data.conclusion, 'supported_by_source');
+  }
+});
+
+test('typed submission retains source validation and allows one corrected submission', async () => {
+  const invalid = draft(); invalid.tests.novelty.evidence_ids = ['invented'];
+  const out = await run(request(), [...researchOnly(), submit(invalid), submit(draft())]);
+  assert.equal(out.status, 'ok'); assert.equal(out.data.passed, true);
+  assert.ok(!out.data.evidence.some(e => e.evidence_id === 'invented'));
+});
+
+test('submission preflight gives precise feedback for missing nested verdicts before SDK validation', async () => {
+  const invalid = draft(); delete invalid.tests.novelty.result;
+  const messages = [...researchOnly(), submit(invalid), context => {
+    const errors = context.messages.filter(m => m.role === 'toolResult' && m.toolName === 'submit_report');
+    assert.ok(errors.some(m => m.isError && JSON.stringify(m.content).includes('tests.novelty.result') &&
+      JSON.stringify(m.content).includes('Allowed evidence records')));
+    return submit(draft());
+  }];
+  assert.equal((await run(request(), messages)).status, 'ok');
+});
+
+test('two schema-invalid submissions terminate without accepting a third or another model call', async () => {
+  const invalid = draft(); invalid.technical_checks[0].extra_private_field = 'wrong';
+  const f = fixture([...researchOnly(), submit(invalid), submit(invalid), submit(draft())]);
+  let calls = 0;
+  const out = await runEvaluator({ request: request(), retrieval, officialDomains: ['docs.example.com'], model: f.model,
+    streamFn: (...args) => { calls++; return f.streamFn(...args); } });
+  assert.equal(out.error.code, 'INVALID_OUTPUT'); assert.equal(calls, 5);
+});
+
+test('typed and textual submissions share the single correction allowance', async () => {
+  const invalid = draft(); invalid.tests.novelty.evidence_ids = ['invented'];
+  const f = fixture([...researchOnly(), submit(invalid), final(invalid), submit(draft())]);
+  let calls = 0;
+  const out = await runEvaluator({ request: request(), retrieval, officialDomains: ['docs.example.com'], model: f.model,
+    streamFn: (...args) => { calls++; return f.streamFn(...args); } });
+  assert.equal(out.error.code, 'INVALID_OUTPUT'); assert.equal(calls, 5);
+});
+
+test('accepted submission cannot be overwritten by a later call in the same batch', async () => {
+  const altered = draft(); altered.tests.novelty.result = 'fail';
+  const messages = [...researchOnly(), fauxAssistantMessage([
+    fauxToolCall('submit_report', { data: draft(), warnings: [] }, { id: 'submit-first' }),
+    fauxToolCall('submit_report', { data: altered, warnings: [] }, { id: 'submit-second' }),
+  ], { stopReason: 'toolUse' })];
+  const out = await run(request(), messages);
+  assert.equal(out.status, 'ok'); assert.equal(out.data.tests.novelty.result, 'pass');
+});
+
+test('a valid submission on the last allowed turn completes without an extra model request', async () => {
+  const out = await run(request(), [...researchOnly(), submit(draft())], { maxTurns: 4 });
+  assert.equal(out.status, 'ok'); assert.equal(out.data.passed, true);
+});
+
+test('exhausted call budget prevents report submission and cannot publish a pass', async () => {
+  const out = await run(request(), [...researchOnly(), submit(draft())], { maxToolCalls: 3 });
+  assert.equal(out.status, 'partial'); assert.equal(out.data.passed, false);
+});
+
+test('truncated tool arguments are never executed or accepted as a complete report', async () => {
+  const truncated = fauxAssistantMessage(fauxToolCall('submit_report', { data: draft(), warnings: [] }), { stopReason: 'length' });
+  const out = await run(request(), [...researchOnly(), truncated]);
+  assert.equal(out.status, 'error'); assert.equal(out.error.code, 'MODEL_ERROR');
+});
+
+test('a rejected textual output can use its one correction to submit through the typed tool', async () => {
+  const out = await run(request(), [...researchOnly(), fauxAssistantMessage('not JSON'), submit(draft())]);
+  assert.equal(out.status, 'ok'); assert.equal(out.data.passed, true);
 });

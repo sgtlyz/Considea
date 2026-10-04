@@ -7,84 +7,28 @@
   "payload": {
     "candidate": {
       "candidate_id": "idea-1",
-      "version": 1,
+      "version": 2,
       "title": "团队选题协调员",
-      "target_users": [
-        "四人比赛团队"
-      ],
+      "target_user": "四人比赛团队",
       "problem": "队员难以形成共同选题",
-      "core_flow": [
-        "独立访谈",
-        "整合候选",
-        "查重和可行性测试",
-        "协商"
-      ],
-      "mvp_scope": [
-        "完成一个候选的评估"
-      ],
-      "out_of_scope": [
-        "语音"
-      ],
-      "critical_dependencies": [
-        {
-          "dependency_id": "db",
-          "description": "共享状态实时同步",
-          "must_have": true
-        }
-      ],
-      "contributions": [],
-      "tradeoffs": [],
-      "unknowns": [],
-      "change_summary": "",
-      "iteration_index": 1
+      "solution": "先形成共同理解，生成并微调候选，最后评估",
+      "discussion_trace": ["decision-1：采用共享状态"],
+      "tradeoffs": ["仅做文字"],
+      "mvp": "一个候选的评估报告",
+      "member_suggestions": [],
+      "status": "refined",
+      "critical_dependencies": [{"dependency_id": "db", "description": "共享状态实时同步", "must_have": true}]
     },
     "room_config": {
       "room_id": "room-1",
-      "member_ids": [
-        "member-a"
-      ],
-      "deadline_at": null,
-      "max_iterations": 3,
-      "initial_interview_max_rounds": 7,
-      "max_questions_per_turn": 3,
-      "followup_batches_per_member_per_iteration": 1,
-      "constraints": [
-        {
-          "id": "time",
-          "text": "18 小时完成最小 demo",
-          "source_kind": "member_report",
-          "source_id": "member-a",
-          "verification_status": "member_reported",
-          "acceptance": "team_confirmed"
-        }
-      ]
-    },
-    "team_criteria": {
-      "version": 1,
-      "criteria": [],
-      "unresolved_tradeoffs": []
+      "members": ["member-a"],
+      "hackathon_context": "团队项目选题",
+      "constraints": ["仅做文字"],
+      "time_limit": {"kind": "none"}
     },
     "shared_resources": [
-      {
-        "profile_id": "p-a",
-        "profile_version": 1,
-        "item_id": "skill-a",
-        "member_id": "member-a",
-        "category": "skill",
-        "text": "团队能使用 Node 和数据库"
-      }
+      {"profile_id": "p-a", "profile_version": 1, "item_id": "skill-a", "member_id": "member-a", "category": "skill", "text": "团队能使用 Node 和数据库"}
     ],
-    "previous_report": null,
-    "tool_budget": {
-      "max_searches": 2,
-      "max_reads": 3,
-      "timeout_ms": 60000,
-      "per_call_timeout_ms": 10000
-    },
-    "question": {
-      "issue_id": "issue-1",
-      "text": "是否支持实时同步？",
-      "expected_information": "官方接口能力"
-    }
+    "question": {"issue_id": "issue-1", "text": "是否支持实时同步？", "expected_information": "官方接口能力"}
   }
 }

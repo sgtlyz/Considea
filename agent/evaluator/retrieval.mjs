@@ -1,4 +1,5 @@
 import { execFile } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 import { error, object } from './contracts.mjs';
 
 export function publicUrl(value) {
@@ -11,6 +12,13 @@ export function publicUrl(value) {
   } catch { return null; }
 }
 const unavailable = () => error('TOOL_UNAVAILABLE', 'Retrieval service failed or returned an invalid result');
+function domainFilter(includeDomains) {
+  if (includeDomains === undefined) return {};
+  if (!Array.isArray(includeDomains) || includeDomains.length === 0 ||
+    !includeDomains.every(v => typeof v === 'string' && /^[a-z0-9.-]+$/i.test(v)))
+    throw error('CONFIG_ERROR', 'Invalid retrieval domain filter');
+  return { include_domains: includeDomains };
+}
 function searchResult(body) {
   if (!object(body) || !Array.isArray(body.results)) throw unavailable();
   const results = body.results.filter(v => object(v) && publicUrl(v.url) && typeof v.title === 'string' && typeof v.content === 'string')
@@ -43,8 +51,8 @@ export function createTavilyApi({ apiKey, fetchFn = fetch } = {}) {
     } catch { throw unavailable(); }
   };
   return {
-    async search(query, { limit = 5, signal } = {}) {
-      return searchResult(await post('search', { query, max_results: limit, search_depth: 'basic' }, signal));
+    async search(query, { limit = 5, signal, includeDomains } = {}) {
+      return searchResult(await post('search', { query, max_results: limit, search_depth: 'basic', ...domainFilter(includeDomains) }, signal));
     },
     async read(value, { signal } = {}) {
       const url = publicUrl(value); if (!url) throw error('INVALID_SOURCE', 'Only public HTTP(S) sources are accepted');
@@ -53,9 +61,14 @@ export function createTavilyApi({ apiKey, fetchFn = fetch } = {}) {
   };
 }
 
-export function createTavilyCli({ executable = 'tvly', argsPrefix = [] } = {}) {
+export function createTavilyCli({ executable = 'tvly', argsPrefix = [], pythonExecutable } = {}) {
   if (typeof executable !== 'string' || !executable || !Array.isArray(argsPrefix) || !argsPrefix.every(v => typeof v === 'string'))
     throw error('CONFIG_ERROR', 'Invalid Tavily executable configuration');
+  if (pythonExecutable !== undefined) {
+    if (typeof pythonExecutable !== 'string' || !pythonExecutable) throw error('CONFIG_ERROR', 'Invalid Tavily Python executable');
+    executable = pythonExecutable;
+    argsPrefix = [fileURLToPath(new URL('./tavily_cli_compat.py', import.meta.url)), ...argsPrefix];
+  }
   const call = (args, signal) => new Promise((resolve, reject) => {
     // Executable and prefix are server configuration; request text is passed only as an argument.
     execFile(executable, [...argsPrefix, ...args, '--json'], { shell: false, windowsHide: true, signal,
@@ -66,8 +79,10 @@ export function createTavilyCli({ executable = 'tvly', argsPrefix = [] } = {}) {
     });
   });
   return {
-    async search(query, { limit = 5, signal } = {}) {
-      return searchResult(await call(['search', query, '--max-results', String(limit), '--depth', 'basic'], signal));
+    async search(query, { limit = 5, signal, includeDomains } = {}) {
+      const filter = domainFilter(includeDomains);
+      return searchResult(await call(['search', query, '--max-results', String(limit), '--depth', 'basic',
+        ...(filter.include_domains ? ['--include-domains', filter.include_domains.join(',')] : [])], signal));
     },
     async read(value, { signal } = {}) {
       const url = publicUrl(value); if (!url) throw error('INVALID_SOURCE', 'Only public HTTP(S) sources are accepted');

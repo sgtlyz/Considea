@@ -10,9 +10,10 @@ export function request(operation = 'evaluator.evaluate') {
   return { schema_version: '1.0', request_id: 'req-1', room_id: 'room-1', input_revision: 1, operation,
     payload: { candidate: structuredClone(idea),
       room_config: { room_id: 'room-1', member_ids: ['member-a'], deadline_at: null,
+        time_limit: { kind: 'none' },
         max_iterations: 3, initial_interview_max_rounds: 7, max_questions_per_turn: 3,
         followup_batches_per_member_per_iteration: 1,
-        constraints: [{ id: 'time', text: '18 小时完成最小 demo', source_kind: 'member_report',
+        constraints: [{ id: 'scope', text: '先完成文字版 MVP', source_kind: 'member_report',
           source_id: 'member-a', verification_status: 'member_reported', acceptance: 'team_confirmed' }] },
       team_criteria: { version: 1, criteria: [], unresolved_tradeoffs: [] },
       shared_resources: [{ profile_id: 'p-a', profile_version: 1, item_id: 'skill-a', member_id: 'member-a',
@@ -41,6 +42,9 @@ export function investigation() {
     recommended_next_step: '接入后测试' };
 }
 export const retrieval = {
-  search: async () => ({ results: [{ url: source.url, title: source.title, content: '订阅文档' }] }),
+  search: async (_query, options = {}) => ({ results: options.includeDomains?.includes('devpost.com') ? [] :
+    options.includeDomains?.includes('github.com') ? [{ url: 'https://github.com/fixture/team-planner',
+      title: 'Fixture Team Planner', content: 'Synthetic project discovery result.' }] :
+      [{ url: source.url, title: source.title, content: '订阅文档' }] }),
   read: async url => ({ url, title: source.title, content: source.excerpt }),
 };

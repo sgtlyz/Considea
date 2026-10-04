@@ -27,7 +27,8 @@ def run_evaluator(request, *, timeout=None, fixture=False):
                                  capture_output=True, text=True, encoding="utf-8", timeout=timeout,
                                  env={**os.environ, "PYTHONIOENCODING": "utf-8"}, check=False,
                                  **({"creationflags": subprocess.CREATE_NO_WINDOW} if os.name == "nt" else {}))
-        lines = [line for line in process.stdout.splitlines() if line.strip()]
+        # JSONL is delimited by LF; legal U+2028/U+2029 inside a JSON string are content.
+        lines = [line for line in process.stdout.split('\n') if line.strip()]
         if process.returncode != 0 or len(lines) != 1:
             return _error(request, "BRIDGE_ERROR", "Evaluator subprocess failed", True)
         result = json.loads(lines[0])
