@@ -1,7 +1,7 @@
 FROM node:22-bookworm-slim AS agent-dependencies
 WORKDIR /app/agent/pi-base
 RUN npm install --global pnpm@11.19.0
-COPY agent/pi-base/package.json agent/pi-base/pnpm-lock.yaml ./
+COPY agent/pi-base/package.json agent/pi-base/pnpm-lock.yaml agent/pi-base/pnpm-workspace.yaml ./
 RUN pnpm install --frozen-lockfile --prod
 
 FROM python:3.12-slim-bookworm
