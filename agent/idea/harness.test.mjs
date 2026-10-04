@@ -17,6 +17,22 @@ test('tool-free Idea corrects one malformed JSON response then validates generat
   }
 });
 
+test('Idea never retries or publishes output stopped at the token limit', async () => {
+  for (const operation of ['idea.generate', 'idea.revise']) {
+    const f = fixture(operation); let calls = 0;
+    // Even syntactically complete content is not a completed provider response.
+    const raw = JSON.stringify({ status: 'ok', data: f.response.data, warnings: [] });
+    const result = await runIdea({ request: f.request, runtime: createOfflineRuntime([
+      () => { calls++; return fauxAssistantMessage(raw, { stopReason: 'length' }); },
+      () => assert.fail('token exhaustion must not request output correction'),
+    ]) });
+    assert.equal(result.error.code, 'BUDGET_EXCEEDED');
+    assert.equal(result.error.retryable, false);
+    assert.deepEqual(result.data, {});
+    assert.equal(calls, 1);
+  }
+});
+
 test('Idea output schema binds exact candidate slots, source IDs and revision reference', () => {
   const f = fixture('idea.generate'), s = ideaOutputSchema(f.request.operation, f.request.payload);
   assert.equal(s.properties.data.properties.candidates.minItems, f.request.payload.candidate_slots.length);

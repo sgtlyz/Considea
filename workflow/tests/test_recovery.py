@@ -300,6 +300,39 @@ class RevisionRecoveryTests(unittest.TestCase):
     vote = base.WorkflowTests.vote
     store_transaction = base.WorkflowTests.store_transaction
 
+    def test_generation_budget_failure_preserves_round_four_votes_and_retries(self):
+        self.reach_convergence_gate()
+        self.vote("alice", "converge")
+        self.assertEqual(self.view()["phase"], "awaiting_convergence_decision")
+        self.assertFalse(any(t["operation"] == "idea.generate" for t in self.view()["tasks"]))
+        self.vote("bob", "converge")
+        before = self.view()
+        claim = self.engine.claim(self.room)
+        self.assertEqual(claim["request"]["operation"], "idea.generate")
+        self.assertFalse(self.engine.finish(claim["task_id"], claim["lease_token"],
+                                           failure(claim["request"], "BUDGET_EXCEEDED", False)))
+        failed = self.view()
+        for key in ("discussion_round", "phase", "answers", "votes", "convergence_decision", "shared_context"):
+            self.assertEqual(failed[key], before[key])
+        self.assertEqual(failed["phase"], "idea_generating")
+        self.assertFalse(failed["candidates"])
+        task = next(t for t in failed["tasks"] if t["task_id"] == claim["task_id"])
+        self.assertEqual((task["status"], task["error"]["code"], task["auto_retries"]),
+                         ("failed", "BUDGET_EXCEEDED", 0))
+        self.assertFalse(self.engine.run_once(self.room))
+        self.engine = Workflow(Store(self.path), MockRunner())
+        self.engine.retry(self.tokens["alice"], self.room, task["task_id"])
+        retry = self.engine.claim(self.room)
+        self.assertEqual(retry["request"], claim["request"])
+        self.assertTrue(self.engine.finish(retry["task_id"], retry["lease_token"], self.runner(retry["request"])))
+        self.drain()
+        resumed = self.view()
+        self.assertEqual(resumed["phase"], "awaiting_review")
+        for key in ("discussion_round", "answers", "votes", "convergence_decision"):
+            self.assertEqual(resumed[key], before[key])
+        self.assertEqual(len(resumed["candidates"]), 2)
+        self.assertIsNone(resumed["final_output"])
+
     def test_failed_revision_keeps_four_rounds_and_human_reviews_then_resumes(self):
         cid = self.reach_review()
         old = self.view()["candidates"][cid]

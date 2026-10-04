@@ -156,6 +156,7 @@ export async function runAgent({ request, definition, model, streamFn,
       // Protected diagnostics only; raw output never enters public progress/errors.
       try { onDiagnostic({ request_id: request.request_id, operation: request.operation, attempt,
         stopReason: last?.stopReason, usage: last?.usage, content: last?.content }); } catch { /* diagnostics cannot fail a run */ }
+      if (last?.stopReason === 'length') throw fail('BUDGET_EXCEEDED', 'Model exceeded its output token limit');
       if (!last || last.stopReason !== 'stop') throw fail('MODEL_ERROR', 'Model did not finish successfully');
       let raw, result, parsed = false, jsonRepair = null;
       try {

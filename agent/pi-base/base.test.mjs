@@ -52,6 +52,24 @@ test('real Pi loop executes a scoped tool then obtains final response', async ()
   assert.ok(events.some(e => e.type === 'tool_execution_start'));
   assert.ok(events.every(e => Object.keys(e).length === 2));
 });
+
+test('output token exhaustion is non-retryable and preserves protected diagnostics', async () => {
+  const diagnostics = [], progress = [];
+  const message = fauxAssistantMessage('PRIVATE_TRUNCATED_OUTPUT', { stopReason: 'length' });
+  const r = await runAgent({ request: request(), definition, maxOutputRepairs: 1,
+    onDiagnostic: record => diagnostics.push(record), onProgress: event => progress.push(event),
+    ...fixture([message, () => assert.fail('token exhaustion must not request output correction')]),
+  });
+  assert.equal(r.error.code, 'BUDGET_EXCEEDED');
+  assert.equal(r.error.retryable, false);
+  assert.equal(r.error.message, 'Model exceeded its output token limit');
+  assert.deepEqual(r.data, {});
+  assert.equal(diagnostics.length, 1);
+  assert.equal(diagnostics[0].stopReason, 'length');
+  assert.ok(diagnostics[0].usage.input > 0);
+  assert.ok(diagnostics[0].usage.output > 0);
+  assert.ok(!JSON.stringify({ r, progress }).includes('PRIVATE_TRUNCATED_OUTPUT'));
+});
 test('fresh contexts isolate consecutive members', async () => {
   for (const member of ['PRIVATE_A', 'PRIVATE_B']) {
     const other = member === 'PRIVATE_A' ? 'PRIVATE_B' : 'PRIVATE_A';
