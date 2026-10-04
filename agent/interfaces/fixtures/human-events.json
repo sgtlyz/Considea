@@ -1,0 +1,100 @@
+[
+  {
+    "contract_version": "2.0",
+    "room_id": "room-demo",
+    "expected_revision": 20,
+    "event_id": "evt-answer",
+    "type": "interview.answer",
+    "payload": {
+      "session_ref": {
+        "id": "session-a",
+        "version": 1
+      },
+      "question_batch_ref": {
+        "id": "questions-a",
+        "version": 1
+      },
+      "answers": [
+        {
+          "question_key": "q-1",
+          "text": "减少选题争论。",
+          "declined": false
+        }
+      ]
+    }
+  },
+  {
+    "contract_version": "2.0",
+    "room_id": "room-demo",
+    "expected_revision": 20,
+    "event_id": "evt-profile",
+    "type": "profile.approve",
+    "payload": {
+      "draft_ref": {
+        "id": "draft-a",
+        "version": 1
+      },
+      "items": [
+        {
+          "item_key": "draft-1",
+          "category": "desired_experience",
+          "text": "重要决定由用户确认。",
+          "basis": "member_statement",
+          "confidence": "high"
+        }
+      ],
+      "unknowns": []
+    }
+  },
+  {
+    "contract_version": "2.0",
+    "room_id": "room-demo",
+    "expected_revision": 20,
+    "event_id": "evt-difference",
+    "type": "difference.answer",
+    "payload": {
+      "difference_ref": {
+        "id": "difference-4",
+        "version": 1
+      },
+      "selected_option_key": "no",
+      "text": "重要决定须由人确认。",
+      "disagrees_with_framing": false
+    }
+  },
+  {
+    "contract_version": "2.0",
+    "room_id": "room-demo",
+    "expected_revision": 20,
+    "event_id": "evt-converge",
+    "type": "convergence.vote",
+    "payload": {
+      "difference_ref": {
+        "id": "difference-4",
+        "version": 1
+      },
+      "discussion_round": 4,
+      "decision": "converge",
+      "reason": "剩余取舍可以通过候选表达。"
+    }
+  },
+  {
+    "contract_version": "2.0",
+    "room_id": "room-demo",
+    "expected_revision": 20,
+    "event_id": "evt-review",
+    "type": "candidate.review",
+    "payload": {
+      "candidate_ref": {
+        "id": "candidate-a",
+        "version": 1
+      },
+      "evaluation_ref": {
+        "id": "evaluation-a-1",
+        "version": 1
+      },
+      "decision": "minor_revision",
+      "instructions": "MVP 暂时只保留文字卡片。"
+    }
+  }
+]

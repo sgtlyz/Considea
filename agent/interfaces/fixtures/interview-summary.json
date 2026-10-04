@@ -1,0 +1,80 @@
+{
+  "description": "OFFLINE MOCK: fabricated team, evidence and approvals; no API calls.",
+  "request": {
+    "schema_version": "1.0",
+    "request_id": "req-interview-summary",
+    "room_id": "room-demo",
+    "operation": "interview.summarize",
+    "input_revision": 1,
+    "payload": {
+      "contract_version": "2.0",
+      "discussion_round": 1,
+      "room_context": {
+        "member_ids": [
+          "member-a",
+          "member-b",
+          "member-c",
+          "member-d"
+        ],
+        "hackathon_context": "Offline fixture: four-person hackathon team.",
+        "deadline_at": null,
+        "constraints": []
+      },
+      "member_id": "member-a",
+      "mode": "initial",
+      "messages": [
+        {
+          "message_id": "msg-a-1",
+          "role": "assistant",
+          "content": "希望保留什么体验？"
+        },
+        {
+          "message_id": "msg-a-2",
+          "role": "user",
+          "content": "AI 提建议，重要决定由我确认。"
+        }
+      ],
+      "current_profile": null,
+      "shared_context": {
+        "profiles": [],
+        "discussion_history": [],
+        "sources": []
+      },
+      "followup_context": null,
+      "stop_reason": "enough_information"
+    }
+  },
+  "response": {
+    "schema_version": "1.0",
+    "request_id": "req-interview-summary",
+    "room_id": "room-demo",
+    "operation": "interview.summarize",
+    "input_revision": 1,
+    "status": "ok",
+    "data": {
+      "contract_version": "2.0",
+      "member_id": "member-a",
+      "profile_draft": {
+        "items": [
+          {
+            "item_key": "draft-1",
+            "category": "desired_experience",
+            "text": "AI 提建议，重要决定由用户确认。",
+            "basis": "member_statement",
+            "confidence": "high",
+            "private_message_ids": [
+              "msg-a-2"
+            ]
+          }
+        ],
+        "unknowns": [
+          "低风险自动操作边界"
+        ]
+      }
+    },
+    "warnings": [
+      "Offline fixture — not a real agent result"
+    ],
+    "error": null
+  }
+}

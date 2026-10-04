@@ -1,3 +1,5 @@
+> **v2 接线提示：** 下文演示保留旧业务格式。当前六个 operation 和新 payload 见 [接口契约 v2.0](../contracts.md)。新角色直接导出 definition；不要将旧 roles.mjs 或 example-role.mjs 当作四角色实现。外层 schema_version 仍为 1.0，业务 contract_version 为 2.0。本文未改变现有 runtime。
+
 # Pi Agent Base v0.1
 
 供 Interview、Negotiate、Evaluator 三位负责人复用的运行层。整体设计见 [framework-design.md](../framework-design.md)。这不是三个完整业务 Agent，也不包含房间数据库、界面或 Agentverse 注册。
