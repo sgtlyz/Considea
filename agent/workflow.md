@@ -2,7 +2,7 @@
 
 当前流程的完整说明统一维护在 [workflow_updated.md](../workflow_updated.md)。产品概览见 [README](../README.md)。
 
-> 本页保留原有链接入口，流程以白板及后续问答确认结果为准。本次仅更新说明与系统图，暂不实现 workflow。
+> 本页保留原有流程入口。可运行的状态机、HTTP 接口和本地工作台见 [Workflow 开发说明](../workflow/README.md)。
 
 ![Conclave 系统图](../docs/assets/conclave-workflow.png)
 
@@ -19,4 +19,6 @@
 
 Workflow 是应用代码，负责身份、共享权限、轮次、任务、版本和人工事件。四个业务角色为 Interview、Negotiator、Idea Generator 和 Evaluator。
 
-状态机和验收仍待实现。六个 Agent operation、数据字段和人工事件已写入 [接口契约 v2.0](contracts.md)，并提供 [Schema](interfaces/protocol.schema.json) 与 [完整样例](interfaces/fixtures)。Workflow 可直接基于这些样例并行开发；多人决策汇总、具体轮次计数事件和运行预算仍由应用层另行确定。
+状态机已实现，并使用 [接口契约 v2.0](contracts.md)、[Schema](interfaces/protocol.schema.json) 和 [完整样例](interfaces/fixtures) 进行校验。讨论从 n=1 开始，每次回访递增；n≥4 时所需回答收齐后，全员 converge 才生成，任何人 diverge 返回 Interview。预算耗尽只暂停，管理员可增加额度或结束房间。
+
+默认 mock 模式可完整联调；队友的业务 Agent 通过 `--mode pi` 接入。真实模型输出质量和检索效果需另行验收。

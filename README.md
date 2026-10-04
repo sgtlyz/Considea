@@ -2,7 +2,18 @@
 
 面向 Hackathon 团队：先分别理解成员，通过访谈、分歧识别和真实人工回答逐步澄清方向；由成员决定何时收敛，再生成候选、评估并审阅。
 
-> **当前状态：架构设计与 Pi 基础层。** 本文描述白板及后续讨论确认的目标行为，不代表完整 workflow 已实现。本次只更新文档与系统图，暂不实现 workflow。首版场景为四人团队、文字访谈。
+> **当前状态：Workflow 已实现，可离线联调。** Python 状态机、SQLite 持久化、HTTP 接口和本地工作台位于 [workflow/](workflow/README.md)。默认使用明确标记的 mock Agent；四个业务 Agent 由队友按 v2.0 契约接入，真实模型与检索效果尚未验收。
+
+## 本地运行
+
+在仓库根目录执行：
+
+```powershell
+python -m pip install -r workflow/requirements.txt
+python -m workflow
+```
+
+打开 http://127.0.0.1:8765 ，创建房间、保存管理员令牌，将每个成员的邀请码分别交给本人。每个成员在独立浏览器标签页加入并完成私人访谈。启动参数、HTTP 输入输出、Agent 接入和恢复规则见 [Workflow 开发说明](workflow/README.md)。
 
 ## 系统图
 
@@ -39,7 +50,7 @@ flowchart TD
 - 生成后的顺序是 **Idea Generator → Evaluator → Human Review**。
 - Human Review 可以接受并输出；小改交回 Idea Generator，修订后重新评估和审阅；加一轮则回到 Interview，重新经过分歧识别和人工节点。
 
-这里的 `n` 表示团队讨论轮次。个人访谈的一组问答、Pi 内部一次模型/tool turn、候选版本都有各自的计数，不能混用。具体计数事件与回访后的编号见 workflow 待确认项。
+这里的 `n` 表示团队讨论轮次。个人访谈的一组问答、Pi 内部一次模型/tool turn、候选版本都有各自的计数，不能混用。实现从 n=1 开始，每次回到新一轮 Interview 时递增；生成后加一轮继续原编号，小改和失败重试不加轮。
 
 ## 角色与责任
 
@@ -67,11 +78,12 @@ flowchart TD
 - 人工回答、共享批准、收敛选择和最终接受必须来自真实用户事件。未回复不等于同意。
 - 小改产生新候选版本，随后重新评估、重新审阅；旧版确认和旧报告不能直接代表新版。
 - `converge` 表示人决定进入候选生成；最终接受发生在评估后的 Human Review。两种决定分别记录。
-- 多人成员选择如何汇总成团队动作仍待确认；当前不默认多数票、房主单独决定或模型代判。
+- 已确认收敛规则：`n ≥ 4` 且所需 difference 回答收齐后，全员 `converge` 才生成；任何人 `diverge` 立即回访。
+- 当前审阅默认采用全员对同一候选、版本及报告作出相同动作。小改意见需先协商为相同文字；意见冲突保持等待，可修改自己的审阅。
 
 ## 候选、评估与输出
 
-候选数量沿用原文的 **3–5 个建议值**，尚未固定为实现约束。候选应包含目标用户、问题、核心机制、团队适配、讨论来源、取舍、MVP 和未决问题，并有实质不同的取舍。
+实现默认生成 **3 个候选**，房间配置允许 1–5 个，全部先评估再审阅。候选应包含目标用户、问题、核心机制、团队适配、讨论来源、取舍、MVP 和未决问题，并有实质不同的取舍。
 
 Evaluator 检查官方技术文档、API、数据、设备、开发时间约束和类似公开项目。区分有来源支持、成员自述、待测试和未知；没有检索结果不能称全球首创，文档支持也不等于原型已验证。搜索失败可以显示 `partial` 并进入人工审阅。
 
@@ -81,9 +93,9 @@ Evaluator 检查官方技术文档、API、数据、设备、开发时间约束�
 
 目标界面包括 Room、Private Interview、Team Workbench 和 Final Idea。工作台展示获准共享的偏好、当前分歧、人工问题、历史与真实进度；结果页展示候选、评估和三种审阅动作。
 
-现有 [Pi Base](agent/pi-base/README.md) 提供隔离的单次调用、输入输出校验、工具循环预算、超时、初访示例和 Python 桥接。现有角色提示词仍沿用旧三角色设计，完整四角色业务逻辑、房间状态机、持久化和前端尚未在本次实现。
+[Workflow](workflow/README.md) 已实现房间、成员邀请、私人访谈、共享批准、分歧回答、收敛、生成与评估调度、审阅及两条回路，并提供本地工作台。现有 [Pi Base](agent/pi-base/README.md) 负责单次模型调用；`--mode pi` 通过 Python bridge 调用队友的角色 definition。旧 roles.mjs 仍是旧三角色示例，不作为本工作流的业务 Agent。
 
-后续实现以 [workflow_updated.md](workflow_updated.md) 为流程依据，以 [接口契约 v2.0](agent/contracts.md) 和 [JSON Schema](agent/interfaces/protocol.schema.json) 为接线基准。六个 Agent operation 已明确，配套 [离线样例](agent/interfaces/fixtures) 可供 Workflow 与 Agent 并行开发。当前 Pi Base 示例仍是旧业务格式，接入新 Agent 时使用契约指定的 definition。
+实现以 [workflow_updated.md](workflow_updated.md) 为流程依据，以 [接口契约 v2.0](agent/contracts.md) 和 [JSON Schema](agent/interfaces/protocol.schema.json) 为接线基准。六个 Agent operation 已明确，配套 [离线样例](agent/interfaces/fixtures) 可供 Workflow 与 Agent 并行开发。当前 Pi Base 示例仍是旧业务格式，接入新 Agent 时使用契约指定的 definition。
 
 ## 验收重点
 
@@ -94,7 +106,7 @@ Evaluator 检查官方技术文档、API、数据、设备、开发时间约束�
 - 新版本重新评估和确认；重复请求及旧结果不能错误推进流程。
 - 模型不能把沉默、轮数或多数意见写成全员共识。
 
-运行预算、多人决策汇总、轮次计数细节等待确认项在 workflow 文档集中维护。
+当前默认配置、决策政策和未实现边界在 [Workflow 开发说明](workflow/README.md) 集中维护。
 ## 并行开发接口
 
 | 负责方 | operation |
@@ -104,6 +116,6 @@ Evaluator 检查官方技术文档、API、数据、设备、开发时间约束�
 | Idea Generator | `idea.generate`、`idea.revise` |
 | Evaluator | `evaluator.evaluate` |
 
-Workflow 先使用完整 request/response 样例接线，Agent 负责人按相同字段独立实现。人工回答、批准、收敛投票和审阅有单独事件格式，不混入模型输出。详见 [开发入口](agent/README.md)。
+Workflow 已使用相同契约接线，Agent 负责人按相同字段独立实现。人工回答、批准、收敛投票和审阅有单独事件格式，不混入模型输出。详见 [开发入口](agent/README.md)。
 
-在仓库根目录运行 `python agent/interfaces/validate_contracts.py` 可校验离线样例与协议边界；这不表示完整业务已实现。
+在仓库根目录运行 `python -m unittest discover -s workflow/tests -v` 验证工作流；运行 `python agent/interfaces/validate_contracts.py` 验证协议样例。测试使用 mock，不代表真实 Agent 的问题质量、候选质量或检索效果。
