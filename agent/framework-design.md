@@ -1,4 +1,6 @@
-# 团队选题助手：框架与 Pi Base 设计 v0.1
+# 团队选题助手：框架与 Pi Base 设计 v0.1（旧版）
+
+> 本文保留早期设计作迁移参考；角色拆分、流程、数据库方案和讨论轮次以 [workflow_updated.md](../workflow_updated.md) 为准。当前 Evaluator 接线见 [实现 README](evaluator/README.md)。
 
 本文供四位开发者同步实现边界。产品保留 **Interview、Negotiate、Evaluator 三个业务 Agent**；第四位成员开发 workflow、存储、界面与通信。Pi 是三者共享的执行库，不是第四个业务 Agent。
 

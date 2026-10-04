@@ -1,58 +1,34 @@
-# 三 Agent 设计与四人分工
+# Agent 基座与接线
 
-本文档是实现设计，不代表功能已经完成。产品范围以根目录 [README](../README.md) 为准；本目录将职责固定为 **Interview Agent、Negotiate Agent、Evaluator Agent**。Workflow 是应用程序中的状态与调度逻辑，不是第四个 Agent。
+项目流程、状态机和数据对象以 [workflow_updated.md](../workflow_updated.md) 为准。本目录提供 Pi 基座及各模块的接口说明；早期三 Agent 文档保留作迁移参考。
 
-开发接线先读 [框架与 Pi Base 设计](framework-design.md)，再运行 [Pi Base v0.1](pi-base/README.md) 的离线 demo。共用运行层已提供；[Evaluator 实现与样例](evaluator/README.md) 已提供离线测试、模型/检索调用层、Node/Python 接口，真实 API 尚未验收。Interview、Negotiate 与整体 workflow 仍由各负责人实现。
+新版流程：Interview → Preference Profile → Negotiator 识别分歧 → Human Decision → 深入讨论（3–5 轮）→ Idea Generator 生成 3–5 个候选 → 成员微调 → Evaluator → final_review。
 
-## 每个人从哪里开始
+## 职责
 
-| 负责人 | 主文档 | 交付接口 | 负责的结果 |
-| --- | --- | --- | --- |
-| 成员 1 | [Interview Agent](interview-agent.md) | `interview.turn`、`interview.summarize` | 初访、定向追访、待本人确认的摘要 |
-| 成员 2 | [Negotiate Agent](negotiate-agent.md) | `negotiate.criteria`、`negotiate.generate`、`negotiate.plan`、`negotiate.revise`、`negotiate.recommend` | 整合想法、三个候选、分歧分析与下一步建议 |
-| 成员 3 | [Evaluator Agent](evaluator-agent.md) | `evaluator.evaluate`、`evaluator.investigate` | 查重、可行性、通过判定及来源 |
-| 成员 4 | [Workflow](workflow.md) | 房间、共享权限、调用适配器、任务与状态、前端事件 | 接通三 Agent、私人访谈与团队工作台 |
+| 模块 | 负责的结果 |
+| --- | --- |
+| Interview Agent | 独立访谈与画像草稿，仅本人确认后进入共享上下文 |
+| Negotiator Agent | 从共享画像与讨论识别分歧，生成供成员亲自作答的决策题 |
+| Idea Generator Agent | 讨论收敛后，依据讨论与人工决策轨迹生成多个候选 |
+| Evaluator Agent | 成员微调后，查重、可行性、技术条件、来源与未知项 |
+| Workflow（应用代码） | 调度以上角色，保存权限、决策、轮次、版本、成员确认与任务状态 |
 
-所有人首先阅读 [共享契约](contracts.md)。以上名称是应用层 operation 标识，既可映射为函数，也可映射为框架消息；不是指定某个 SDK 或 HTTP 路由。共用执行基座已采用 Pi Core；具体模型、数据库、搜索服务与 Fetch.ai 端到端接入仍待实现和验证。
+Idea Generator 与 Negotiator 已在最新版规划中分开。Evaluator 不负责协商、生成候选或决定成员是否支持。
 
-## 分工原则
+## 当前 Evaluator 接线
 
-- Interview Agent 是唯一接收某成员原始访谈的角色；每位成员的上下文独立。它只生成摘要草稿，共享由本人确认和 workflow 执行。
-- Negotiate Agent 同时承担原设计中的“候选整合”和“协商”，不另设整合 Agent。只读取共享数据，并提出行动计划。
-- Evaluator Agent 同时承担原设计中的“研究”和“评估”，不另设研究 Agent。它判断证据支持程度，不决定谁必须接受方案。
-- Workflow 持有权威状态。Agent 输出不能直接修改成员反馈、共享权限、迭代轮数或共识状态。
-- 一人主责一个模块，但四人共同锁定接口、运行完整验收场景。第四位成员的界面范围用三个简单页面控制，其他成员提供可直接展示的数据。
+[Evaluator 实现与样例](evaluator/README.md) 提供 evaluator.evaluate、evaluator.investigate、Tavily CLI/HTTP、DeepSeek/Gemini 配置，以及 Node/Python 接口。离线 Pi 工具循环和测试可运行；真实 API 尚未验收。
 
-## 已确定与工程建议
+- 接收新版 IdeaCandidate：target_user、problem、solution、mvp、discussion_trace、member_suggestions 和 workflow 固定的 candidate_id/version。
+- 接收房间成员、约束及获准共享的技能/资源，不读取全队私人访谈。
+- 用户先回答项目有无时间限制；缺失时返回 needs_input，明确无时限可以正常评估。项目时间不采用开发本系统的 18 小时窗口。
+- Evaluation 1.2 输出 version、feasibility、similar_projects、technical_checks、risks、unknowns、sources、status，以及两项 tests 与 passed。
+- 来源支持与实测分开：supported_by_source、team_claim、needs_test、unknown；本工具不产生 verified。
+- Workflow 在 candidate_refinement 后调度 Evaluator，保存结果、阻止旧版结果覆盖新版，然后进入 final_review。
 
-已确定：四人团队、文字优先、首次访谈每人最多 7 轮且每轮约 3 问、本人确认共享摘要、三个候选、竞品与技术检查、主观反对也协商、AI 只推荐、用户设置最大迭代轮数 n、四块公共看板、18 小时窗口。
+## 阅读入口
 
-本目录提出以下可配置的实现建议，方便立即接线：
+[Pi Base](pi-base/README.md) 是共用执行层。[共享契约](contracts.md) 的统一 envelope 保持 1.0，Evaluator 部分已更新；其他旧字段与角色接口按最新版规划迁移。[Evaluator 设计](evaluator-agent.md) 与实现 README 对齐。
 
-- 首次候选展示记为第 1 轮，总共最多展示 n 个轮次；访谈准备不计入该数字。n=1 时完成首轮评估与反馈，然后结束或输出未达共识，不发布第二轮。创建房间时向用户解释这个口径。
-- 每次反馈后的协商，针对每位成员最多安排一组追访问题，每组 1–3 问；达到该限额仍不清楚就保留未知，不在同一轮无限追访。
-- 用户可以在访谈结束前主动提交摘要；未填写内容保留为空或未知。
-- 使用简单函数/消息调用、任务表与轮询进度即可；语音、独立部署的 Agent 服务和复杂消息队列不作为首版前置条件。
-
-这些建议补全了此前未明确的工程细节，没有改变“存在反对不能自动定案”的规则。
-
-## 18 小时集成节奏
-
-| 时间 | 三位 Agent 负责人 | Workflow 负责人 |
-| --- | --- | --- |
-| 0–1h | 一起确认共享字段，提供固定返回样例 | 实现 operation 适配器、初始状态和样例数据 |
-| 1–5h | 各自实现主路径；Interview 优先支持完整初访 | 接通房间、私人聊天、摘要确认；用样例接入另外两个角色 |
-| 5–9h | Negotiate 生成三候选；Evaluator 返回真实来源 | 串联生成、评估与反馈，完成四块简单看板 |
-| 9–13h | 接通追访、专题核查、候选修订 | 调度定向任务，处理版本与轮数，重新收集反馈 |
-| 13–16h | 验收本模块错误与边界，联合跑完整场景 | 检查权限、状态、重复请求、超时和结束条件 |
-| 16–18h | 修复关键问题，准备演示素材 | 完整演练、录制和部署检查 |
-
-优先顺序：四人摘要 → 三候选 → 有来源的评估 → 一次主观反对触发追访 → 修订并重新反馈 → 正确结束。失败或无结果要如实显示；预置演示数据必须标记为演示，不冒充现场检索。
-
-## 联合验收故事
-
-成员 A 喜欢生活化、有趣的互动，B 提供某项技术资源，C 反对陌生人匹配，D 关注比赛约束。四人分别访谈并确认摘要。
-
-Negotiate 产生三个不同取舍的候选，Evaluator 找到相似项目并指出未验证的技术条件。A 对推荐方案表示“我不喜欢”。系统私下追问 A，而不是宣布 3:1 通过。A 确认分享新条件后，Negotiate 修改方案，Evaluator 检查修改涉及的关键条件，四人对新版重新反馈。
-
-全员明确确认同一新版才达成共识。达到 n 轮仍有反对则输出推荐、分歧与下一步，由团队接手。
+Interview、Negotiator、Idea Generator、ASI:One/Agentverse 和 SpacetimeDB 接入由对应负责人实现。开发节奏与联合验收直接参考 workflow_updated.md，不把旧版候选反复迭代流程作为当前要求。

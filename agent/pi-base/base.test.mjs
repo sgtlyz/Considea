@@ -21,6 +21,19 @@ test('preserves workflow headers and validates model output', async () => {
   assert.equal(r.request_id, 'req-a'); assert.equal(r.input_revision, 1);
   assert.equal(r.status, 'ok'); assert.equal(r.data.answer, 'hello');
 });
+
+test('validated tool output ends at the turn boundary and preserves the normal envelope', async () => {
+  let submitted;
+  const def = { ...definition, operations: { 'interview.turn': { ...definition.operations['interview.turn'],
+    getOutput: () => submitted } }, createTools: () => [{ name: 'submit', label: 'Submit', description: 'Submit fixture output',
+    parameters: Type.Object({}), execute: async () => {
+      submitted = { status: 'ok', data: { answer: 'submitted' }, warnings: [] };
+      return { content: [{ type: 'text', text: 'accepted' }], details: {} };
+    } }] };
+  const r = await runAgent({ request: request(), definition: def, maxTurns: 1,
+    ...fixture([fauxAssistantMessage(fauxToolCall('submit', {}), { stopReason: 'toolUse' })]) });
+  assert.equal(r.status, 'ok'); assert.equal(r.request_id, 'req-a'); assert.equal(r.data.answer, 'submitted');
+});
 test('rejects malformed request and wrong-role operation before calling model', async () => {
   const streamFn = () => { throw new Error('must not call'); };
   for (const req of [null, { ...request(), operation: 'evaluator.evaluate' }, { ...request(), input_revision: -1 }]) {

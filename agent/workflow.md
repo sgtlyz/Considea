@@ -1,4 +1,6 @@
-# Workflow 设计与第四位成员的实现任务
+# Workflow 设计与第四位成员的实现任务（旧版）
+
+> 本文保留早期候选迭代设计作迁移参考；新版先讨论再生成候选，状态机与对象以 [workflow_updated.md](../workflow_updated.md) 为准。Evaluator 的 needs_input 时间追问与 Evaluation 1.2 接线见 [实现 README](evaluator/README.md)。
 
 负责人：成员 4。目标：把三个 Agent 的结果接成用户能完成的流程，管理真实状态、共享权限、版本和停止条件。
 

@@ -1,6 +1,6 @@
-# 三 Agent 的共享输入输出契约
+# Agent 的共享输入输出契约
 
-三位 Agent 负责人和 workflow 负责人以本文字段接线。下列是语言无关的实现契约，JSON 片段是示例，字段表是完整约束。可新增展示字段，但修改共享字段名称或状态枚举时应同时更新四个模块。
+最新产品流程、四个 Agent 职责和状态机以 [workflow_updated.md](../workflow_updated.md) 为准。本文保留旧版 Interview/Negotiate 对象供迁移；它们不能覆盖最新版规划。Evaluator 当前接线见 [实现 README](evaluator/README.md)，已支持新版 IdeaCandidate/Room 和 Evaluation 1.2。统一调用 envelope 保持 1.0。
 
 ## 1. 统一调用与返回
 
@@ -43,6 +43,16 @@
 错误码建议：`INVALID_INPUT`、`MODEL_TIMEOUT`、`INVALID_OUTPUT`、`TOOL_UNAVAILABLE`。Schema 修复最多一次，不进行无上限重试。workflow 负责超时和重试策略。
 
 ## 2. 核心对象
+
+### Evaluator 当前输入：IdeaCandidate 与 Room
+
+IdeaCandidate 使用 `candidate_id/version/title/target_user/problem/solution/discussion_trace[]/tradeoffs[]/mvp/member_suggestions[]/status`。讨论轨迹与成员建议传获准共享的 string[] 摘要，不传原始访谈；`mvp` 支持 string 或 string[]。可选 critical_dependencies；未提供时必须识别必要依赖再核实，不能当作没有技术条件。版本与成员确认仍由 workflow 控制。
+
+Room 的评估快照使用 `room_id/members[]/hackathon_context/constraints[]/discussion_round_limit/idea_candidate_limit/status`；members 为成员 ID，hackathon_context 为共享文字摘要，constraints 可用 string[]。旧 member_ids 与旧结构化约束仍可输入。Evaluator 不要求旧访谈轮数或候选迭代字段。
+
+新增 `time_limit` 表示用户回答的项目交付约束：`{kind:"none"}`、`{kind:"duration",hours:正数}` 或 `{kind:"deadline",deadline_at:带时区ISO时间}`。未回答时省略，evaluator.evaluate 返回 needs_input 和 data.questions；workflow 询问用户、更新快照后再调用，不把开发用的时间窗口当作每个 idea 的限制。tool_budget 的执行毫秒数独立于项目时间。
+
+以下 RoomConfig 和 Candidate 字段表是旧格式兼容说明。
 
 ### RoomConfig：共同上下文
 
@@ -124,9 +134,11 @@ Interview 输出的是相同内容结构的草稿，省略 `approved_at`；由 w
 
 Evidence 必须是实际获取的来源记录：`evidence_id`、`url`（成员自述可 null）、`title`、`accessed_at`、`source_kind`、`claim`、`limitation`。
 
-`source_kind`：`official_documentation`、`project_self_report`、`member_report`。官方文档支持某能力也不等于团队已经测试成功；项目方声明不等于独立验证。
+`source_kind`：`official_documentation`、`public_web`、`member_report`；旧报告的 `project_self_report` 仍可读取。普通公开页面统一为 `public_web`，不能自动视为项目方声明。官方文档支持某能力也不等于团队已经测试成功；项目列表或第三方文章不证明项目已经实现某能力。
 
-EvaluationReport 1.1：`report_schema_version`（`1.1`）、`report_id`、`candidate_id`、`candidate_version`、`status`（`complete` / `partial`）、`passed`（bool）、`tests`、`competitors`、`technical_checks`、`risks`、`unverified_assumptions`、`recommended_changes`、`evidence`、`search_log`。这是报告字段的增补，外层 envelope 仍为 schema_version=1.0；workflow 应按报告版本读取通过判定。
+EvaluationReport 1.2：`report_schema_version`（`1.2`）、`report_id`、`candidate_id`、`version`、`feasibility[]`、`similar_projects[]`、`technical_checks[]`、`risks[]`、`unknowns[]`、`sources[]`、`status`（`complete` / `partial`）、`passed`（bool）、`tests`、`recommended_changes`、`search_log`。保留 candidate_version、competitors、unverified_assumptions、evidence 供旧展示代码迁移；报告版本递增，外层 envelope 仍为 schema_version=1.0。
+
+结论等级对齐最新规划：实际测试为 verified（当前检索模式不产生）、公开来源支持为 supported_by_source、授权成员自述为 team_claim、待实测为 needs_test、证据不足为 unknown。sources/feasibility/similar_projects 附 conclusion；technical_checks.conclusion 采用这些新等级，outcome 区分 support/blocker/unknown，next_check_status=needs_test。旧 documented_support 等枚举仅在 Pi 内部模型草稿中使用，不再作为公开报告枚举。
 
 - `tests`：`{novelty, feasibility}`，每项 `{result, reason, evidence_ids, required_changes, missing_information}`；result 为 `pass` / `fail` / `insufficient_evidence`。两项都 pass 时 passed=true，否则 false。证据不足表示尚未核实，不能称已证明不可行。
 - 查重失败标准：已有项目的目标用户、核心问题、核心方案高度相同，并且 idea 没有明确差异。仅有同类产品仍可通过。
@@ -135,8 +147,9 @@ EvaluationReport 1.1：`report_schema_version`（`1.1`）、`report_id`、`candi
 - `tool_budget`：`{max_searches,max_reads,timeout_ms,per_call_timeout_ms}`，可省略或部分覆盖；默认 2/3/60000/10000，每请求独立。`shared_resources` 是已获准共享的 `{profile_id,profile_version,item_id,member_id,category,text}`[]，category 为 skill/resource。
 
 - competitor：`{name, url, overlap, differences, maturity, evidence_ids}`；maturity 为 `self_reported_implemented` / `planned` / `unknown`。
-- technical_check：`{dependency_id, finding, conclusion, evidence_ids, next_check}`；conclusion 为 `documented_support` / `documented_blocker` / `member_reported` / `unknown`。
+- technical_check：`{dependency_id, finding, conclusion, outcome, evidence_ids, next_check, next_check_status}`；公开 conclusion 为 `supported_by_source` / `team_claim` / `unknown`，next_check_status 为 needs_test。
 - search_log：`{query, result_status}`；result_status 为 `results` / `no_results` / `failed`。失败和无结果不可混为一谈。
+- Evaluator 查重最低要求是分别检索 GitHub 仓库与 Devpost hackathon 项目；前两次搜索优先覆盖这两个范围，不增加原预算。`search_log` 新增运行层字段 `scope`（github/devpost/web）、`executed`、`result_count`、`excluded_count`、`result_urls`，query 是实际传给 Tavily 的查询。`novelty_coverage` 为 `{required_scopes:["github","devpost"],complete,scopes:[{scope,status,attempts,result_count}]}`；status 为 results/no_results/failed/not_searched。缺少成功平台覆盖时不得查重 pass，报告为 partial；有证据的重复 fail 保留。旧报告兼容为历史上下文，不计入当前覆盖。investigate 不需要查重覆盖。
 - 代码生成的 Evidence 可附带实际正文 excerpt 和成员来源 source_ref；模型不能生成或修改这些身份字段。失败的 search_log 可以附 error_code。
 - 首版不输出“全网重复率”“全球首创”“成功概率”，也不使用未经校准的综合分数代替证据。
 

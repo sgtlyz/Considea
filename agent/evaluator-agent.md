@@ -2,13 +2,13 @@
 
 负责人：成员 3。目标：接收细化好的 idea，测评查重和可行性，输出是否通过、两项理由、真实来源和必要修改。可运行代码、样例和配置见 [Evaluator 实现](evaluator/README.md)。
 
-字段以 [contracts.md](contracts.md) 为准。该 Agent 包含检索与分析两个步骤，不再拆成 Research Agent。首版的验证范围是公开来源与官方文档检查。
+流程以 [workflow_updated.md](../workflow_updated.md) 为准，当前字段以 [实现 README](evaluator/README.md) 为准。该 Agent 包含检索与分析两个步骤，不再拆成 Research Agent。由独立 Idea Generator 生成候选、成员微调后再评估；首版的验证范围是公开来源与官方文档检查。
 
 ## 1. 职责与边界
 
 - 找最接近的项目或产品，比较用户场景、核心功能、交互和实现状态。
 - 检查候选关键依赖的官方文档、访问条件、必要数据与设备要求。
-- 接收 Negotiate 的专题问题并返回有依据的答案或 unknown。
+- 接收 workflow 路由的专题问题并返回有依据的答案或 unknown。
 - 提出缩小范围、替换依赖或调整差异点的建议。
 
 不接收成员原始访谈，不分析成员心理，不决定团队是否接受方案，不替候选直接改需求。
@@ -23,7 +23,11 @@
 
 shared_resources 仅包含评估必需且成员已批准共享的技能/资源条目，不传全队原始对话。tool_budget 是 workflow 配置的工具次数与时间上限，不是 Agent 自己无限申请的预算。
 
-输出 data：EvaluationReport 1.1，必须关联 candidate_id 与 candidate_version。报告包含 passed、tests.novelty、tests.feasibility，以及 competitors、technical_checks、risks、unverified_assumptions、recommended_changes、实际 evidence 和 search_log。两项都 pass 才通过；高度相同且无明确差异才查重失败。运行完整性与业务判定分开，不能把缺少证据当成已证明不可行。
+输出 data：EvaluationReport 1.2，关联 candidate_id 与 version；字段对齐最新 Evaluation：feasibility、similar_projects、technical_checks、risks、unknowns、sources、status，同时保留 passed、两项 tests 与旧展示别名。两项都 pass 才通过；高度相同且无明确差异才查重失败。运行完整性与业务判定分开，不能把缺少证据当成已证明不可行。
+
+查重至少分别搜索 GitHub 仓库与 Devpost hackathon 项目；运行层优先分配前两次搜索、设置 Tavily 域名限制并记录 query/scope/result_urls。`novelty_coverage` 展示各平台是否成功完成；缺失或失败不能查重通过，已取得的重复证据仍可支持 fail。目录/gallery 不是具体项目正文。工具预算保持硬上限，专题 investigate 不要求查重搜索。
+
+项目时间没有固定默认值。evaluator.evaluate 在 room_config.time_limit 缺失时先返回 needs_input，请 workflow 询问用户“有没有时间限制”，再提交带 none/duration/deadline 的新快照。无时限是有效回答；开发本系统的时间窗口不用于判断用户 idea。专题技术调查不强制要求项目交付时间。
 
 输入也支持 payload.idea，不能同时提供 candidate；基础字段和默认值见实现 README。通过测试不代表成员接受方案。
 
@@ -31,7 +35,7 @@ shared_resources 仅包含评估必需且成员已批准共享的技能/资源�
 
 输入 payload：以上上下文，以及 `question`（`{issue_id, text, expected_information}`）。
 
-输出 data：`{issue_id, candidate_id, candidate_version, answer, conclusion, evidence, search_log, limitations, recommended_next_step}`。conclusion 为 `documented_support` / `documented_blocker` / `member_reported` / `unknown`。
+输出 data：`{issue_id,candidate_id,version,candidate_version,answer,conclusion,outcome,sources,evidence,search_log,limitations,recommended_next_step,next_check_status}`。conclusion 为 supported_by_source / team_claim / unknown；outcome 为 support / blocker / unknown，下一步为 needs_test。本工具不做实际原型测试，因此不产生 verified。
 
 只能回答提供的问题，例如“此 API 的文档是否支持流式音频”，不要擅自给整个团队换题。专题结论并入报告时保留来源与版本。
 
@@ -61,7 +65,7 @@ shared_resources 仅包含评估必需且成员已批准共享的技能/资源�
 1. 针对每个 critical_dependency 判断是不是最小 demo 的必须项。
 2. 搜索/读取相关官方文档，确认支持范围、账号/权限要求和已公开限制。
 3. 对照团队已共享资源与时间：已有可用资源、文档有能力但未接入、确认存在 blocker、仍然未知。
-4. 输出最小替代方式与下一步核实任务，例如先用文字、静态数据、人工确认步骤；建议改变范围由 Negotiate 和团队处理。
+4. 输出最小替代方式与下一步核实任务，例如先用文字、静态数据、人工确认步骤；建议改变范围由 workflow 和团队处理，Evaluator 不直接修改候选。
 
 时间可行性只给带前提的判断和分项工作量，不凭模型生成精确成功率。依赖未核实可以返回 unknown，不武断宣称做不到。
 
@@ -115,8 +119,8 @@ shared_resources 仅包含评估必需且成员已批准共享的技能/资源�
 | --- | --- |
 | 相似产品存在，但没有逐人访谈 | 写清重合与缺少的公开证据，不称完全重复 |
 | 产品把功能写在 next steps | maturity 为 planned |
-| 官方文档支持 streaming | documented_support，端到端延迟仍未验证 |
-| 成员说接口已接通 | member_reported，不能自动标成已测试 |
+| 官方文档支持 streaming | supported_by_source，端到端延迟需要 needs_test |
+| 成员说接口已接通 | team_claim，不能自动标成 verified |
 | 来源不能打开 | partial 与 limitation，不生成假 URL |
 | 没有相关结果 | 本次未发现，不能说全球首创 |
 | 检索预算用完 | 返回已有证据与缺口，不继续循环 |
