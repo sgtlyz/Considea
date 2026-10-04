@@ -1,6 +1,8 @@
 # Considea Interview — standalone Agentverse adapter
 
-**Status (2026-10-04): 66 Node tests and four Python transport/bridge tests passed offline. The local HTTP service starts and rejects unsigned requests. Not yet verified as registered, discoverable, or usable in ASI:One. No hackathon submission has been confirmed.** Considea is one multi-agent project with Interview, Negotiate and Evaluator agents and a four-person team. This is the first component being registered, not a separate single-agent project or team submission.
+**Status (2026-10-04): 66 Node tests and four Python transport/bridge tests passed offline. Three real DeepSeek calls completed initial questions, profile extraction and a follow-up question batch; review and export then completed without model calls using a synthetic participant. The local and temporary public HTTP service respond. Not yet verified as registered, discoverable, or usable in ASI:One. No hackathon submission has been confirmed.** Considea is one multi-agent project with Interview, Negotiate and Evaluator agents and a four-person team. This is the first component being registered, not a separate single-agent project or team submission.
+
+The live sample exposed a content defect: an explicit 18-hour deadline was preserved in one constraint but changed to 17 hours in an inferred goal; lack of a skill was also extended into a preference. Prompts now explicitly forbid those transformations, and review visibly distinguishes member statements from AI inferences. That prompt adjustment has **not** been retested live. Contract validity does not establish factual accuracy; synthetic approval in a test is not a real member's approval.
 
 This adapter reuses `runInterview` and the v2.1 contract. It adds a persistent individual workflow and the official Agent Chat Protocol (ACP 0.3.0) transport. Existing legacy CLI behavior is unchanged.
 
@@ -87,6 +89,8 @@ For an approved four-call, US$0.10 test, use `max_calls: 4` and `max_usd: 0.10`.
 ```sh
 python agent/interview/agentverse/register.py --config .interview-local/agentverse-config.json --endpoint https://YOUR-ACTUAL-HOST/chat
 ```
+
+Alternatively, append `--key-file .interview-local/agentverse-api-key.txt` to read the Agentverse key from a private, ignored file containing only the key. The registration wizard calls the same credential `AGENTVERSE_KEY`; this script uses `AGENTVERSE_API_KEY` unless a key file is supplied. Never commit either credential.
 
 4. Confirm the returned Agentverse profile, test discovery and the entire interview/review/export inside ASI:One, then record the address/profile URL and shared ASI chat link here and in the root README. Registration success alone does not prove discovery or chat operation. Endpoint reachability and platform registration expiry may require renewal; unattended operation is not implemented.
 5. Register Negotiate and Evaluator as additional components as they become ready. Keep all three under the same four-person **Considea MAS project**. Collect their individual addresses, Agentverse profile URLs and ASI demo links in one project submission through Devpost and the MHacks Submission Agent. If a Considea submission already exists, update it using its existing Submission Team ID; do not create a second project for Interview. `Considea` is the project name, not a verified platform Team ID. Lead name/email and teammates' joins are still required for the team submission.

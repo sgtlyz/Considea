@@ -82,7 +82,7 @@ export class InterviewSession {
   }
   review(s) {
     s.approval_token ??= randomUUID().slice(0, 8);
-    return `已保存详细档案 v${s.version}，尚未批准。\n${s.items.map((i, n) => `${n + 1}. [${i.category}] ${i.text}`).join('\n')}\n未知：${s.unknowns.join('；') || '无已记录未知项'}\n可用 /edit、/drop、/short 修改。本人确认后发送 /approve ${s.revision} ${s.approval_token}；这会生成可交接档案与短摘要，不会自动发给队友。`;
+    return `已保存详细档案 v${s.version}，尚未批准。\n${s.items.map((i, n) => `${n + 1}. [${i.category} · ${i.basis === 'agent_inference' ? 'AI推断，请核实' : '成员自述'}] ${i.text}`).join('\n')}\n未知：${s.unknowns.join('；') || '无已记录未知项'}\n请核对数字、限制及AI推断。可用 /edit、/drop、/short 修改。本人确认后发送 /approve ${s.revision} ${s.approval_token}；这会生成可交接档案与短摘要，不会自动发给队友。`;
   }
   export(s) {
     if (!s.approved) return '尚未批准任何档案。请先 /finish 审核。';
