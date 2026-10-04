@@ -14,7 +14,7 @@ identity; this change does not replace its address or recover its missing seed.
 
 | Agent role | Public endpoint | Existing implementation |
 | --- | --- | --- |
-| Interview (optional migration) | `/agentverse/interview/chat` | `agent/interview/service.mjs` |
+| Interview | `/agentverse/interview/chat` | `agent/interview/service.mjs` |
 | Negotiator | `/agentverse/negotiate/chat` | `agent/negotiate/service.mjs` |
 | Idea Generator | `/agentverse/idea/chat` | `agent/idea/service.mjs` |
 | Evaluator | `/agentverse/evaluator/chat` | `agent/evaluator/` through the integrated worker |
@@ -34,7 +34,7 @@ conversation for the whole workflow; the backend dispatches all four specialists
    python -m workflow.register_agentverse --init .agentverse-local/seeds.json
    ```
 
-   This defaults to Negotiator, Idea Generator and Evaluator. Use repeated
+   This defaults to Interview, Negotiator, Idea Generator and Evaluator. Use repeated
    `--role` options to choose roles. Back up the file privately. To migrate an
    existing address, use its original seed; a new seed creates a different agent.
 3. Set the private JSON map as `CONCLAVE_AGENTVERSE_SEEDS` on the existing live

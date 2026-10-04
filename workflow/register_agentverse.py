@@ -29,11 +29,11 @@ def main():
     parser.add_argument("--init", type=Path, help="Create a private seed map once; never overwrite an existing file")
     parser.add_argument("--seeds-file", type=Path)
     parser.add_argument("--base-url")
-    parser.add_argument("--role", action="append", choices=list(ROLES), help="Repeat for each agent; defaults to the three remaining roles")
+    parser.add_argument("--role", action="append", choices=list(ROLES), help="Repeat for each agent; defaults to all four roles")
     parser.add_argument("--key-file", type=Path, help="Private file containing the Agentverse account API key")
     parser.add_argument("--output", type=Path, default=Path("docs/agentverse-agents.json"))
     args = parser.parse_args()
-    roles = list(dict.fromkeys(args.role or ["negotiate", "idea", "evaluator"]))
+    roles = list(dict.fromkeys(args.role or list(ROLES)))
     if args.init:
         args.init.parent.mkdir(parents=True, exist_ok=True)
         with args.init.open("x", encoding="utf-8") as f:
