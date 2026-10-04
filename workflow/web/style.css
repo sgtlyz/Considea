@@ -1413,42 +1413,104 @@ html[lang="zh-CN"] .source-type {
   background: #ddd;
   border-color: #ddd;
 }
-.cover-footer {
-  position: absolute;
-  left: 48px;
-  right: 48px;
-  bottom: 30px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 20px;
-  font-size: 12px;
-  color: #c1c1c5;
-}
 .cover-about {
-  background: #f8f8f6;
-  color: #191919;
-  padding: 90px max(28px, 8vw);
+  --about-paper: #f4f2ec;
+  background: var(--about-paper);
+  color: #252a2c;
+  padding: 100px max(28px, 8vw) 36px;
+  scroll-margin-top: 0;
+}
+.about-heading {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 80px;
+  grid-template-columns: 1.35fr 1fr;
+  gap: 60px;
+  align-items: end;
+  margin-bottom: 64px;
+}
+.about-heading > p {
+  color: #646964;
+  max-width: 330px;
+  margin: 0 0 4px auto;
+  font-size: 16px;
 }
 .cover-about h2 {
   font:
-    400 clamp(35px, 4vw, 58px) / 1.08 "Instrument Serif",
+    400 clamp(42px, 4.8vw, 68px) / 1.04 "Instrument Serif",
     Georgia,
     serif;
   margin: 0;
 }
-.cover-about ol {
+.process-map {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   list-style: none;
   margin: 0;
   padding: 0;
 }
-.cover-about li {
-  border-top: 1px solid #bbb;
-  padding: 17px 0;
-  font-size: 15px;
+.process-step {
+  position: relative;
+  padding: 0 36px 0 0;
+}
+.process-step::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 21px;
+  height: 1px;
+  background: #bbc2b9;
+}
+.process-step:last-child { padding-right: 0; }
+.process-step:last-child::before { right: calc(100% - 44px); }
+.process-node {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  background: var(--about-paper);
+  border: 1px solid #9da99e;
+  border-radius: 50%;
+  color: #43604f;
+  font-size: 12px;
+}
+.process-step:last-child .process-node { background: #344b3f; color: #fff; border-color: #344b3f; }
+.process-step h3 {
+  font: 400 clamp(28px, 2.6vw, 38px)/1.12 "Instrument Serif", Georgia, serif;
+  margin: 25px 0 14px;
+  min-height: 2.24em;
+}
+.process-step > p { margin: 0 0 26px; color: #646964; font-size: 14px; max-width: 280px; min-height: 3.1em; }
+.process-branches { list-style: none; margin: 0 0 0 21px; padding: 0; }
+.process-branches li {
+  position: relative;
+  padding: 0 0 24px 24px;
+  font-size: 14px;
+  line-height: 1.65;
+  border-left: 1px solid #c4cbc0;
+}
+.process-branches li:last-child { padding-bottom: 0; border-left-color: transparent; }
+.process-branches li::before { content: ""; position: absolute; top: 11px; left: -1px; width: 15px; height: 1px; background: #c4cbc0; }
+.process-branches li::after { content: ""; position: absolute; top: 8px; left: 12px; width: 6px; height: 6px; border-radius: 50%; background: #819480; }
+.process-branches li:last-child::before { top: 0; height: 12px; background: none; border-left: 1px solid #c4cbc0; border-bottom: 1px solid #c4cbc0; }
+.project-footer { margin-top: 74px; padding-top: 32px; border-top: 1px solid #d4d6cd; text-align: center; }
+.project-links { display: flex; justify-content: center; align-items: center; gap: 26px; }
+.project-links a { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; text-decoration: none; font-size: 13px; }
+.project-links a:hover { color: #53785e; }
+.project-links svg { width: 23px; height: 23px; }
+.project-link-divider { height: 18px; width: 1px; background: #c9cec4; }
+.project-footer p { font-size: 12px; color: #646964; margin: 16px 0 0; }
+@media (max-width: 850px) {
+  .about-heading { display: block; margin-bottom: 45px; }
+  .about-heading > p { margin: 20px 0 0; max-width: 420px; }
+  .process-map { grid-template-columns: 1fr; gap: 40px; }
+  .process-step, .process-step:last-child { padding: 0 0 0 66px; }
+  .process-node { position: absolute; left: 0; top: 0; }
+  .process-step::before { left: 21px; right: auto; top: 44px; bottom: -40px; width: 1px; height: auto; }
+  .process-step:last-child::before { display: none; }
+  .process-step h3 { margin: 2px 0 12px; max-width: none; min-height: 0; }
+  .process-step > p { max-width: none; min-height: 0; }
+  .process-branches { margin-left: 0; }
 }
 .landing[hidden],
 .cover-about[hidden],
@@ -1493,19 +1555,15 @@ html[lang="zh-CN"] .source-type {
     font-size: 14px;
     max-width: 315px;
   }
-  .cover-footer {
-    left: 24px;
-    right: 24px;
-    bottom: 22px;
-    line-height: 1.5;
-  }
   .cover-about {
-    display: block;
-    padding: 65px 26px;
+    padding: 65px 26px 30px;
   }
   .cover-about h2 {
-    margin-bottom: 35px;
+    max-width: 330px;
   }
+  .project-footer { margin-top: 48px; }
+  .cover-header nav { order: 3; flex-basis: 100%; justify-content: space-between; gap: 10px; }
+  .cover-header nav a, .cover-header nav button { font-size: 11px; }
 }
 
 /* Working room surfaces inherit the prototype's palette and typography. */

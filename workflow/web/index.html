@@ -34,25 +34,63 @@
       </header>
       <div class="cover-content">
         <h1 id="cover-title" tabindex="-1"><span data-en="What should" data-zh="一起想想，">What should</span><span data-en="we build?" data-zh="我们做什么？">we build?</span></h1>
-        <p>
-          <span data-en="Think through different ideas." data-zh="认真听见不同的想法。">Think through different ideas.</span><br /><span data-en="Find a project your whole team wants to build." data-zh="找到全队都愿意投入的项目。">Find a project your whole team wants to build.</span><br /><small data-en="Private interviews. Shared decisions." data-zh="私下表达，共同决定。">Private interviews. Shared decisions.</small>
-        </p>
+        <p data-en="Different minds. A shared direction." data-zh="不同的想法，共同的方向。">Different minds. A shared direction.</p>
         <button class="cover-login" type="button" data-demo-login data-en="Open workspace" data-zh="进入工作区">
           Open workspace
         </button>
       </div>
-      <div class="cover-footer">
-        <span data-en="Different perspectives. A shared direction." data-zh="不同的视角，共同的方向。">Different perspectives. A shared direction.</span
-        ><span>considea</span>
-      </div>
     </section>
-    <section class="cover-about" id="cover-about">
-      <h2 data-en="Find your way to a project." data-zh="一起找到值得做的项目。">Find your way to a project.</h2>
-      <ol>
-        <li data-en="Hear every perspective." data-zh="听见每个人的想法。">Hear every perspective.</li>
-        <li data-en="Talk through the differences that matter." data-zh="把重要分歧谈清楚。">Talk through the differences that matter.</li>
-        <li data-en="Choose a direction worth building." data-zh="选定值得投入的方向。">Choose a direction worth building.</li>
+    <section class="cover-about" id="cover-about" aria-labelledby="about-title">
+      <div class="about-heading">
+        <h2 id="about-title" data-en="Find your way to a project." data-zh="一起找到值得做的项目。">Find your way to a project.</h2>
+        <p data-en="A little space to think. A conversation that brings you together." data-zh="留一点空间认真思考，让一次次交流把大家带到一起。">A little space to think. A conversation that brings you together.</p>
+      </div>
+      <ol class="process-map">
+        <li class="process-step">
+          <span class="process-node" aria-hidden="true">01</span>
+          <h3 data-en="Hear every perspective." data-zh="听见每个人的想法。">Hear every perspective.</h3>
+          <p data-en="Start together, then take a moment for yourself." data-zh="先聚到一起，再留一点时间给自己。">Start together, then take a moment for yourself.</p>
+          <ul class="process-branches">
+            <li data-en="Invite your team into one workspace." data-zh="邀请队友进入同一个工作区。">Invite your team into one workspace.</li>
+            <li data-en="Talk privately about your interests, strengths and limits." data-zh="私下聊聊你的兴趣、擅长的事和顾虑。">Talk privately about your interests, strengths and limits.</li>
+            <li data-en="Edit your summary. You choose what the team sees." data-zh="修改你的总结，由你决定让队友看到什么。">Edit your summary. You choose what the team sees.</li>
+          </ul>
+        </li>
+        <li class="process-step">
+          <span class="process-node" aria-hidden="true">02</span>
+          <h3 data-en="Talk through what matters." data-zh="把重要分歧谈清楚。">Talk through what matters.</h3>
+          <p data-en="Find the questions worth answering together." data-zh="找到值得大家一起回答的问题。">Find the questions worth answering together.</p>
+          <ul class="process-branches">
+            <li data-en="See where your hopes overlap or pull apart." data-zh="看清彼此的期待，哪些相同、哪些不同。">See where your hopes overlap or pull apart.</li>
+            <li data-en="Everyone gets a turn to answer and rethink." data-zh="每个人都有机会回答，也可以调整想法。">Everyone gets a turn to answer and rethink.</li>
+            <li data-en="After some rounds of conversation choose together: keep talking or explore ideas." data-zh="交谈几轮后，一起选择继续聊，还是开始探索方案。">After four rounds, choose together: keep talking or explore ideas.</li>
+          </ul>
+        </li>
+        <li class="process-step">
+          <span class="process-node" aria-hidden="true">03</span>
+          <h3 data-en="Choose a direction worth building." data-zh="选定值得投入的方向。">Choose a direction worth building.</h3>
+          <p data-en="Turn shared understanding into a plan you believe in." data-zh="把共同的理解，变成大家认可的计划。">Turn shared understanding into a plan you believe in.</p>
+          <ul class="process-branches">
+            <li data-en="Explore project ideas shaped by your team." data-zh="探索围绕你们团队提出的项目方案。">Explore project ideas shaped by your team.</li>
+            <li data-en="Compare what exists, what could work and what needs another look." data-zh="看看已有的项目、可行的部分，以及还需想清楚的地方。">Compare what exists, what could work and what needs another look.</li>
+            <li data-en="Refine it together. Take away a brief only when everyone agrees." data-zh="一起完善方案，全员认可后再带走项目简报。">Refine it together. Take away a brief only when everyone agrees.</li>
+          </ul>
+        </li>
       </ol>
+      <footer class="project-footer">
+        <div class="project-links">
+          <a href="https://github.com/sgtlyz/MHacks" target="_blank" rel="noopener noreferrer" aria-label="Considea on GitHub">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 .8a11.2 11.2 0 0 0-3.54 21.83c.56.1.77-.24.77-.54v-2.1c-3.13.68-3.8-1.33-3.8-1.33-.51-1.3-1.25-1.65-1.25-1.65-1.02-.7.08-.69.08-.69 1.13.08 1.72 1.16 1.72 1.16 1 1.72 2.63 1.22 3.27.93.1-.73.39-1.22.71-1.5-2.5-.29-5.13-1.25-5.13-5.56 0-1.23.44-2.23 1.16-3.02-.12-.28-.5-1.43.11-2.98 0 0 .95-.3 3.08 1.15a10.7 10.7 0 0 1 5.6 0c2.14-1.45 3.08-1.15 3.08-1.15.61 1.55.23 2.7.12 2.98.72.79 1.15 1.79 1.15 3.02 0 4.32-2.63 5.27-5.14 5.55.4.35.76 1.03.76 2.08v3.1c0 .3.2.65.78.54A11.2 11.2 0 0 0 12 .8Z"/></svg>
+            <span>GitHub</span>
+          </a>
+          <span class="project-link-divider" aria-hidden="true"></span>
+          <a href="https://mhacks-2026.devpost.com/" target="_blank" rel="noopener noreferrer" aria-label="MHacks 2026 on Devpost">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="m6 1.6-6 10.4 6 10.4h12L24 12 18 1.6H6Z"/><path fill="var(--about-paper, #f4f2ec)" d="M8 6.5h4.1c3.3 0 5.4 2.1 5.4 5.5s-2.1 5.5-5.4 5.5H8v-11Zm2.5 2.3v6.4H12c1.9 0 3-1.1 3-3.2s-1.1-3.2-3-3.2h-1.5Z"/></svg>
+            <span>Devpost</span>
+          </a>
+        </div>
+        <p data-en="Shoutout to MHacks. Built with different minds." data-zh="致谢 MHacks，让不同的想法在这里相遇。">Shoutout to MHacks. Built with different minds.</p>
+      </footer>
     </section>
     <div id="workspace" hidden>
       <a
