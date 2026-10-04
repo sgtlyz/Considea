@@ -371,9 +371,37 @@ try {
     ),
     false,
   );
+  // The saved replay must work without a room, credentials or API requests.
+  const replayContext = await browser.newContext({viewport:{width:1440,height:1000}});
+  contexts.push(replayContext);
+  const replay = await replayContext.newPage();
+  const replayErrors=[],apiRequests=[];
+  replay.on("pageerror",e=>replayErrors.push(e.message));
+  replay.on("request",r=>{if(new URL(r.url()).pathname.startsWith("/api/"))apiRequests.push(r.url());});
+  await replay.goto(base+"/demo.html");
+  await until(async()=> (await replay.locator("#demo-status").innerText()).startsWith("Recorded "));
+  await until(()=>replay.locator("video").evaluate(v=>Number.isFinite(v.duration)&&v.duration>70&&v.duration<100));
+  await replay.locator("video").evaluate(v=>{v.muted=true;return v.play();});
+  await until(()=>replay.locator("video").evaluate(v=>v.currentTime>0.2));
+  await replay.locator("video").evaluate(v=>{v.pause();v.currentTime=71;});
+  await until(()=>replay.locator("video").evaluate(v=>!v.seeking&&v.readyState>=2));
+  for (const width of [1440,375]) {
+    await replay.setViewportSize({width,height:900});
+    while(await replay.locator("#previous").isEnabled())await replay.locator("#previous").click();
+    for(let step=1;step<=8;step++) {
+      assert.equal(await replay.locator("#step-position").innerText(),`${step} / 8`);
+      assert.ok((await replay.locator("#step-body").innerText()).length>30);
+      assert.ok(await replay.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),"Replay must fit the viewport");
+      if(step<8){await replay.locator("#next").focus();await replay.keyboard.press("Enter");}
+    }
+    assert.ok(await replay.locator("#next").isDisabled());
+  }
+  assert.deepEqual(apiRequests,[]);
+  assert.deepEqual(replayErrors,[]);
+  await replay.screenshot({path:join(screenshots,"replay-mobile.png"),fullPage:true});
   assert.deepEqual(errors, []);
   console.log(
-    "PASS: test login, room creation/join/admin, drafts/reload/languages/themes, four UI rounds, human gates, private data isolation, safe text rendering, real candidate tabs, mobile layout, small revision/re-evaluation, unanimous acceptance, accepted brief export, logout; no page errors.",
+    "PASS: workspace entry, room creation/join/admin, drafts/reload/languages/themes, four UI rounds, human gates, private data isolation, safe text rendering, real candidate tabs, mobile layout, small revision/re-evaluation, unanimous acceptance, accepted brief export, logout; public replay and video, keyboard navigation, no API calls or page errors.",
   );
 } finally {
   if (browser) await browser.close();

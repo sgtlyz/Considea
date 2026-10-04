@@ -11,9 +11,9 @@ remain standalone historical prototypes with sample content. They are not the de
 2. Create a room with member IDs, context, optional project time limit and search preference.
 3. Save the returned administrator token and invitations. Distribute only each person's invitation to them.
 4. Each person joins in their own tab with a room ID and invitation. Invitations are single use.
-5. Save your own recovery token privately. Restore with the room ID and token after leaving.
+5. Download your private recovery card. Restore with the room ID, identity and recovery code; existing-token restore is also retained.
 
-The test login never supplies an identity or permission to the API. Administrator access
+Opening the workspace never supplies an identity or permission to the API. Administrator access
 is separate from member access and cannot read private interviews or vote for a member.
 Room tokens and unsent form drafts live in sessionStorage, scoped to this tab and identity.
 Draft keys include the question batch, profile draft, difference or candidate/evaluation
@@ -25,7 +25,7 @@ and drafts. Local storage holds only appearance and language preferences.
 
 All workspace content comes from the authenticated `GET /api/rooms/{room_id}` RoomView.
 The frontend has no fixed people, candidate ideas, evaluation scores or simulated votes.
-Mock/offline/live mode is controlled by the backend and labelled separately from test login.
+Mock/offline/live mode is controlled by the backend and labelled in the workspace.
 Agent-produced text is displayed as text, not executable HTML, and remains in its original
 language when interface chrome switches between English and Chinese.
 

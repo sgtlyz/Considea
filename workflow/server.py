@@ -26,8 +26,7 @@ def make_server(workflow, host="127.0.0.1", port=8765):
             pass  # Do not log invitation bodies or credentials.
 
         def _send(self, status, data, content_type="application/json; charset=utf-8"):
-            body = (json.dumps(data, ensure_ascii=False).encode("utf-8")
-                    if content_type.startswith("application/json") else data)
+            body = data if isinstance(data, bytes) else json.dumps(data, ensure_ascii=False).encode("utf-8")
             self.send_response(status)
             self.send_header("Content-Type", content_type)
             self.send_header("Content-Length", str(len(body)))
@@ -68,7 +67,10 @@ def make_server(workflow, host="127.0.0.1", port=8765):
                 # Explicit public assets only: never expose repository files or secrets.
                 assets = {"style.css": "text/css; charset=utf-8",
                           "app.js": "text/javascript; charset=utf-8",
-                          "atmosphere.js": "text/javascript; charset=utf-8"}
+                          "atmosphere.js": "text/javascript; charset=utf-8",
+                          "demo.html": "text/html; charset=utf-8", "demo.js": "text/javascript; charset=utf-8",
+                          "demo.css": "text/css; charset=utf-8", "demo-data.json": "application/json; charset=utf-8",
+                          "demo.mp4": "video/mp4", "demo-poster.png": "image/png"}
                 if method == "GET" and len(parts) == 1 and parts[0] in assets:
                     data = (Path(__file__).parent / "web" / parts[0]).read_bytes()
                     return self._send(200, data, assets[parts[0]])
