@@ -41,6 +41,7 @@ jobs:
           docker run --rm --workdir /app/agent/evaluator considea-ci node --test 'test/*.test.mjs'
           docker run --rm --workdir /app/agent/idea/spacetime considea-ci node node_modules/typescript/bin/tsc --noEmit
           docker run --rm --workdir /app/agent/idea/spacetime considea-ci node --test module.test.mjs
+          docker run --rm --workdir /app/workflow/node considea-ci node --test localize.test.mjs
           docker run --rm --workdir /app/workflow/node considea-ci node --input-type=module -e "await import('./spacetime.mjs')"
       - name: Verify frontend routing and build
         run: |

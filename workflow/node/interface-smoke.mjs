@@ -31,8 +31,8 @@ let browser,
   base,
   stderr = "";
 worker.stderr.on("data", (b) => (stderr += b.toString()));
-async function until(fn) {
-  const end = Date.now() + 20000;
+async function until(fn, timeout = 20000) {
+  const end = Date.now() + timeout;
   while (Date.now() < end) {
     if (await fn()) return;
     await delay(100);
@@ -88,6 +88,12 @@ try {
   // The test login grants no room access.
   const unauthorized = await fetch(base + "/api/rooms/not-a-room");
   assert.equal(unauthorized.status, 401);
+  assert.equal(await admin.locator(".primary-nav").isVisible(),false);
+  assert.equal(await admin.locator("#join-panel").isVisible(),false);
+  await admin.locator("#show-join").click();
+  assert.equal(await admin.locator("#start-panel").isVisible(),false);
+  assert.equal(await admin.locator("#join-panel").isVisible(),true);
+  await admin.locator("#show-start").click();
   await admin.locator("#memberIds").fill("alice,bob");
   await admin.locator("#context").fill("Synthetic interface regression");
   await until(async()=>!(await admin.locator("#connection-status").innerText()).includes("Connecting"));
@@ -95,6 +101,9 @@ try {
   await admin.locator("#create").click();
   const room=await (await created).json();
   await admin.locator("#credentials").waitFor();
+  assert.equal(await admin.locator("#credentials textarea").count(),0);
+  await admin.locator("#credentials details").first().locator("summary").click();
+  assert.ok((await admin.locator("#credentials").innerText()).includes("Recovery code"));
   await admin
     .getByRole("button", { name: "Open administrator view", exact: true })
     .click();
@@ -135,6 +144,32 @@ try {
   }
   const a = pages.alice,
     b = pages.bob;
+  async function goTo(p, view) {
+    if (!(await p.locator("#"+view+"-view").isVisible()))
+      await p.getByRole("button",{name:{interview:"Go to private interview",studio:"Go to team studio",brief:"View project brief"}[view],exact:true}).click();
+    await p.locator("#"+view+"-view").waitFor({state:"visible"});
+  }
+  async function checkChinese(page, extraAllowed = []) {
+    await page.locator('#workspace [data-language="zh"]').click();
+    await until(async()=>!(await page.locator('#translation-status').count()),60000);
+    const text=await page.locator('#workspace').innerText();
+    const allowed=['considea','alice','bob',room.room_id,...extraAllowed];
+    let remainder=text;
+    for(const value of allowed)remainder=remainder.split(value).join('');
+    assert.ok(!/[A-Za-z]{2,}/.test(remainder),'Untranslated interface text: '+remainder);
+    assert.ok(!text.includes('"schema_version"') && !text.includes('"source_ref"'));
+    if(await page.locator('#studio-view').isVisible()) {
+      await page.setViewportSize({width:375,height:812});
+      assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
+      await page.screenshot({path:join(screenshots,'interface-chinese-mobile.png'),fullPage:true});
+      await page.setViewportSize({width:1440,height:1000});
+    }
+    await page.locator('#workspace [data-language="en"]').click();
+  }
+  await checkChinese(a);
+  assert.equal(await a.locator(".primary-nav button").count(),0);
+  assert.equal(await a.getByRole("button",{name:"Go to team studio",exact:true}).count(),0);
+
   await admin.locator("#account-panel > summary").click();
   await admin.locator("#room-deepseek").fill("test-browser-private-deepseek");
   await admin.locator("#room-tavily").fill("test-browser-private-tavily");
@@ -153,10 +188,17 @@ try {
   await a.locator("#recover-panel > summary").click();
   await a.locator("#recover-member").fill("alice");
   await a.locator("#recover-code").fill(oldAuth.recovery_code);
-  const [recoveryDownload]=await Promise.all([a.waitForEvent("download"),a.locator("#recover").click()]);
-  await recoveryDownload.saveAs(join(folder,"recovery.json"));
-  const recovered=JSON.parse(await readFile(join(folder,"recovery.json"),"utf8"));
-  assert.equal(recovered.role,"member");assert.notEqual(recovered.recovery_code,oldAuth.recovery_code);
+  const recoveryDownloads=[];a.on("download",d=>recoveryDownloads.push(d));
+  await a.locator("#recover").click();
+  await a.locator("#recovery-card .access-card").waitFor({state:"visible"});
+  assert.equal(recoveryDownloads.length,0,"Recovery must show a card, not force a download");
+  const recovered=JSON.parse(await a.evaluate(()=>sessionStorage.getItem("conclave-auth")));
+  assert.notEqual(recovered.recovery_code,oldAuth.recovery_code);
+  assert.ok((await a.locator("#recovery-card").innerText()).includes(recovered.recovery_code));
+  const [recoveryDownload]=await Promise.all([a.waitForEvent("download"),a.locator("#recovery-card").getByRole("button",{name:"Save a text copy",exact:true}).click()]);
+  await recoveryDownload.saveAs(join(folder,"recovery.txt"));
+  const recoveryText=await readFile(join(folder,"recovery.txt"),"utf8");
+  assert.ok(recoveryText.includes("Recovery code:"));assert.ok(!recoveryText.includes('"recovery_code"'));
   await a.locator("#app").waitFor({state:"visible"});
   tokens.alice=JSON.parse(await a.evaluate(()=>sessionStorage.getItem("conclave-auth"))).token;
   const revoked=await fetch(base+"/api/rooms/"+room.room_id,{headers:{Authorization:"Bearer "+oldAuth.token}});
@@ -174,13 +216,21 @@ try {
     await a.locator("#private textarea").first().inputValue(),
     "Draft retained through refresh and language changes",
   );
-  await a.getByRole("button", { name: "EN", exact: true }).click();
+  await a.getByRole("button", { name: "英文", exact: true }).click();
   await sync(a);
   assert.equal(
     await a.locator("#private textarea").first().inputValue(),
     "Draft retained through refresh and language changes",
   );
+  const authBeforeHome=await a.evaluate(()=>sessionStorage.getItem('conclave-auth'));
+  await a.locator('#workspace [data-home]').click();
+  await a.locator('#landing').waitFor({state:'visible'});
+  assert.equal(await a.locator('#workspace').isVisible(),false);
+  assert.equal(await a.evaluate(()=>sessionStorage.getItem('conclave-auth')),authBeforeHome);
   await a.reload();
+  await a.locator('#landing').waitFor({state:'visible'});
+  assert.equal(await a.locator('#workspace').isVisible(),false);
+  await a.locator('.cover-login').click();
   await a.locator("#private textarea").first().waitFor();
   assert.equal(
     await a.locator("#private textarea").first().inputValue(),
@@ -196,7 +246,7 @@ try {
         async () => (await view(member)).private.stage === "awaiting_answers",
       );
       await sync(p);
-      await p.locator('[data-view="interview"]').click();
+      await goTo(p,"interview");
       for (const field of await p.locator("#private textarea").all())
         await field.fill("PRIVATE-" + member + "-" + round);
       await p
@@ -207,6 +257,7 @@ try {
           (await view(member)).private.stage === "awaiting_profile_approval",
       );
       await sync(p);
+      if(round===1)await checkChinese(p);
       const fields = await p.locator("#private textarea").all();
       for (const [index, field] of fields.entries())
         await field.fill(
@@ -234,7 +285,9 @@ try {
     for (const member of v.difference.content.affected_member_ids) {
       const p = pages[member];
       await sync(p);
-      await p.locator('[data-view="studio"]').click();
+      await goTo(p,"studio");
+      if(round===1)await checkChinese(p);
+      assert.equal(await p.getByRole("button",{name:"Go to private interview",exact:true}).count(),0);
       assert.equal(
         await p
           .getByRole("button", { name: "Generate directions", exact: true })
@@ -275,12 +328,16 @@ try {
   assert.ok(!(await admin.locator("body").textContent()).includes("PRIVATE-"));
   assert.equal(await a.evaluate(() => !!window.uiInjected), false);
   assert.equal(await a.locator("#sources img").count(), 0);
+  assert.equal(await a.locator("#app pre").count(),0);
+  await a.locator('#candidates details').first().locator('summary').click();
+  await a.locator('#candidates details').first().getByRole("heading",{name:"How it works",exact:true}).waitFor({state:"visible"});
   assert.equal(
     await admin
       .getByRole("button", { name: "Accept this version", exact: true })
       .count(),
     0,
   );
+  await checkChinese(a);
   // Candidate tabs are backed by actual IDs; switching changes the review target.
   const ids = Object.keys((await view("alice")).candidates);
   assert.ok(ids.length > 1);
@@ -344,7 +401,8 @@ try {
   }
   await until(async () => (await view("alice")).phase === "completed");
   await sync(a);
-  await a.locator('[data-view="brief"]').click();
+  await goTo(a,"brief");
+  await checkChinese(a);
   const [download] = await Promise.all([
     a.waitForEvent("download"),
     a
@@ -395,6 +453,12 @@ try {
       if(step<8){await replay.locator("#next").focus();await replay.keyboard.press("Enter");}
     }
     assert.ok(await replay.locator("#next").isDisabled());
+  }
+  await replay.locator('[data-language="zh"]').click();
+  await until(async()=>(await replay.locator('#demo-status').innerText()).startsWith('录制日期：'));
+  for(let step=1;step<=8;step++) {
+    assert.match(await replay.locator('#step-title').innerText(),/[\u3400-\u9fff]/);
+    if(step<8)await replay.locator('#next').click();
   }
   assert.deepEqual(apiRequests,[]);
   assert.deepEqual(replayErrors,[]);

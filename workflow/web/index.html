@@ -23,37 +23,35 @@
       <div class="cover-veil" aria-hidden="true"></div>
       <div class="cover-grain" aria-hidden="true"></div>
       <header class="cover-header">
-        <a class="wordmark" href="#landing" aria-label="considea home"
+        <a class="wordmark" data-home href="/#home" aria-label="considea home" data-aria-en="considea home" data-aria-zh="considea 首页"
           >considea</a
         >
-        <nav aria-label="Main navigation">
-          <a href="#cover-about">How it works</a
-          ><a href="/demo.html">Watch a walkthrough</a><button type="button" data-demo-login>Open workspace</button>
+        <nav aria-label="Main navigation" data-aria-en="Main navigation" data-aria-zh="主导航">
+          <a href="#cover-about" data-en="How it works" data-zh="如何使用">How it works</a
+          ><a href="/demo.html" data-en="Watch a walkthrough" data-zh="查看流程演示">Watch a walkthrough</a><button type="button" data-demo-login data-en="Open workspace" data-zh="进入工作区">Open workspace</button>
         </nav>
+        <div class="preference cover-language"><button data-language="en" data-en="EN" data-zh="英文">EN</button><button data-language="zh">中文</button></div>
       </header>
       <div class="cover-content">
-        <h1 id="cover-title"><span>What should</span><span>we build?</span></h1>
+        <h1 id="cover-title" tabindex="-1"><span data-en="What should" data-zh="一起想想，">What should</span><span data-en="we build?" data-zh="我们做什么？">we build?</span></h1>
         <p>
-          Think through different ideas.<br />Find a project your whole team
-          wants to build.<br /><small
-            >Private interviews. Shared decisions.</small
-          >
+          <span data-en="Think through different ideas." data-zh="认真听见不同的想法。">Think through different ideas.</span><br /><span data-en="Find a project your whole team wants to build." data-zh="找到全队都愿意投入的项目。">Find a project your whole team wants to build.</span><br /><small data-en="Private interviews. Shared decisions." data-zh="私下表达，共同决定。">Private interviews. Shared decisions.</small>
         </p>
-        <button class="cover-login" type="button" data-demo-login>
+        <button class="cover-login" type="button" data-demo-login data-en="Open workspace" data-zh="进入工作区">
           Open workspace
         </button>
       </div>
       <div class="cover-footer">
-        <span>Different perspectives. A shared direction.</span
+        <span data-en="Different perspectives. A shared direction." data-zh="不同的视角，共同的方向。">Different perspectives. A shared direction.</span
         ><span>considea</span>
       </div>
     </section>
     <section class="cover-about" id="cover-about">
-      <h2>Find your way<br />to a project.</h2>
+      <h2 data-en="Find your way to a project." data-zh="一起找到值得做的项目。">Find your way to a project.</h2>
       <ol>
-        <li>Hear every perspective.</li>
-        <li>Talk through the differences that matter.</li>
-        <li>Choose a direction worth building.</li>
+        <li data-en="Hear every perspective." data-zh="听见每个人的想法。">Hear every perspective.</li>
+        <li data-en="Talk through the differences that matter." data-zh="把重要分歧谈清楚。">Talk through the differences that matter.</li>
+        <li data-en="Choose a direction worth building." data-zh="选定值得投入的方向。">Choose a direction worth building.</li>
       </ol>
     </section>
     <div id="workspace" hidden>
@@ -68,43 +66,43 @@
       <div class="atmosphere-veil" aria-hidden="true"></div>
       <div class="shell">
         <header class="masthead">
-          <a class="wordmark" href="#desk" aria-label="considea">considea</a>
-          <nav class="primary-nav" aria-label="Workspace">
-            <button
+          <a class="wordmark" data-home href="/#home" aria-label="considea">considea</a>
+          <nav class="primary-nav" aria-label="Conversation progress" data-aria-en="Conversation progress" data-aria-zh="讨论进度" hidden>
+            <span
               data-view="interview"
               data-en="Your perspective"
               data-zh="我的想法"
             >
               Your perspective
-            </button>
-            <button
+            </span>
+            <span
               data-view="studio"
               data-en="Team studio"
               data-zh="团队工作室"
             >
               Team studio
-            </button>
-            <button
+            </span>
+            <span
               data-view="brief"
               data-en="Project brief"
               data-zh="项目简报"
             >
               Project brief
-            </button>
+            </span>
           </nav>
           <button class="focus-button" data-focus-toggle aria-pressed="false">
             Focus on the discussion
           </button>
           <div class="preferences">
-            <div class="preference" role="group" aria-label="Appearance">
+            <div class="preference" role="group" aria-label="Appearance" data-aria-en="Appearance" data-aria-zh="外观">
               <button data-theme-choice="light" data-en="Light" data-zh="浅色">
                 Light</button
               ><button data-theme-choice="dark" data-en="Dark" data-zh="深色">
                 Dark
               </button>
             </div>
-            <div class="preference" role="group" aria-label="Language">
-              <button data-language="en">EN</button
+            <div class="preference" role="group" aria-label="Language" data-aria-en="Language" data-aria-zh="语言">
+              <button data-language="en" data-en="EN" data-zh="英文">EN</button
               ><button data-language="zh">中文</button>
             </div>
           </div>
@@ -147,14 +145,14 @@
           <p id="error" role="alert" hidden></p>
           <p id="connection-status" class="notice" role="status">Connecting to the workspace… The free demo may take a moment to wake up.</p>
           <div id="entry" class="entry-grid">
-            <section>
+            <section id="start-panel">
               <h2 data-en="Start a conversation." data-zh="开始一次讨论。">
                 Start a conversation.
               </h2>
               <label
                 ><span
                   data-en="Member IDs, separated by commas"
-                  data-zh="成员 ID，以逗号分隔"
+                  data-zh="成员代号，以逗号分隔"
                   >Member IDs, separated by commas</span
                 ><input
                   id="memberIds"
@@ -186,14 +184,16 @@
               >
                 Create room
               </button>
+              <button id="show-join" class="quiet-button entry-switch" type="button" data-en="Already have a team? Join your team" data-zh="已经有团队？加入你的团队">Already have a team? Join your team</button>
               <div id="credentials" hidden></div>
             </section>
-            <section>
+            <section id="join-panel" hidden>
+              <button id="show-start" class="quiet-button entry-switch" type="button" data-en="Start a new conversation instead" data-zh="返回创建新讨论">Start a new conversation instead</button>
               <h2 data-en="Join your team." data-zh="加入你的团队。">
                 Join your team.
               </h2>
               <label
-                ><span data-en="Room ID" data-zh="房间 ID">Room ID</span
+                ><span data-en="Room ID" data-zh="房间编号">Room ID</span
                 ><input id="roomId" autocomplete="off"
               /></label>
               <label
@@ -211,11 +211,11 @@
               </button>
               <details id="recover-panel">
                 <summary data-en="Recover with your private code" data-zh="使用私人恢复码恢复">Recover with your private code</summary>
-                <label>Role<select id="recover-role"><option value="member">Participant</option><option value="admin">Administrator</option></select></label>
-                <label>Member ID (participants only)<input id="recover-member" autocomplete="off" /></label>
-                <label>Private recovery code<input id="recover-code" type="password" autocomplete="off" /></label>
-                <button id="recover" class="primary-button">Recover access</button>
-                <p class="muted">This signs out older sessions. Download the new recovery card after recovery.</p>
+                <label><span data-en="Role" data-zh="身份">Role</span><select id="recover-role"><option value="member" data-en="Participant" data-zh="成员">Participant</option><option value="admin" data-en="Administrator" data-zh="管理员">Administrator</option></select></label>
+                <label><span data-en="Member ID (participants only)" data-zh="成员代号（仅成员填写）">Member ID (participants only)</span><input id="recover-member" autocomplete="off" /></label>
+                <label><span data-en="Private recovery code" data-zh="私人恢复码">Private recovery code</span><input id="recover-code" type="password" autocomplete="off" /></label>
+                <button id="recover" class="primary-button" data-en="Recover access" data-zh="恢复访问">Recover access</button>
+                <p class="muted" data-en="This signs out older sessions. Your new recovery card will appear here." data-zh="恢复后旧会话会退出，并在页面内显示新的恢复卡。">This signs out older sessions. Your new recovery card will appear here.</p>
               </details>
               <details>
                 <summary
@@ -268,7 +268,7 @@
             </div>
             <section id="status" class="status-panel"></section>
             <details id="account-panel" class="activity-panel">
-              <summary>Access, invitations &amp; API keys</summary>
+              <summary data-en="Access, invitations &amp; API keys" data-zh="访问、邀请与服务密钥">Access, invitations &amp; API keys</summary>
               <div id="room-access"></div>
             </details>
             <section id="interview-view" class="other-view" tabindex="-1" hidden>
@@ -297,7 +297,7 @@
                 </p>
               </aside>
             </section>
-            <section id="studio-view" class="studio-body" hidden>
+            <section id="studio-view" class="studio-body" tabindex="-1" hidden>
               <aside class="sources">
                 <h2
                   class="section-title"
@@ -338,7 +338,7 @@
                 <div id="reviews" class="my-stance"></div>
               </aside>
             </section>
-            <section id="brief-view" class="other-view brief-view" hidden>
+            <section id="brief-view" class="other-view brief-view" tabindex="-1" hidden>
               <div id="brief"></div>
             </section>
             <details class="activity-panel">

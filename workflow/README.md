@@ -36,6 +36,14 @@ A `clarification` with one `affected_member_ids` entry is private to that member
 Only the respondent's interview Agent receives the personal clarification and answer. Other interview Agents continue from their own messages/current profile and authorized shared context (`mode: initial`, no followup payload under contract 2.1). This does not reset the discussion round or bypass any human gate. New summaries are shared only after approval; historical personal clarification sources stay private. Generation and evaluation receive public sources only. Stored state remains intact; read projections and pending task dispatch enforce the policy for existing rooms too. This cannot revoke information already seen before the policy was applied.
 
 
+## Interface and language
+
+The entry screen starts with room creation; existing members open **Join your team** or follow their personal invitation. The header shows progress after joining. Transitions between private interviews, shared discussion and the accepted brief appear only when the current workflow requires them. Room and recovery cards are readable in the browser, with optional copy and plain-text export. Discussion history and reports use labeled sections rather than raw JSON.
+
+Chinese mode translates interface copy and authorized room prose, including previously saved English questions, summaries, differences, directions and evaluations. Translation uses the room's model credentials and shared daily allowance when applicable. Results are cached by room and source hash in `display_translations` in SQLite/PostgreSQL. It does not rewrite agent memory, evidence or previous answers; a member may explicitly edit and approve translated summary text. Typed drafts are retained when switching languages.
+
+Translation reads only the caller's current RoomView, rechecks access before returning even cached results, and never publishes private translations to the shared outbox. Requests are limited to 16 visible strings, 24,000 characters total, and 160 model batches per room per day. Model batches preserve quantities and use bounded output repair. Failed translations show a Chinese retry message and keep the related action disabled until its content is readable. Mock/offline mode uses labeled Chinese fixtures. The public walkthrough includes a saved Chinese text version; its original video remains an English recording.
+
 ## Creation options
 
 | Field | Engine default | Accepted values |
@@ -63,6 +71,7 @@ Send JSON with `Content-Type: application/json`; maximum body size is 1 MiB. Pro
 | POST /api/rooms | `{room_context,config?,access_code?,credentials?}` | Room ID, admin token/recovery code, one-use invitations, mode |
 | POST /api/rooms/{id}/join | `{invitation}` | Member token, member ID and recovery code |
 | GET /api/rooms/{id} | None | Authorized RoomView |
+| POST /api/rooms/{id}/translations | `{texts:[string]}`; authenticated, currently visible content only | `{translations:[{source,text}]}` in Simplified Chinese |
 | POST /api/rooms/{id}/events | ClientEvent v2.0 | Accepted event or rejected business result |
 | POST /api/rooms/{id}/tasks/{task}/retry | `{}` | Requeued task if permitted |
 | POST /api/rooms/{id}/project-time-limit | `{time_limit}`; administrator | Initial time configuration, idempotent for the same value |

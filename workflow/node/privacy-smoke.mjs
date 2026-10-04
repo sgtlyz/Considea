@@ -57,7 +57,7 @@ try {
     });
     await page.goto(fixture.base);
     await page.locator("#app").waitFor({ state: "visible" });
-    await page.locator('[data-view="studio"]').click();
+    await page.locator('#studio-view').waitFor({state:'visible'});
     await page.locator("#discussion h2").waitFor();
   }
   const a = pages.alice, b = pages.bob, admin = pages.admin;
@@ -69,9 +69,9 @@ try {
     assert.equal(await p.locator("#discussion textarea").count(), 0);
     for (const marker of markers) assert.ok(!(await p.locator("body").innerText()).includes(marker));
   }
-  await b.locator('[data-language="zh"]').click();
+  await b.locator('#workspace [data-language="zh"]').click();
   assert.match(await b.locator("#discussion").innerText(), /你暂时无需操作/);
-  await b.locator('[data-language="en"]').click();
+  await b.locator('#workspace [data-language="en"]').click();
   const updated = a.waitForResponse(r => r.url().endsWith("/events") && r.request().method() === "POST");
   await a.locator("#discussion textarea").fill("PERSONAL-ANSWER-ONLY-ALICE");
   await a.getByRole("button", { name: "Confirm my statements", exact: true }).click();

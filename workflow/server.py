@@ -14,11 +14,13 @@ from .store import configured_store
 from .integration import IntegratedRunner, SharedSync
 from .environment import load_environment
 from .security import RoomSecurity
+from .localization import Localization
 
 
 def make_server(workflow, host="127.0.0.1", port=8765):
     security = RoomSecurity(workflow)
     workflow.security = security
+    localization = Localization(workflow)
     if hasattr(workflow.runner, "credentials_for"):
         workflow.runner.credentials_for = security.credentials_for
     class Handler(BaseHTTPRequestHandler):
@@ -70,7 +72,7 @@ def make_server(workflow, host="127.0.0.1", port=8765):
                           "atmosphere.js": "text/javascript; charset=utf-8",
                           "demo.html": "text/html; charset=utf-8", "demo.js": "text/javascript; charset=utf-8",
                           "demo.css": "text/css; charset=utf-8", "demo-data.json": "application/json; charset=utf-8",
-                          "demo.mp4": "video/mp4", "demo-poster.png": "image/png"}
+                          "demo-zh.json": "application/json; charset=utf-8", "demo.mp4": "video/mp4", "demo-poster.png": "image/png"}
                 if method == "GET" and len(parts) == 1 and parts[0] in assets:
                     data = (Path(__file__).parent / "web" / parts[0]).read_bytes()
                     return self._send(200, data, assets[parts[0]])
@@ -143,6 +145,8 @@ def make_server(workflow, host="127.0.0.1", port=8765):
                         return
                     if method == "POST":
                         body = self._body()
+                        if parts[3:] == ["translations"]:
+                            return self._send(200, localization.translate(token, rid, body.get("texts")))
                         if parts[3:] == ["recovery-code"]:
                             return self._send(200, workflow.recovery_code(token,rid))
                         if parts[3:] == ["invitation"]:

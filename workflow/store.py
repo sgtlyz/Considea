@@ -67,6 +67,9 @@ class Store:
                     outcome TEXT NOT NULL, started_at TEXT NOT NULL,
                     finished_at TEXT, error TEXT, result TEXT,
                     PRIMARY KEY(task_id,attempt));
+                CREATE TABLE IF NOT EXISTS display_translations (
+                    room_id TEXT NOT NULL, source_hash TEXT NOT NULL, language TEXT NOT NULL,
+                    translated TEXT NOT NULL, PRIMARY KEY(room_id,source_hash,language));
                 CREATE TABLE IF NOT EXISTS recovery (
                     room_id TEXT NOT NULL, role TEXT NOT NULL, member_id TEXT NOT NULL,
                     recovery_hash TEXT NOT NULL, PRIMARY KEY(room_id,role,member_id));
