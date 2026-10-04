@@ -51,6 +51,7 @@ try{
    const d=(await view('alice')).difference;
    for(const member of d.content.affected_member_ids)await send(member,'difference.answer',{difference_ref:d.difference_ref,
      selected_option_key:d.content.answer_type==='binary'?d.content.options[0].key:null,text:'Public answer '+member,disagrees_with_framing:false});
+   if(round<4)await send('alice','convergence.vote',{difference_ref:d.difference_ref,discussion_round:round,decision:'diverge',reason:'Synthetic human choice to continue'});
  }
  await until(async()=> (await pages.alice.locator('#status').innerText()).includes('等待成员选择'));
  assert.ok(!(await pages.bob.locator('body').innerText()).includes('PRIVATE-alice'));

@@ -55,12 +55,12 @@ test('invalid human difference contexts fail before model use', async () => {
   }
 });
 
-test('human diverge after round four requires its explicit referenced decision', () => {
+for (const round of [1, 4]) test(`human diverge after round ${round} requires its explicit referenced decision`, () => {
   const p = followup().request.payload, c = p.followup_context;
-  p.discussion_round = 5; c.trigger = 'human_diverge'; c.difference.discussion_round = 4;
-  Object.assign(c.decision_result, { discussion_round: 4, decision: 'diverge', source_ids: ['human-diverge'] });
+  p.discussion_round = round + 1; c.trigger = 'human_diverge'; c.difference.discussion_round = round;
+  Object.assign(c.decision_result, { discussion_round: round, decision: 'diverge', source_ids: ['human-diverge'] });
   p.shared_context.sources.push({ source_id: 'human-diverge', kind: 'convergence_decision', object_ref: c.decision_result.decision_ref,
-    member_id: null, discussion_round: 4, text: 'OFFLINE MOCK: 人工决定继续讨论。' });
+    member_id: null, discussion_round: round, text: 'OFFLINE MOCK: 人工决定继续讨论。' });
   assert.equal(validatePayload(p), true);
   c.decision_result.decision = 'converge'; assert.equal(validatePayload(p), false);
   c.decision_result.decision = 'diverge'; p.shared_context.sources.at(-1).object_ref = { id: 'other', version: 1 };

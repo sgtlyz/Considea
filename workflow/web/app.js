@@ -990,7 +990,7 @@
       },"quiet-button");
     }
     if (Object.values(v.members).some(m=>m.available===false)) note(tr("A participant is away. Their answers and approvals are still required. Resume when everyone returns; if the team changes, end this room and create another.","有成员暂时离开，仍需等其回答和确认。人员到齐后继续；如果团队成员发生变化，请结束本房间并重新创建。"),out);
-    if (v.discussion_round < 4) el("p",tr("Discussion " + v.discussion_round + " of at least 4. Each round includes human answers before the team decides to generate.","当前第 "+v.discussion_round+" 轮，至少讨论 4 轮。每轮都由成员回答，再由团队决定是否生成方案。"),out,"muted");
+    if (!["completed", "ended"].includes(v.phase)) el("p",tr("After each round's answers, your team chooses whether to generate directions or keep discussing.","每轮回答完成后，由团队选择生成方向或继续讨论。"),out,"muted");
     if (v.tasks.some(t=>t.status==="failed")) {
       note(tr("A step needs attention. Your answers are saved. Open Activity & recovery to retry it.","有一步需要处理，回答已保存。请展开“运行进度与恢复”后重试。"),out);
       document.querySelector(".activity-panel:has(#tasks)").open=true;
@@ -1413,8 +1413,8 @@
       if (v.phase === "awaiting_convergence_decision") {
         note(
           tr(
-            "From round 4, everyone must choose to converge before generation. One diverge starts another discussion round.",
-            "从第 4 轮起，全员 同意生成 才生成；任何人 继续讨论 则继续一轮讨论。",
+            "Your team decides after every round. Everyone must choose Generate directions to proceed; Keep exploring starts another discussion round.",
+            "每轮结束都由团队决定。全员选择“进入生成”才生成方向；任何人选择“继续深挖”则开始下一轮讨论。",
           ),
           out,
         );
@@ -1453,14 +1453,13 @@
           }
         }
       } else if (
-        v.discussion_round <= 3 &&
-        !["completed", "ended"].includes(v.phase)
+        v.phase === "awaiting_difference_answers"
       )
         el(
           "p",
           tr(
-            "This round returns to private interviews after the required human answers. Generation opens from round 4.",
-            "本轮收齐人工回答后回到私人访谈。第 4 轮起才开放收敛选择。",
+            "Once the required answers are in, everyone can choose to generate directions or keep exploring.",
+            "收齐本轮必要回答后，每位成员都可以选择进入生成或继续深挖。",
           ),
           out,
           "muted",

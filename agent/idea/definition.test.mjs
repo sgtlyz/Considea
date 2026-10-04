@@ -98,7 +98,7 @@ test('approved profile sources may appear again in later discussion rounds', () 
   assert.equal(validateGenerateInput(request.payload), true);
 });
 
-test('generation requires current round four or later and the exact convergence source', () => {
+test('generation requires the current round and the exact convergence source', () => {
   for (const mutate of [
     p => { p.discussion_round = 3; },
     p => { p.convergence_decision.discussion_round = 3; },
@@ -113,6 +113,23 @@ test('generation requires current round four or later and the exact convergence 
     mutate(request.payload);
     assert.equal(validateGenerateInput(request.payload), false);
   }
+});
+
+test('round one generation accepts a complete human convergence source and valid shared history', () => {
+  const { request, response } = fixture('generate');
+  const p = request.payload;
+  p.discussion_round = p.convergence_decision.discussion_round = 1;
+  const history = p.shared_context.discussion_history;
+  const first = { discussion_round: 1 };
+  for (const key of Object.keys(history[0]).filter(k => k.endsWith('_source_ids'))) {
+    first[key] = [...new Set(history.flatMap(h => h[key]))];
+  }
+  p.shared_context.discussion_history = [first];
+  for (const source of p.shared_context.sources) if (source.discussion_round !== null) source.discussion_round = 1;
+  assert.equal(validateGenerateInput(p), true);
+  assert.equal(validateGenerateData(response.data, p), true);
+  p.convergence_decision.source_ids = ['fabricated-decision'];
+  assert.equal(validateGenerateInput(p), false);
 });
 
 test('candidate slots are an exact set, not a model-controlled count or identity', () => {

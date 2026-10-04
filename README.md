@@ -25,9 +25,7 @@ flowchart TD
     I[Private interviews] --> P[Each member approves their shared summary]
     P --> D[Find a difference or clarification]
     D --> A[Members answer the difference]
-    A --> R{Discussion round}
-    R -->|1 to 3| I
-    R -->|4 or later| C{Team decision}
+    A --> C{Team decision after every round}
     C -->|Anyone wants more discussion| I
     C -->|Everyone agrees to generate| G[Generate candidates]
     G --> E[Evaluate evidence and feasibility]
@@ -37,7 +35,7 @@ flowchart TD
     H -->|Another discussion round| I
 ```
 
-Every round requires human answers. Round 4 opens a choice; it does not automatically start generation. A revised candidate gets a new evaluation and fresh approvals. Silence, model advice and exhausted budgets never count as agreement.
+Every round requires human answers and an explicit team decision, starting with round 1. All members must choose to converge before generation; any member can choose further discussion. A revised candidate gets a new evaluation and fresh approvals. Silence, model advice and exhausted budgets never count as agreement.
 
 ## Run locally
 

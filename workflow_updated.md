@@ -7,7 +7,7 @@ This is the current four-role architecture. Earlier three-agent sketches are sup
 1. Interview each member privately. Produce an editable summary; only the member-approved projection is shared.
 2. Compare the approved profiles and shared history. Select one important difference, or a clarification when the evidence does not establish disagreement.
 3. Ask every affected member to answer. Members may reject the question's framing.
-4. In rounds 1–3, use those answers to start another interview round. From round 4, ask all members whether to generate or continue discussing.
+4. After the required answers in every round, starting with round 1, ask all members whether to generate or continue discussing. No fixed minimum number of discussion rounds is imposed.
 5. Generate only after all members choose `converge`. Any `diverge` starts another round immediately.
 6. Evaluate every candidate before opening review. Incomplete evidence remains visible as a partial report.
 7. Accept only when all members accept the same candidate and evaluation version. An agreed small revision returns to Idea generation, followed by evaluation and new review. An agreed request for further discussion returns to Interview.

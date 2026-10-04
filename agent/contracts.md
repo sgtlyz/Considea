@@ -56,7 +56,7 @@ A difference contains kind, category, question, answer type, options, affected m
 
 ### Ideas
 
-Generation requires a workflow-confirmed convergence decision at discussion round 4 or later. Candidate slots are unique and number one to five. Return every slot exactly once; do not create candidate IDs or versions.
+Generation requires a workflow-confirmed convergence decision at any discussion round, including round 1, after the required human answers. Candidate slots are unique and number one to five. Return every slot exactly once; do not create candidate IDs or versions.
 
 Drafts describe title, users, problem, solution, MVP scope, exclusions, contributions, tradeoffs, dependencies, unknowns and discussion source trace. Revisions must honor the current candidate/report references and actual shared instructions. Workflow assigns the new version and requests a new evaluation.
 

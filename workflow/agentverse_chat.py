@@ -33,7 +33,7 @@ The room creator receives a separate invitation for each teammate. Keep your own
 /difference your answer — answer the current team question
 /choose OPTION_KEY | optional context — answer a multiple-choice difference
 /disagree your explanation — flag an inaccurate question
-/vote converge or /vote diverge — decide after round 4's required answers
+/vote converge or /vote diverge — decide after each round's required answers
 /accept CANDIDATE_ID:VERSION — accept a candidate after evaluation
 /revise CANDIDATE_ID:VERSION | changes — request a small revision
 /discuss CANDIDATE_ID:VERSION | reason — return to interviews

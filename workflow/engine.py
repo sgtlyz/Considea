@@ -385,11 +385,7 @@ class Workflow:
             s["answer_revisions"][member_id] = s["answer_revisions"].get(member_id, 0) + 1
             self._source(s, "difference_answer", answer["answer_ref"], encode(p), member_id)
             if set(s["answers"]) >= set(content["affected_member_ids"]):
-                if s["discussion_round"] <= 3:
-                    followup = self._followup(s, "difference_answers")
-                    self._begin_round(db, s, "followup", followup)
-                else:
-                    s["phase"] = "awaiting_convergence_decision"
+                s["phase"] = "awaiting_convergence_decision"
         elif kind == "convergence.vote":
             need(s["phase"] == "awaiting_convergence_decision", "Not accepting convergence votes", "STALE_INPUT")
             need(p["discussion_round"] == s["discussion_round"] and

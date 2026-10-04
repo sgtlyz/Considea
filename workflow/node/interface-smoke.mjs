@@ -270,7 +270,8 @@ try {
   await a.getByRole("button", { name: "Light", exact: true }).click();
   assert.equal(await a.locator("html").getAttribute("data-theme"), "light");
   await a.getByRole("button", { name: "Dark", exact: true }).click();
-  for (let round = 1; round <= 4; round++) {
+  const discussionRounds = Number(process.env.CONCLAVE_TEST_DISCUSSION_ROUNDS || 1);
+  for (let round = 1; round <= discussionRounds; round++) {
     for (const member of ["alice", "bob"]) {
       const p = pages[member];
       await until(
@@ -370,7 +371,11 @@ try {
         .click();
       await until(() => p.locator("#refresh").isEnabled());
     }
-    if (round < 4) {
+    await until(async () => (await view("alice")).phase === "awaiting_convergence_decision");
+    await sync(a);
+    assert.equal(await a.getByRole("button", { name: "Generate directions", exact: true }).isEnabled(), true);
+    if (round < discussionRounds) {
+      await a.getByRole("button", { name: "Keep exploring", exact: true }).click();
       await until(
         async () => (await view("alice")).discussion_round === round + 1,
       );
@@ -597,7 +602,7 @@ try {
   await replay.screenshot({path:join(screenshots,"replay-mobile.png"),fullPage:true});
   assert.deepEqual(errors, []);
   console.log(
-    "PASS: workspace entry, room creation/join/admin, drafts/reload/languages/themes, four UI rounds, human gates, private data isolation, safe text rendering, real candidate tabs, mobile layout, small revision/re-evaluation, unanimous acceptance, accepted brief export, logout; public replay and video, keyboard navigation, no API calls or page errors.",
+    "PASS: workspace entry, room creation/join/admin, drafts/reload/languages/themes, human-selected discussion rounds, first-round convergence, human gates, private data isolation, safe text rendering, real candidate tabs, mobile layout, small revision/re-evaluation, unanimous acceptance, accepted brief export, logout; public replay and video, keyboard navigation, no API calls or page errors.",
   );
 } finally {
   if (browser) await browser.close();

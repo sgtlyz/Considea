@@ -101,7 +101,7 @@ try{
     await click(page,'Submit difference answer');
    }
   }else if(v.phase==='awaiting_convergence_decision'){
-   assert.equal(v.discussion_round,4);
+   assert.equal(v.discussion_round,1);
    for(const member of ['alice','bob']){
     if((await view(member)).votes[member])continue;
     const page=pages[member];await sync(page);await page.locator('[data-view=studio]').click();
@@ -125,7 +125,7 @@ try{
   }else if(v.phase==='completed'){
    completed=true;await sync(pages.alice);await pages.alice.locator('[data-view=brief]').click();await scene('07 Accepted project brief');
    const [download]=await Promise.all([pages.alice.waitForEvent('download'),pages.alice.getByRole('button',{name:'Export accepted brief',exact:true}).click()]);await download.saveAs(join(output,'accepted-brief.txt'));
-   const admin=await view('admin');assert.equal(admin.private,null);assert.equal(v.discussion_round,4);
+   const admin=await view('admin');assert.equal(admin.private,null);assert.equal(v.discussion_round,1);
    await writeFile(join(output,'completed-admin-view.json'),JSON.stringify(admin,null,2));
    session.completed_at=new Date().toISOString();session.final_revision=v.revision;await save();
    await pages.alice.reload();await pages.alice.locator('#app').waitFor({state:'visible'});assert.ok((await pages.alice.locator('#status').innerText()).includes('Agreed by the team'));

@@ -47,7 +47,7 @@ The trusted Workflow supplies:
 
 - Room members, competition context, deadlines, and constraints with their acceptance/verification status.
 - Current approved profiles and the **complete still-authorized discussion history**, including actual source text and stable references. Hard constraints and human decisions are always included; Mem0 never replaces them.
-- For generation: round >=4, the matching authenticated human convergence event, and 1–5 reserved unique candidate slots.
+- For generation: round >=1, the matching authenticated human convergence event, and 1–5 reserved unique candidate slots.
 - For revision: one current candidate, its matching evaluation, and matching minor-revision reviews. Conflicting instructions must be resolved by Workflow before calling the Agent.
 
 The original [shared contract](../contracts.md) and [schema](../interfaces/protocol.schema.json) are unchanged. Use the new default-export `definition.mjs` or `runIdea`, not legacy `pi-base/roles.mjs`, which does not register Idea.

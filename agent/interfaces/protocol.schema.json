@@ -1614,7 +1614,7 @@
         },
         "discussion_round": {
           "type": "integer",
-          "minimum": 4
+          "minimum": 1
         },
         "room_context": {
           "$ref": "#/$defs/RoomContext"
@@ -2898,7 +2898,7 @@
                 },
                 "discussion_round": {
                   "type": "integer",
-                  "minimum": 4
+                  "minimum": 1
                 },
                 "decision": {
                   "type": "string",

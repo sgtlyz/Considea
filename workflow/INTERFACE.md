@@ -35,7 +35,7 @@ language when interface chrome switches between English and Chinese.
 | Starting points | `shared_context.profiles` | Only approved text is shown |
 | Team progress | `members`, `answers`, `votes` | No inferred agreement |
 | Discussion | `difference`, `event_revisions.difference` | `difference.answer` |
-| Convergence | `discussion_round`, `votes` | `convergence.vote` from round 4, after required answers |
+| Convergence | `discussion_round`, `votes` | `convergence.vote` after required answers in any round, including round 1 |
 | Candidate tabs | `candidates`, `evaluations`, `evaluation_details` | Select a real candidate ID/version |
 | Version review | `reviews`, `event_revisions.review` | `candidate.review`: accept / minor_revision / more_discussion |
 | Brief | `final_output` | Export only the persisted, unanimously accepted result |

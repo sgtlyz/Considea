@@ -169,7 +169,7 @@ def negatives(fixtures):
          lambda x: x["request"]["payload"]["limits"].update(remaining_question_batches=0))
     case("duplicate candidate slot", "idea-generate",
          lambda x: x["response"]["data"]["candidates"][1].update(slot_id="slot-a"))
-    case("round 3 generation", "idea-generate",
+    case("generation round does not match the human decision", "idea-generate",
          lambda x: x["request"]["payload"].update(discussion_round=3))
     case("missing human converge", "idea-generate",
          lambda x: x["request"]["payload"].pop("convergence_decision"))

@@ -94,6 +94,9 @@ class IntegrationTests(unittest.TestCase):
             self.assertEqual(ctx["candidate"]["candidate_ref"], ctx["evaluation"]["content"]["candidate_ref"])
             self.assertEqual(ctx["evaluation"]["feasibility"]["verdict"], "unknown")
 
+    def test_real_services_accept_first_round_convergence(self):
+        base.WorkflowTests.test_round_one_requires_every_vote_then_generates_without_extra_interviews(self)
+
     def test_minor_revision_and_new_evaluation(self):
         base.WorkflowTests.test_minor_revision_versions_and_reconfirmation(self)
         history = self.view()["candidate_history"][-1]["evaluation_details"]

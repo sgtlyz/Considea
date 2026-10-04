@@ -91,8 +91,8 @@ Unknowns in the draft are included in the approval. Only approved summaries are
 shared with the team.
 
 The Negotiator produces a difference. Use `/difference`, `/choose` for displayed
-multiple-choice options, or `/disagree` to correct its framing. Rounds 1–3 return
-to interviews after the required answers. From round 4, every member must choose
+multiple-choice options, or `/disagree` to correct its framing. After the required
+answers in every round (including round 1), every member must choose
 `/vote converge`; any `/vote diverge` reopens discussion. Candidates are generated
 and evaluated asynchronously. Read the results with `/status`, then `/accept`,
 `/revise` or `/discuss` using the displayed candidate version. Revisions require

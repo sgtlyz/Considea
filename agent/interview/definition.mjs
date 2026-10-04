@@ -87,7 +87,7 @@ export function validatePayload(p, operation = 'interview.turn') {
       result.discussion_round !== ctx.difference.discussion_round) return false;
   const sources = sourcesOf(p);
   if (!result.source_ids.every(id => ['difference_answer', 'convergence_decision'].includes(sources.get(id)?.kind))) return false;
-  if (ctx.trigger === 'human_diverge') return result.decision === 'diverge' && result.discussion_round >= 4 &&
+  if (ctx.trigger === 'human_diverge') return result.decision === 'diverge' && result.discussion_round >= 1 &&
     result.source_ids.some(id => sources.get(id).kind === 'convergence_decision' && sameRef(sources.get(id).object_ref, result.decision_ref));
   return result.decision === 'continue_interview' && result.discussion_round <= 3 && result.source_ids.every(id =>
     ctx.answers.some(a => sameRef(sources.get(id).object_ref, a.answer_ref) && sources.get(id).member_id === a.member_id));

@@ -25,7 +25,7 @@ The repository-root `.env` is loaded automatically. Existing environment variabl
 
 ## Room rules
 
-Every discussion round includes private interviews, member-approved summaries and human answers to a difference or clarification. Rounds 1–3 return to Interview; round 4 or later opens an explicit choice. All members must converge to generate; any diverge starts another round.
+Every discussion round includes private interviews, member-approved summaries and human answers to a difference or clarification. After every round, including round 1, members explicitly choose whether to generate or continue discussing. All members must converge to generate; any diverge starts another round.
 
 Every generated candidate is evaluated before review. All members must choose the same action for the same candidate/report versions. Small revisions require identical trimmed instructions, produce a new version and clear old approvals. More discussion preserves earlier candidates and returns to Interview. Only unanimous acceptance creates `final_output`.
 
@@ -58,7 +58,7 @@ Translation reads only the caller's current RoomView, rechecks access before ret
 | project_time_limit | null | `{kind:"none"}`, `{kind:"duration",hours:24}`, or `{kind:"deadline",deadline_at:"..."}` |
 | decision_policy | unanimous | Only supported policy |
 
-The room creator can choose the interview limit in the web form or send `config.question_batches_per_round` to `POST /api/rooms`. An interview can finish early when enough information is available. Existing rooms retain their saved limit. This setting does not change the separate team discussion rounds or the convergence gate from round 4.
+The room creator can choose the interview limit in the web form or send `config.question_batches_per_round` to `POST /api/rooms`. An interview can finish early when enough information is available. Existing rooms retain their saved limit. This setting controls private interview batches. After each team discussion round, people choose whether to converge or continue; there is no four-round minimum.
 
 A missing time limit holds evaluation for administrator input; it does not mean unlimited time. Time constraints cannot silently change after evaluation.
 

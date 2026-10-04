@@ -87,6 +87,8 @@ class PrivacyTests(unittest.TestCase):
     def test_followup_is_private_and_real_interview_contract_accepts_both_members(self):
         self.prepare()
         self.assertEqual(self.answer()["status"], "accepted")
+        self.assertEqual(self.view()["phase"], "awaiting_convergence_decision")
+        self.vote("alice", "diverge")
         self.assertEqual(self.view()["discussion_round"], 2)
         with self.engine.store.transaction() as db:
             requests = [json.loads(row[0]) for row in db.execute("SELECT request FROM tasks WHERE status='queued'")]
@@ -109,15 +111,11 @@ class PrivacyTests(unittest.TestCase):
         self.assertPrivate(self.view("bob"))
         self.assertIn("Approved public goal for bob", json.dumps(self.view()["shared_context"]))
 
-    def test_round_four_still_requires_personal_answer_then_every_members_vote(self):
+    def test_round_one_requires_personal_answer_then_every_members_vote(self):
         self.prepare()
-        for n in range(1, 5):
-            self.assertEqual(self.view()["discussion_round"], n)
-            self.assertEqual(self.view()["phase"], "awaiting_difference_answers")
-            self.assertFalse(self.view()["candidates"])
-            self.assertEqual(self.answer()["status"], "accepted")
-            if n < 4:
-                self.complete_interviews()
+        self.assertEqual(self.view()["discussion_round"], 1)
+        self.assertFalse(self.view()["candidates"])
+        self.assertEqual(self.answer()["status"], "accepted")
         self.assertPrivate(self.view("bob"))
         self.assertEqual(self.view("bob")["phase"], "awaiting_convergence_decision")
         self.vote("bob", "converge")
@@ -134,6 +132,7 @@ class PrivacyTests(unittest.TestCase):
     def test_legacy_pending_tasks_and_sync_are_filtered_before_dispatch(self):
         self.prepare()
         self.answer()
+        self.vote("alice", "diverge")
         with self.engine.store.transaction() as db:
             state = Store.load(db, self.room)
             row = db.execute("SELECT id,request FROM tasks WHERE status='queued' AND member_id='bob'").fetchone()
@@ -161,6 +160,7 @@ class PrivacyTests(unittest.TestCase):
     def test_new_approved_profile_is_shared_while_old_clarification_stays_private(self):
         self.prepare()
         self.answer()
+        self.vote("alice", "diverge")
         self.runner = self.engine.runner = MockRunner()
         self.complete_interviews()
         bob = self.view("bob")
@@ -174,6 +174,7 @@ class PrivacyTests(unittest.TestCase):
         for n in range(1, 5):
             self.answer()
             if n < 4:
+                self.vote("alice", "diverge")
                 self.complete_interviews()
         self.vote("bob", "diverge")
         self.assertEqual((self.view()["phase"], self.view()["discussion_round"]), ("interviewing", 5))

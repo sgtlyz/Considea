@@ -105,7 +105,7 @@ function validDraftReferences(draft, payload) {
 export function validateGenerateInput(payload) {
   if (!validShape('IdeaGenerateInput', payload) || !validSharedContext(payload)) return false;
   const decision = payload.convergence_decision;
-  if (decision.discussion_round !== payload.discussion_round || decision.discussion_round < 4) return false;
+  if (decision.discussion_round !== payload.discussion_round || decision.discussion_round < 1) return false;
   const sources = catalog(payload);
   const record = payload.shared_context.discussion_history.find(entry => entry.discussion_round === payload.discussion_round);
   return !!record && decision.source_ids.every(id => {

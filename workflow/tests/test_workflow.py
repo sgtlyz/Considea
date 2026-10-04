@@ -89,13 +89,16 @@ class WorkflowTests(unittest.TestCase):
             })
             self.assertEqual(result["status"], "accepted")
 
-    def reach_convergence_gate(self):
-        for n in range(1, 5):
+    def reach_convergence_gate(self, rounds=4):
+        for n in range(1, rounds + 1):
             self.complete_interviews()
             self.assertEqual(self.view()["discussion_round"], n)
             self.assertEqual(self.view()["phase"], "awaiting_difference_answers")
             self.assertFalse(self.view()["candidates"])
             self.answer_difference()
+            self.assertEqual(self.view()["phase"], "awaiting_convergence_decision")
+            if n < rounds:
+                self.vote("alice", "diverge")
         self.assertEqual(self.view()["phase"], "awaiting_convergence_decision")
 
     def vote(self, member, decision):
@@ -134,6 +137,35 @@ class WorkflowTests(unittest.TestCase):
         public = self.engine.view(self.created["admin_token"], self.room)
         self.assertNotIn("PRIVATE-", json.dumps(public))
         self.assertIsNone(public["private"])
+
+    def test_round_one_requires_every_vote_then_generates_without_extra_interviews(self):
+        self.reach_convergence_gate(rounds=1)
+        before = self.view()
+        self.assertFalse(self.engine.run_once(self.room))
+        self.vote("alice", "converge")
+        self.assertEqual(self.view()["phase"], "awaiting_convergence_decision")
+        self.assertFalse(self.engine.run_once(self.room))
+        self.vote("bob", "converge")
+        self.drain()
+        after = self.view()
+        self.assertEqual((after["discussion_round"], after["phase"]), (1, "awaiting_review"))
+        self.assertEqual(after["answers"], before["answers"])
+        self.assertEqual(len(after["candidates"]), 2)
+
+    def test_round_one_diverge_preserves_answers_and_requires_fresh_votes_next_round(self):
+        self.reach_convergence_gate(rounds=1)
+        self.vote("alice", "converge")
+        self.vote("bob", "diverge")
+        self.assertEqual((self.view()["discussion_round"], self.view()["phase"]), (2, "interviewing"))
+        self.assertFalse(self.view()["votes"])
+        self.assertFalse(self.view()["candidates"])
+        self.complete_interviews()
+        self.answer_difference()
+        self.vote("bob", "converge")
+        self.assertEqual(self.view()["phase"], "awaiting_convergence_decision")
+        self.vote("alice", "converge")
+        self.drain()
+        self.assertEqual(self.view()["phase"], "awaiting_review")
 
     def test_interview_default_and_custom_caps_stop_at_summary_and_survive_restart(self):
         for cap in (None, 1, 5, 7):
@@ -378,8 +410,7 @@ class WorkflowTests(unittest.TestCase):
     def test_early_votes_and_missing_difference_answers_cannot_advance(self):
         self.complete_interviews()
         v = self.view()
-        with self.assertRaises(ValidationError):
-            self.vote("alice", "converge")
+        self.assertEqual(self.vote("alice", "converge")["error"]["code"], "STALE_INPUT")
         result, _ = self.send("alice", "convergence.vote", {
             "difference_ref": v["difference"]["difference_ref"], "discussion_round": 4,
             "decision": "converge", "reason": "Try to bypass the early round",
@@ -395,6 +426,9 @@ class WorkflowTests(unittest.TestCase):
             "difference_ref": v["difference"]["difference_ref"], "selected_option_key": None,
             "text": "Avoid paid data", "disagrees_with_framing": False,
         })
+        self.assertEqual(self.view()["phase"], "awaiting_convergence_decision")
+        self.assertIsNone(self.engine.claim(self.room))
+        self.vote("bob", "diverge")
         claim = self.engine.claim(self.room)
         followup = claim["request"]["payload"]["followup_context"]
         self.assertEqual({a["member_id"] for a in followup["answers"]}, {"alice", "bob"})
@@ -425,7 +459,7 @@ class WorkflowTests(unittest.TestCase):
         payload["disagrees_with_framing"] = True
         result, _ = self.send("alice", "difference.answer", payload)
         self.assertEqual(result["status"], "accepted")
-        self.assertEqual(self.view()["discussion_round"], 2)
+        self.assertEqual((self.view()["discussion_round"], self.view()["phase"]), (1, "awaiting_convergence_decision"))
 
     def test_blank_revision_instructions_do_not_dispatch_agent(self):
         cid = self.reach_review()

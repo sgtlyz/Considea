@@ -86,6 +86,9 @@ class ChatTests(unittest.TestCase):
             for member in ("alice", "bob"):
                 self.say(member, "/status")
                 self.assertIn("saved", self.say(member, "/difference Ready if we keep scope small", "negotiate"))
+            if n < 4:
+                self.say("alice", "/status")
+                self.assertIn("saved", self.say("alice", "/vote diverge", "negotiate"))
         self.assertEqual(self.view()["phase"], "awaiting_convergence_decision")
         for member in ("alice", "bob"):
             self.say(member, "/status")

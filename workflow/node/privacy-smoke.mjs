@@ -15,6 +15,7 @@ fixture.setUp()
 fixture.prepare()
 for _ in range(3):
     fixture.answer()
+    fixture.vote("alice", "diverge")
     fixture.complete_interviews()
 server = make_server(fixture.engine, port=0)
 print(json.dumps({"base": "http://127.0.0.1:" + str(server.server_port),
