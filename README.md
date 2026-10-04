@@ -1,6 +1,5 @@
 # Considea
-
-Considea helps a small team choose a project together. Each person talks privately with an interview agent, approves what to share, and answers the differences that matter. The team decides when to generate ideas and which evaluated version to accept.
+Considea aligns small teams on what to build next. Through iterative private interviews, our AI uncovers each member’s skills, preferences, and perspective gaps. It then bridges those differences to generate tailored project directions—evaluated collaboratively by AI and the team to reach high-conviction consensus.
 
 ## Try it
 
