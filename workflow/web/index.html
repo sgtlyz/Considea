@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Conclave · 团队讨论</title>
+<style>
+:root{font-family:system-ui,"Segoe UI",sans-serif;color:#153b50;background:#f3f7fa}
+body{max-width:1080px;margin:32px auto;padding:0 20px}h1{margin-bottom:6px}small{color:#587285}
+section,article{background:white;border:1px solid #d9e5ec;border-radius:14px;padding:20px;margin:16px 0}
+input,textarea,select{font:inherit;padding:9px;border:1px solid #bccfdc;border-radius:6px;max-width:100%;box-sizing:border-box}
+input,textarea{width:100%;margin:6px 0 14px}textarea{min-height:80px}
+input[type=checkbox]{width:auto}button{font:inherit;background:#14657d;color:white;border:0;border-radius:6px;padding:10px 16px;margin:5px;cursor:pointer}
+button.secondary{background:#526b7c}button:disabled{opacity:.5;cursor:wait}.row{display:flex;gap:16px;flex-wrap:wrap}.row>section{flex:1;min-width:270px}
+pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:13px;background:#edf3f7;padding:12px}
+details{margin:12px 0}summary{cursor:pointer;font-weight:600}section{min-width:0}#entry[hidden],#app[hidden]{display:none}
+.notice{color:#825108;background:#fff5da;padding:12px;border-radius:8px}#error{color:#9d1724;white-space:pre-wrap}label{display:block}
+.tag{display:inline-block;background:#e4f0f2;border-radius:8px;padding:5px 9px;margin-right:8px}
+</style>
+<h1>Conclave</h1><small>表达偏好 · 回答分歧 · 人工决定 · 审阅候选</small>
+<p id="error" role="alert"></p>
+<div id="entry" class="row">
+<section><h2>创建房间</h2>
+<label>成员 ID（逗号分隔）<input id="members" value="member-a,member-b,member-c,member-d"></label>
+<label>比赛背景<textarea id="context">四人 Hackathon 团队，先澄清方向再生成候选。</textarea></label>
+<button id="create">创建</button><pre id="credentials" hidden></pre>
+</section>
+<section><h2>加入或恢复</h2>
+<label>房间 ID<input id="roomId"></label><label>邀请码<input id="invitation" type="password"></label>
+<button id="join">使用邀请码加入</button>
+<label>已有个人令牌<input id="token" type="password"></label><button id="resume">恢复会话</button>
+</section>
+</div>
+<div id="app" hidden>
+<div><button id="refresh">刷新</button><button id="logout" class="secondary">离开此会话</button></div>
+<section id="status"></section><section id="private"></section><section id="discussion"></section>
+<section id="candidates"></section><section id="tasks"></section>
+</div>
+<script>
+let auth=JSON.parse(sessionStorage.getItem('conclave-auth')||'null'), snapshot=null, dirty=false;
+const $=id=>document.getElementById(id);
+const labels={interviewing:'私人访谈',detecting_difference:'梳理分歧',awaiting_difference_answers:'等待分歧回答',awaiting_convergence_decision:'等待成员选择',idea_generating:'生成候选',evaluating:'评估候选',awaiting_review:'等待审阅',revising:'修改候选',completed:'已完成',ended:'已结束',queued_turn:'准备问题',awaiting_answers:'等待回答',queued_summary:'整理画像',awaiting_profile_approval:'等待批准共享',approved:'已确认',queued:'排队中',running:'进行中',failed:'失败',stale:'已过期',cancelled:'已取消'};
+document.addEventListener('input',e=>{if(e.target.closest('#app'))dirty=true});
+function showPeople(records,parent,format){for(const [member,value] of Object.entries(records)){const p=node('p',undefined,parent);node('strong',member+'：',p);p.append(format(value))}}
+function node(tag,text,parent){const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(parent)parent.append(n);return n}
+function button(text,parent,fn){const b=node('button',text,parent);b.onclick=async()=>{b.disabled=true;try{await fn()}catch(e){$('error').textContent=e.message}finally{b.disabled=false}};return b}
+function area(label,parent,value=''){const wrapper=node('label',label,parent);const a=node('textarea',value,wrapper);a.value=value;return a}
+function detail(label,value,parent){const d=node('details',undefined,parent);node('summary',label,d);node('pre',JSON.stringify(value,null,2),d)}
+async function api(path,body,token=auth?.token){
+ const r=await fetch('/api'+path,{method:body===undefined?'GET':'POST',headers:{...(body===undefined?{}:{'Content-Type':'application/json'}),...(token?{'Authorization':'Bearer '+token}:{})},body:body===undefined?undefined:JSON.stringify(body)});
+ const data=await r.json();if(!r.ok)throw Error((data.error?.code?data.error.code+'：':'')+(data.error?.message||'操作未完成'));return data;
+}
+function save(a){auth=a;snapshot=null;dirty=false;sessionStorage.setItem('conclave-auth',JSON.stringify(a))}
+async function event(type,payload,revision){
+ const result=await api('/rooms/'+auth.room_id+'/events',{contract_version:'2.0',event_id:crypto.randomUUID(),room_id:auth.room_id,expected_revision:revision,type,payload});
+ if(result.status!=='accepted')throw Error(result.error.message);dirty=false;await refresh();
+}
+$('create').onclick=async()=>{try{
+ const member_ids=$('members').value.split(',').map(s=>s.trim()).filter(Boolean);
+ const result=await api('/rooms',{room_context:{member_ids,hackathon_context:$('context').value,deadline_at:null,constraints:[]}});
+ $('credentials').hidden=false;$('credentials').textContent='请保存管理员令牌，并分别私下发放邀请码：\n'+JSON.stringify(result,null,2);
+ $('roomId').value=result.room_id;
+}catch(e){$('error').textContent=e.message}};
+$('join').onclick=async()=>{try{const x=await api('/rooms/'+$('roomId').value.trim()+'/join',{invitation:$('invitation').value.trim()},null);save({room_id:x.room_id,token:x.token});await refresh()}catch(e){$('error').textContent=e.message}};
+$('resume').onclick=async()=>{save({room_id:$('roomId').value.trim(),token:$('token').value.trim()});try{await refresh()}catch(e){$('error').textContent=e.message}};
+$('logout').onclick=()=>{sessionStorage.removeItem('conclave-auth');location.reload()};
+$('refresh').onclick=()=>{dirty=false;snapshot=null;refresh().catch(e=>$('error').textContent=e.message)};
+async function refresh(){
+ if(!auth)return;
+ const next=await api('/rooms/'+auth.room_id);$('error').textContent='';
+ $('entry').hidden=true;$('app').hidden=false;
+ if(!snapshot||JSON.stringify(snapshot)!==JSON.stringify(next)){snapshot=next;render(snapshot)}
+}
+function render(v){
+ for(const id of ['status','private','discussion','candidates','tasks'])$(id).replaceChildren();
+ const status=$('status');node('h2','第 '+v.discussion_round+' 轮 · '+(labels[v.phase]||v.phase),status);
+ node('p','房间 '+v.room_id+' · '+(v.actor.member_id||'管理员'),status);
+ detail('保存本人的恢复凭据（请私下保管）',{room_id:auth.room_id,token:auth.token},status);
+ if(v.mode==='mock')node('p','离线演示模式：候选和评估为模拟数据，未调用真实 Agent 或搜索。',status).className='notice';
+ node('p','收敛：全员 converge 才生成；任何人 diverge 则继续。已调用 '+v.calls_started+' / '+v.config.max_agent_calls,status);
+ if(v.paused_reason)node('p','已暂停：调用额度已用完，请管理员提高额度或结束房间。',status).className='notice';
+ if(v.actor.role==='admin'){
+  const budget=node('input',undefined,status);budget.type='number';budget.value=v.config.max_agent_calls+100;
+  button('提高调用额度',status,async()=>{await api('/rooms/'+auth.room_id+'/budget',{max_agent_calls:Number(budget.value)});await refresh()});
+  button('结束房间',status,async()=>{await api('/rooms/'+auth.room_id+'/stop',{});await refresh()});
+ }
+ const priv=$('private');node('h2','私人访谈',priv);
+ if(!v.private){node('p','管理员只能看到共享内容。请使用成员身份参与访谈。',priv)}
+ else if(v.private.stage==='awaiting_answers'){
+  const batch=v.private.question_batch;
+  const fields=batch.questions.map(q=>({q,a:area(q.text,priv)}));
+  node('p','不想回答的题目可留空，提交时将记为拒答。',priv);
+  button('提交私人回答',priv,()=>event('interview.answer',{session_ref:v.private.session_ref,question_batch_ref:batch.question_batch_ref,answers:fields.map(({q,a})=>({question_key:q.question_key,text:a.value,declined:!a.value.trim()}))},v.event_revisions.interview));
+ }else if(v.private.stage==='awaiting_profile_approval'){
+  node('p','只有以下你确认的文字才会共享给团队。可以改写或删除条目。',priv);
+  const draft=v.private.draft;
+  const fields=draft.content.items.map(item=>({item,a:area(item.category+' · '+(item.basis==='member_statement'?'成员陈述':'AI 推断')+' · '+item.confidence,priv,item.text)}));
+  const unknowns=area('尚不确定的事项（每行一条，可改写或删除；确认后也会共享）',priv,draft.content.unknowns.join('\n'));
+  button('确认并共享这些内容',priv,()=>event('profile.approve',{draft_ref:draft.draft_ref,items:fields.filter(x=>x.a.value.trim()).map(({item,a})=>({item_key:item.item_key,category:item.category,text:a.value,basis:item.basis,confidence:item.confidence})),unknowns:unknowns.value.split('\n').map(s=>s.trim()).filter(Boolean)},v.event_revisions.interview));
+ }else node('p',v.private.stage==='approved'?'画像已确认。':'正在准备访谈或画像…',priv);
+ if(v.private)detail('查看自己的私人问答',v.private.messages,priv);
+ const disc=$('discussion');node('h2','团队讨论',disc);
+ for(const profile of v.shared_context.profiles){node('strong',profile.member_id,disc);for(const item of profile.items)node('p',item.text,disc);if(profile.unknowns.length)node('p','未知项：'+profile.unknowns.join('；'),disc)}
+ detail('共享讨论历史与来源',v.shared_context,disc);
+ node('p','成员进度：'+Object.entries(v.members).map(([id,m])=>id+'（'+(labels[m.stage]||m.stage)+'）').join(' · '),disc);
+ if(v.difference){
+  node('h3',v.difference.content.question,disc);node('p',v.difference.content.why_it_matters,disc);
+  showPeople(v.answers,disc,a=>{const option=v.difference.content.options.find(o=>o.key===a.selected_option_key);return (option?option.label+'。':'')+a.text+(a.disagrees_with_framing?'（认为题意不准确）':'')});
+  if(v.phase==='awaiting_difference_answers'&&v.difference.content.affected_member_ids.includes(v.actor.member_id)&&!v.answers[v.actor.member_id]){
+   const select=node('select',undefined,disc);select.setAttribute('aria-label','分歧选项');select.hidden=v.difference.content.answer_type!=='binary';node('option','请选择',select).value='';
+   for(const option of v.difference.content.options)node('option',option.label,select).value=option.key;
+   const text=area('回答或补充说明（共享给团队）',disc);
+   const label=node('label','',disc),reject=node('input',undefined,label);reject.type='checkbox';label.append('这个问题没有准确表达分歧');
+   button('提交分歧回答',disc,()=>event('difference.answer',{difference_ref:v.difference.difference_ref,selected_option_key:select.value||null,text:text.value,disagrees_with_framing:reject.checked},v.event_revisions.difference));
+  }
+  if(v.phase==='awaiting_convergence_decision'&&v.actor.member_id){
+   node('p','从第 4 轮起，由成员决定是否进入候选生成。',disc);
+   const reason=area('理由（共享给团队）',disc);
+   for(const decision of ['diverge','converge'])button(decision==='diverge'?'继续深挖':'进入生成',disc,()=>event('convergence.vote',{difference_ref:v.difference.difference_ref,discussion_round:v.discussion_round,decision,reason:reason.value},v.event_revisions.convergence));
+   showPeople(v.votes,disc,a=>(a.decision==='converge'?'同意进入生成':'继续讨论')+(a.reason?' · '+a.reason:''));
+  }
+ }
+ const candidates=$('candidates');node('h2','候选与评估',candidates);
+ for(const [id,candidate] of Object.entries(v.candidates)){
+  const card=node('article',undefined,candidates);node('h3',candidate.content.title+' · v'+candidate.candidate_ref.version,card);
+  node('p','目标用户：'+candidate.content.target_users.join('、'),card);node('p','问题：'+candidate.content.problem,card);node('p',candidate.content.solution,card);node('p','MVP：'+candidate.content.mvp_scope.join('；'),card);
+  detail('完整方案、取舍与未知项',candidate.content,card);
+  const report=v.evaluations[id];
+  if(report){node('p',(report.content.report_status==='partial'?'评估尚不完整':'评估完成')+' · '+report.content.summary,card);for(const [label,key] of [['风险','risks'],['未知项','unknowns'],['建议','recommended_changes']])if(report.content[key].length)node('p',label+'：'+report.content[key].join('；'),card);detail('完整评估与证据',report.content,card)}
+  if(v.phase==='awaiting_review'&&v.actor.member_id){
+   const instructions=area('修改意见／继续讨论的问题（共享给团队）',card);
+   for(const [decision,label] of [['accept','接受此版本'],['minor_revision','小改'],['more_discussion','加一轮']])
+    button(label,card,()=>event('candidate.review',{candidate_ref:candidate.candidate_ref,evaluation_ref:report.evaluation_ref,decision,instructions:instructions.value},v.event_revisions.review[id]));
+   node('small','全员同一动作才继续；小改需先协商成相同修改文字。意见不一致时可重新提交。',card);
+   showPeople(v.reviews[id]||{},card,r=>({accept:'接受',minor_revision:'小改',more_discussion:'加一轮'}[r.decision])+(r.instructions?' · '+r.instructions:''));
+  }
+ }
+ if(v.candidate_history.length)detail('历史候选、评估与人工意见',v.candidate_history,candidates);
+ if(v.final_output){node('h3','团队已接受的结果',candidates);node('pre',JSON.stringify(v.final_output,null,2),candidates)}
+ const tasks=$('tasks');node('h2','运行进度',tasks);
+ for(const task of v.tasks.filter(t=>t.status!=='done')){
+  node('p',task.operation+' · '+(labels[task.status]||task.status)+(task.error?' · '+task.error.code:''),tasks);
+  if(task.status==='failed')button('重试此任务',tasks,async()=>{await api('/rooms/'+auth.room_id+'/tasks/'+task.task_id+'/retry',{});await refresh()});
+ }
+}
+if(auth)refresh().catch(e=>{$('error').textContent=e.message;$('entry').hidden=false});
+setInterval(()=>{if(auth&&!dirty&&!document.querySelector('input:focus,textarea:focus,select:focus'))refresh().catch(()=>{})},2500);
+</script>
+</html>

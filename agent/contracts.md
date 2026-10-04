@@ -1,6 +1,6 @@
 # Workflow ↔ Agent 接口契约 v2.0
 
-这份契约让 Workflow 和四个 Agent 可以独立开发。**操作名、JSON 字段、枚举与返回结构以本文件及 [JSON Schema](interfaces/protocol.schema.json) 为接线基准。** 流程以 [workflow_updated.md](../workflow_updated.md) 为准。这里提供接口、离线样例和校验工具，不实现业务 Agent 或 Workflow。
+这份契约让 Workflow 和四个 Agent 可以独立开发。**操作名、JSON 字段、枚举与返回结构以本文件及 [JSON Schema](interfaces/protocol.schema.json) 为接线基准。** 流程以 [workflow_updated.md](../workflow_updated.md) 为准。本文件固定接口、离线样例和校验规则；实际 Workflow 与 HTTP 接口见 [workflow/README.md](../workflow/README.md)，业务 Agent 由各负责人实现。
 
 ## 1. 分工与交付物
 
@@ -10,13 +10,13 @@
 | Negotiator | `negotiate.detect` | `agent/negotiate/definition.mjs` |
 | Idea Generator | `idea.generate`、`idea.revise` | `agent/idea/definition.mjs` |
 | Evaluator | `evaluator.evaluate` | `agent/evaluator/definition.mjs` |
-| Workflow | Agent 路由、上下文构造、人工事件、权限、持久化、状态机 | 由 Workflow 负责人选择 |
+| Workflow | Agent 路由、上下文构造、人工事件、权限、持久化、状态机 | workflow/ |
 
 上表的模块是将来的交付位置，不代表这些文件已经实现。对外统一为一次请求得到一次结构化返回，不依赖 HTTP 框架。Agent 不互调，不自行等待用户点击，不读全库，不写业务状态。
 
 每位 Agent 负责人交付：default-export 的 definition、各 operation 的输入和输出校验器、prompt、必要的只读工具，以及离线/真实调用的验收结果。Workflow 可以先使用 [fixtures](interfaces/fixtures) 中的固定回包接线。
 
-业务参数由 Workflow 显式传入；尚未确定的多人投票和预算政策不影响 Agent 的字段约定。
+业务参数由 Workflow 显式传入；已实现的全员收敛政策和预算配置见 Workflow 开发说明，字段约定保持 v2.0。
 
 ## 2. 统一信封
 
