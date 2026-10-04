@@ -3,14 +3,20 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "engines": { "node": ">=22.19.0" },
+  "engines": {
+    "node": ">=22.19.0"
+  },
   "packageManager": "pnpm@11.19.0",
   "scripts": {
-    "setup": "pnpm --dir ../pi-base install --frozen-lockfile",
+    "setup": "pnpm install --frozen-lockfile && pnpm --dir ../pi-base install --frozen-lockfile",
     "test": "node --test *.test.mjs ../pi-base/*.test.mjs",
     "demo": "node demo.mjs",
     "chat": "node cli.mjs",
     "smoke:live": "node live-smoke.mjs --live",
     "worker": "node worker.mjs"
+  },
+  "dependencies": {
+    "ajv": "8.17.1",
+    "ajv-formats": "3.0.1"
   }
 }

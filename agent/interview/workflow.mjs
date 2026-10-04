@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
-import { runInterview, emptyCoverage } from './service.mjs';
-import definition from './definition.mjs';
+import { runLegacyInterview as runInterview, emptyCoverage } from './service.mjs';
+import definition from './legacy-definition.mjs';
 
 export class WorkflowError extends Error {
   constructor(code, message) { super(message); this.code = code; }

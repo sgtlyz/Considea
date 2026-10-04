@@ -1,5 +1,7 @@
 # Interview 与新版 Workflow 的对齐设计
 
+> 历史审查：以下针对旧 `feat/workflow`，不再是当前接线依据。master `644c750` 已改为人工决定收敛和评估后再审阅；当前已实现的两个追访入口见 [新追访接线说明](followup-integration.md)。详细 Profile 不应按本文旧提案固定截成 24 条；time=0 画像、持续更新与 Brief 仍未实现。
+
 审阅日期：2026-10-03。对照 [workflow_updated.md，固定版本 f19a24c](https://github.com/sgtlyz/MHacks-Conclave/blob/f19a24c7f998192e37c567e2a1fd9b35d1d8eaca/workflow_updated.md)，以及本分支 `ec817e4` 的 Interview 实现。
 
 **状态：接口设计与差距审查，尚未实现以下 v2 契约。** 现有 `interview.turn` / `interview.summarize`、CLI、worker 仍使用原接口。本文不能作为“已接通新版团队流程”的证明。

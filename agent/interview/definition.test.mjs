@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import definition, {
   COVERAGE_TOPICS, validatePayload, validateTurnOutput, validateSummaryOutput,
-} from './definition.mjs';
+} from './legacy-definition.mjs';
 
 const coverage = () => Object.fromEntries(COVERAGE_TOPICS.map(topic => [topic, 'unknown']));
 function payload(overrides = {}) {

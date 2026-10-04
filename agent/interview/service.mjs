@@ -1,5 +1,6 @@
 import { runAgent } from '../pi-base/base.mjs';
 import definition from './definition.mjs';
+import legacyDefinition from './legacy-definition.mjs';
 
 export const topics = ['pain', 'idea', 'skill', 'resource', 'preference', 'objection', 'participation_condition'];
 export const emptyCoverage = () => Object.fromEntries(topics.map(k => [k, 'unknown']));
@@ -9,7 +10,8 @@ export const errorResponse = (request, code, message) => ({ ...headers(request),
   data: {}, warnings: [], error: { code, message, retryable: false } });
 
 /** Stateless role boundary; call only with workflow-authorized member context. */
-export async function runInterview({ request, runtime, onProgress }) {
+export async function runLegacyInterview({ request, runtime, onProgress }) {
+  const definition = legacyDefinition;
   const spec = definition.operations[request?.operation];
   if (!request || request.schema_version !== '1.0' ||
       !['request_id', 'room_id', 'operation'].every(k => typeof request[k] === 'string' && request[k].trim()) ||
@@ -40,4 +42,26 @@ export async function runInterview({ request, runtime, onProgress }) {
   }
   return runAgent({ request, definition, ...runtime,
     timeoutMs: 60_000, maxTurns: 1, maxToolCalls: 1, onProgress });
+}
+
+/** v2 role entry point. Human event authenticity/completeness remain Workflow responsibilities. */
+export async function runInterview({ request, runtime, onProgress }) {
+  const spec = definition.operations[request?.operation];
+  if (!request || request.schema_version !== '1.0' ||
+      Object.keys(request).some(k => ![...envelopeKeys, 'payload'].includes(k)) ||
+      !['request_id', 'room_id', 'operation'].every(k => typeof request[k] === 'string' && request[k].trim()) ||
+      !Number.isSafeInteger(request.input_revision) || request.input_revision < 0 || !spec || !spec.validateInput(request.payload)) {
+    return errorResponse(request, 'INVALID_INPUT', 'Invalid v2 Interview context. Use 2.1 for human_diverge or reopened; provide matching human decisions, candidate and evaluation.');
+  }
+  const p = request.payload;
+  if (request.operation === 'interview.turn' && p.limits.remaining_question_batches === 0) {
+    return { ...headers(request), status: 'ok', data: { contract_version: p.contract_version, member_id: p.member_id,
+      questions: [], ready_to_summarize: true, stop_reason: 'question_budget' }, warnings: [], error: null };
+  }
+  if (!runtime?.model || typeof runtime.streamFn !== 'function') return errorResponse(request, 'CONFIG_ERROR', 'Configure an offline or DeepSeek runtime');
+  const response = await runAgent({ request, definition, ...runtime, timeoutMs: 60_000, maxTurns: 1, maxToolCalls: 1, onProgress });
+  if (response.status === 'error') return response;
+  const expected = request.operation === 'interview.turn' && !response.data.ready_to_summarize ? 'needs_input' : 'ok';
+  if (response.status !== expected) return errorResponse(request, 'INVALID_OUTPUT', 'Interview status does not match its result');
+  return response;
 }

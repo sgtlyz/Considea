@@ -1,5 +1,7 @@
 # Interview Agent 设计
 
+> 新团队流程接线请看 [v2/v2.1 追访接口](interview/followup-integration.md)：支持分歧经人工决策后的 followup，以及候选评估经人工审阅后的 reopened。下面保留旧本地 CLI 的设计背景；其中 followup_task、旧轮次及输出格式不适用于新 `runInterview`。
+
 开发入口：[agent/interview](interview/README.md)。`agent/interview` 分支提供 Pi + DeepSeek 适配、离线访谈流程与测试；真实模型质量待配置 key 后验证。
 
 负责人：成员 1。目标：让没有现成 idea 的成员也能表达真实经历、资源和参与条件，并给协商过程补充缺失信息。

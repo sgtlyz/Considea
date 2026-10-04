@@ -2,9 +2,11 @@
 
 本分支 `agent/interview` 用于单个 Interview Agent 的开发。复用团队 [Pi 基座](../pi-base/README.md)，提供初访、定向追访、摘要草稿，以及可单独运行的本地流程。产品规则见 [设计文档](../interview-agent.md)。
 
-**新版 Workflow 对齐：** 已审阅 `feat/workflow` 的更新，详见 [接口差距与 PreferenceProfile / NegotiationBrief 设计](workflow-alignment.md)。`PreferenceProfile` 统一此前的 `full_profile` 名称；短摘要、人工 Decision gate 和讨论轮次接口仍为待实现设计。下文描述当前运行时，不能视为已接通新版团队循环。
+**最新团队接口：** 已依据 master `644c750` 实现分歧决策后的 followup，以及人工审阅评估后追加的 reopened 入口。字段、版本兼容和配对 JSON 见 [新追访接线说明](followup-integration.md)。新 `definition.mjs` / `runInterview` 使用 v2；完整人工结论和候选/评估上下文使用本分支扩展 v2.1。团队状态机、认证与持久化仍由 Workflow 实现。
 
-**当前状态：46 项离线测试通过，DeepSeek 两次真实调用通过。** 真实测试覆盖首轮提问和摘要，完整多轮追问质量待人工体验。本地 workflow 只保存进程内状态，退出后清空；它是第四位成员接线的参考，团队服务的登录与数据库仍待实现。
+此前 [PreferenceProfile / NegotiationBrief 对齐草案](workflow-alignment.md) 保留作历史参考，其中 3–5 轮、角色分工与字段提案已被新版 master 和上述接线说明替代。time=0 详细画像、持续更新、短摘要与按成员查询尚未完成。
+
+**当前状态：58 项离线测试通过；新追访路径尚未做 DeepSeek 实测。** 既有 DeepSeek 测试属于旧接口，不能证明新流程的效果。本地 workflow 只保存进程内状态，退出后清空。下文的 CLI、本地流程图和 payload 示例描述保留的旧个人体验流程；其业务定义已移到 `legacy-definition.mjs`，新团队接线请使用上面的说明。
 
 ## 自己体验真实访谈
 
@@ -28,10 +30,10 @@ node --env-file=.env cli.mjs --live
 
 ```mermaid
 flowchart TD
-    U[用户在终端回答] --> C[cli.mjs / worker.mjs 接口入口]
+    U[用户在终端回答] --> C[cli.mjs / worker --legacy 入口]
     C --> W[workflow.mjs 私人会话与状态]
     W --> S[service.mjs 调用前规则]
-    D[definition.mjs 访谈策略与契约] --> S
+    D[legacy-definition.mjs 旧访谈策略与契约] --> S
     S --> H[pi-base/base.mjs + Pi Agent Core harness]
     H --> A[deepseek.mjs 模型适配]
     A --> M[DeepSeek API]
@@ -47,9 +49,9 @@ flowchart TD
 
 | 层 | 当前实现 | 具体职责 |
 | --- | --- | --- |
-| 交互入口 | `cli.mjs`、`worker.mjs` | CLI 给人提问；JSONL worker 给团队程序接线。默认离线，显式 `--live` 才访问模型 |
+| 交互入口 | `cli.mjs`、`worker.mjs --legacy` | 此图为旧个人流程；JSONL worker 默认新 v2 接口。默认离线，显式 `--live` 才访问模型 |
 | 本地 workflow | `workflow.mjs` | 保存当前成员历史、题目、草稿、共享版本；计数、阻止重复/过期回答、等待本人批准 |
-| Interview 业务 | `definition.mjs`、`service.mjs` | 定义初访与追访策略、摘要格式、输入输出校验；执行 7 批/3 问上限及空回答处理 |
+| Interview 业务 | `legacy-definition.mjs`、`service.mjs` | 旧流程经 `runLegacyInterview` 执行 7 批/3 问上限及空回答处理；新流程由 Workflow 显式传入预算 |
 | Agent harness | `pi-base/base.mjs` + `@earendil-works/pi-agent-core@1.0.1` | 为每次 operation 新建 Pi Agent，组装系统提示与授权 payload，执行模型调用，处理进度、超时、JSON 与错误 |
 | 模型接入 | `deepseek.mjs` + `@earendil-works/pi-ai@1.0.1` | 发送 OpenAI 兼容 Chat Completions 请求，固定官方地址，设置 JSON 输出、关闭 thinking、禁止自动重试 |
 | 调用限制 | `live-runtime.mjs` | 每进程最多 16 次调用，输入最多 48,000 字符，默认输出最多 2048 token；单次 operation 60 秒超时 |
@@ -61,11 +63,11 @@ flowchart TD
 
 ## Harness 之外的 skill、MCP、plugin 和依赖
 
-这里的“skill”需要区分使用者。**当前访谈模型的行为来自 `definition.mjs` 的提示词与契约；开发 skill 供 Codex 修改和测试代码时使用。**
+这里的“skill”需要区分使用者。**当前访谈模型的行为来自 `definition.mjs`（新流程）或 `legacy-definition.mjs`（旧 CLI）的提示词与契约；开发 skill 供 Codex 修改和测试代码时使用。**
 
 | 项目 | 当前是否接入 | 使用者与用途 |
 | --- | --- | --- |
-| 应用运行时 skills | 未实现独立 skill 加载器 | 初访、追访和摘要策略均定义在 `definition.mjs`，当前不会向 DeepSeek 加载 SKILL.md |
+| 应用运行时 skills | 未实现独立 skill 加载器 | 初访、追访和摘要策略在上述角色模块内，当前不会向 DeepSeek 加载 SKILL.md |
 | `mhacks-interview-dev` | 本机已安装；[源文件](skill/SKILL.md) 在仓库内 | Codex 开发助手使用，约定分支、接口、离线测试与真实测试步骤 |
 | Engineering skills | 已有 system-design、documentation；debug 可按需使用 | Codex 的设计、文档和诊断能力，属于开发环境 |
 | 模型可调用工具 | 当前 `createTools` 返回空数组 | Interview 只根据授权输入提问与总结；没有搜索、浏览器、文件或 shell 工具 |
@@ -97,8 +99,9 @@ pnpm --dir agent/interview chat
 
 | 文件 | 用途 |
 | --- | --- |
-| [definition.mjs](definition.mjs) | 访谈策略、两个 operation 的提示词和输入输出验证 |
-| [service.mjs](service.mjs) | `runInterview` 入口，确定性的轮数上限与无回答处理 |
+| [definition.mjs](definition.mjs) | 新 v2/v2.1 访谈策略、两个 operation 的提示词和输入输出验证 |
+| [legacy-definition.mjs](legacy-definition.mjs) | 旧 CLI 和本地 workflow 使用的原始策略与契约 |
+| [service.mjs](service.mjs) | 新 `runInterview`、旧 `runLegacyInterview`，按各自契约校验并调用 Pi |
 | [workflow.mjs](workflow.mjs) | 本地成员会话、回答计数、版本检查、草稿确认 |
 | [fixtures.mjs](fixtures.mjs) | 无 API 的固定样例 |
 | [definition.test.mjs](definition.test.mjs)、[workflow.test.mjs](workflow.test.mjs) | 需要保持的业务与隐私边界 |
@@ -109,7 +112,7 @@ pnpm --dir agent/interview chat
 
 ## 接给团队 workflow
 
-Node 调用 `runInterview({request, runtime})`；`runtime` 由 `createDeepSeekRuntime` 或离线适配器创建。Python/uAgents 可将下面 JSON 写到 `node agent/interview/worker.mjs` 的标准输入，每行一个请求、每行一个响应。带 `--live` 才调用 DeepSeek；模型及密钥由服务端环境提供。
+以下是保留的旧 JSON 示例：Node 调用 `runLegacyInterview({request, runtime})`；`runtime` 由 `createDeepSeekRuntime` 或离线适配器创建。Python/uAgents 可将下面 JSON 写到 `node agent/interview/worker.mjs --legacy` 的标准输入，每行一个请求、每行一个响应。带 `--live` 才调用 DeepSeek；模型及密钥由服务端环境提供。新团队接线使用 [v2/v2.1 配对样例](followup-integration.md)。
 
 ```json
 {"schema_version":"1.0","request_id":"req-a-1","room_id":"room-1","operation":"interview.turn","input_revision":0,"payload":{"room_config":{"room_id":"room-1","member_ids":["a","b","c","d"],"initial_interview_max_rounds":7,"max_questions_per_turn":3},"private_interview":{"member_id":"a","mode":"initial","round_index":0,"messages":[],"coverage":{"pain":"unknown","idea":"unknown","skill":"unknown","resource":"unknown","preference":"unknown","objection":"unknown","participation_condition":"unknown"}},"shared_context":null,"followup_task":null}}

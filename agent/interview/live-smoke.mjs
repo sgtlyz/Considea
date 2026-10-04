@@ -1,5 +1,5 @@
 import { createBoundedLiveRuntime } from './live-runtime.mjs';
-import { runInterview } from './service.mjs';
+import { runLegacyInterview as runInterview } from './service.mjs';
 import { samplePayload } from './fixtures.mjs';
 
 if (!process.argv.includes('--live')) throw new Error('Live smoke requires --live');

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createOfflineRuntime } from '../pi-base/offline.mjs';
 import { InterviewWorkflow, WorkflowError } from './workflow.mjs';
-import { runInterview, emptyCoverage } from './service.mjs';
+import { runLegacyInterview as runInterview, emptyCoverage } from './service.mjs';
 import { createInterviewFixtureRuntime, sampleRoom, samplePayload } from './fixtures.mjs';
 
 const room = () => structuredClone(sampleRoom);
