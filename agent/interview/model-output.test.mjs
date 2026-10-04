@@ -4,6 +4,18 @@ import { readFileSync } from 'node:fs';
 import { runInterview } from './service.mjs';
 import { createOfflineRuntime } from '../pi-base/offline.mjs';
 const pair = name => JSON.parse(readFileSync(new URL(`./examples/${name}.json`, import.meta.url), 'utf8'));
+test('duplicate temporary item keys are unique without deleting facts or bypassing evidence', async () => {
+  const x = pair('interview-summary-v2');
+  const data = structuredClone(x.response.data);
+  const a = structuredClone(data.profile_draft.items[0]);
+  data.profile_draft.items = [a, {...structuredClone(a), text: 'Another retained fact'}, {...structuredClone(a), item_key:a.item_key+'_2'}];
+  const run = () => runInterview({request:x.request,runtime:createOfflineRuntime(()=>({status:'ok',data,warnings:[]}))});
+  const r = await run(); assert.equal(r.status,'ok');
+  assert.equal(new Set(r.data.profile_draft.items.map(i=>i.item_key)).size,3);
+  assert.equal(r.data.profile_draft.items[1].text,'Another retained fact');
+  data.profile_draft.items[1].private_message_ids=['foreign'];
+  assert.equal((await run()).error.code,'INVALID_OUTPUT');
+});
 test('nested warnings are preserved without admitting malformed warnings or false evidence', async () => {
   const x = pair('interview-summary-v2');
   const raw = { status: 'ok', data: { ...structuredClone(x.response.data), warnings: ['check this'] } };

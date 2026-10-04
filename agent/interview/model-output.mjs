@@ -18,6 +18,20 @@ export function normalizeInterviewOutput(raw, operation, validate, payload) {
   warnings.push(...notes);
   const data = structuredClone(wrapped ? raw.data : Object.fromEntries(fields.filter(k => Object.hasOwn(raw, k)).map(k => [k, raw[k]])));
   if (!object(data)) return invalid();
+  if (operation === 'interview.summarize' && Array.isArray(data.profile_draft?.items)) {
+    const used = new Set(data.profile_draft.items.map(i => i?.item_key));
+    const seen = new Set();
+    for (const item of data.profile_draft.items) {
+      if (!object(item) || typeof item.item_key !== 'string') continue;
+      if (seen.has(item.item_key)) {
+        let n = 2, key;
+        do { key = `${item.item_key}_${n++}`; } while (used.has(key));
+        item.item_key = key; used.add(key);
+        warnings.push('MODEL_FORMAT_NORMALIZED: duplicate temporary item_key renamed; facts and evidence unchanged');
+      }
+      seen.add(item.item_key);
+    }
+  }
   if (Object.hasOwn(data, 'warnings')) {
     if (!strings(data.warnings)) return invalid();
     warnings.push(...data.warnings);

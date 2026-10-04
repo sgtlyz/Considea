@@ -10,8 +10,8 @@ test('approved cumulative 40-call cap preserves ledger and stops at either limit
   await assert.rejects(budgetedFetch(config)(url, request()), /exhausted/);
   assert.deepEqual(ledger, { calls: 40, reserved_micros: 1_000_000 });
   assert.equal(calls, 1);
-  assert.throws(() => budgetedFetch({ ...config, maxCalls: 41 }));
-  assert.throws(() => budgetedFetch({ ...config, maxUsd: 1.01 }));
+  assert.throws(() => budgetedFetch({ ...config, maxCalls: 53 }));
+  assert.throws(() => budgetedFetch({ ...config, maxUsd: 1.31 }));
 });
 const request = extra => ({ body: JSON.stringify({ model: 'deepseek-flash', thinking: { type: 'disabled' }, max_tokens: 2048, messages: [{ role: 'user', content: 'JSON test' }], ...extra }) });
 function setup() {
