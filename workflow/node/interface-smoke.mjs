@@ -245,8 +245,13 @@ try {
     "Draft retained through refresh and language changes",
   );
   const authBeforeHome=await a.evaluate(()=>sessionStorage.getItem('conclave-auth'));
+  await a.emulateMedia({reducedMotion:'no-preference'});
   await a.locator('#workspace [data-home]').click();
   await a.locator('#landing').waitFor({state:'visible'});
+  const coverBefore=await a.locator('#cover-liquid').screenshot();
+  await delay(800);
+  assert.ok(!coverBefore.equals(await a.locator('#cover-liquid').screenshot()),'Liquid cover must resume after returning from the workspace');
+  await a.emulateMedia({reducedMotion:'reduce'});
   assert.equal(await a.locator('#workspace').isVisible(),false);
   assert.equal(await a.evaluate(()=>sessionStorage.getItem('conclave-auth')),authBeforeHome);
   await a.reload();

@@ -435,6 +435,7 @@
     $("workspace").hidden = true;
     $("landing").hidden = false;
     $("cover-about").hidden = false;
+    window.consideaAtmosphere?.home();
     history.replaceState(null,"",location.pathname+location.search+"#home");
     scrollTo(0,0);
     $("cover-title").focus({preventScroll:true});
@@ -1901,14 +1902,14 @@
     return false;
   }
   setEntryMode(storage.get("considea-entry-mode") || "start");
-  const homeRequested=location.hash === "#home";
+  const homeRequested=["#home", "#cover-about"].includes(location.hash);
   const invitationPending=readInvitation();
   window.addEventListener("hashchange",readInvitation);
   void loadCapabilities();
   translate();
   theme(preference.get("considea-study-theme") === "light" ? "light" : "dark");
   setView("studio");
-  if (!homeRequested && (storage.get("considea-test-login") || auth)) openWorkspace();
+  if (!homeRequested && (location.hash === "#workspace" || storage.get("considea-test-login") || auth)) openWorkspace();
   if (auth && !invitationPending) {
     const saved = { ...auth };
     establish(saved,!homeRequested).catch((e) => {
