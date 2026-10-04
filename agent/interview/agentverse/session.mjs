@@ -58,7 +58,7 @@ export class InterviewSession {
     const request = { schema_version: '1.0', request_id: randomUUID(), room_id: `private-${s.member_id}`, operation,
       input_revision: s.revision, payload: this.payload(s, operation) };
     const result = await this.runner({ request, runtime: await this.runtimeFor(operation) });
-    if (result.status === 'error') throw new Error('Agent operation failed');
+    if (result.status === 'error') throw Object.assign(new Error('Agent operation failed'), { code: result.error?.code });
     return result.data;
   }
   async updateProfile(s) {
@@ -141,9 +141,11 @@ export class InterviewSession {
       } else reply = s.phase === 'review' ? this.review(s) : '结果已保存。/export 取回；/edit、/drop、/short 修改后需重新批准。';
       const result = { ok: true, text: reply, end_session: false };
       s.events[msg_id] = { fingerprint, status: 'done', result }; this.store.write(key, s); return result;
-    } catch {
-      const result = { ok: false, text: '此次操作未应用。请检查命令、先前版本或服务预算；/profile 可查看仍保存的内容。没有自动重试或共享。', end_session: false };
-      stored.events[msg_id] = { fingerprint, status: 'failed', result }; this.store.write(key, stored); return result;
+    } catch (error) {
+      const result = { ok: false, text: error?.code === 'MODEL_BUDGET_EXHAUSTED'
+        ? '测试模型额度已用完，访谈暂时停止。此前档案仍保留，可用 /profile 查看；已保存的档案仍可审核、编辑和导出。请联系运营者增加授权额度。此次操作未应用，没有自动重试。'
+        : '此次操作未应用。请检查命令或先前版本；若命令正确，请联系运营者检查服务。/profile 可查看仍保存的内容。没有自动重试或共享。', end_session: false };
+      stored.events[msg_id] = { fingerprint, status: 'failed', error_code: error?.code ?? 'WORKFLOW_ERROR', result }; this.store.write(key, stored); return result;
     }
   }
 }

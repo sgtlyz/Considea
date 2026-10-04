@@ -14,8 +14,18 @@ if (live) {
   const { createDeepSeekRuntime } = await import('../../pi-base/deepseek.mjs');
   runtime = createDeepSeekRuntime({ fetch: budgetedFetch({ store, maxCalls: cap,
     maxUsd: Number(process.env.CONSIDEA_MAX_USD ?? '0') }) });
+  if (process.env.CONSIDEA_TRACE_MODEL === '1') runtime.onDiagnostic = record => store.write('last-model-diagnostic', record);
 }
-const workflow = new InterviewSession({ store, runtimeFor: op => runtime ?? createProtocolFixtureRuntime(op),
+const workflow = new InterviewSession({ store, runtimeFor: op => {
+  if (live) {
+    const budget = store.read('model-budget') ?? { calls: 0, reserved_micros: 0 };
+    if (budget.calls >= Number(process.env.CONSIDEA_MAX_MODEL_CALLS) ||
+        budget.reserved_micros + 25_000 > Math.floor(Number(process.env.CONSIDEA_MAX_USD) * 1_000_000)) {
+      throw Object.assign(new Error('Model budget exhausted'), { code: 'MODEL_BUDGET_EXHAUSTED' });
+    }
+  }
+  return runtime ?? createProtocolFixtureRuntime(op);
+},
   maxBatches: Number(process.env.CONSIDEA_MAX_BATCHES ?? '5') });
 for await (const line of createInterface({ input: process.stdin, crlfDelay: Infinity })) {
   if (!line.trim()) continue;

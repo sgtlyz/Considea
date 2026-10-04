@@ -14,6 +14,17 @@ function setup() {
 const message = (text, id, overrides = {}) => ({ sender: 'sender-a', session_id: 'session-a', msg_id: id, text, ...overrides });
 const key = JSON.stringify(['sender-a', 'session-a']);
 
+test('exhausted budget explains the limit while profile commands remain available', async () => {
+  const { store } = setup();
+  const app = new InterviewSession({ store, runtimeFor: () => {
+    throw Object.assign(new Error('not public'), { code: 'MODEL_BUDGET_EXHAUSTED' });
+  } });
+  const result = await app.handle(message('start', 'budget1'));
+  assert.equal(result.ok, false); assert.match(result.text, /测试模型额度已用完/);
+  assert.equal((await app.handle(message('/profile', 'budget2'))).ok, true);
+  assert.equal(store.read(key).version, 0);
+});
+
 test('standalone interview persists detailed profiles, reviews and exports an approved brief without private references', async () => {
   const { app, store } = setup();
   assert.equal((await app.handle(message('start', '1'))).ok, true);

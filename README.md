@@ -8,7 +8,7 @@
 
 **发布计划：Considea 作为同一个 MAS 项目参赛，三个 Agent 分别注册到 Agentverse；目前先接入 Interview，随后接入 Negotiate 与 Evaluator，并汇总到同一份团队项目提交。** Interview 的独立调用入口用于分阶段联调，不改变三 Agent 架构。
 
-本 `agent/interview` 分支已提供 Interview Agent 本地体验和 [Agentverse 接入](agent/interview/agentverse/README.md)，包含持久档案、人工审核导出与 ACP 服务。**Considea Interview 已注册，ASI 的帮助命令已实测往返成功**；完整 ASI 访谈流程和比赛提交仍未完成。新路径已完成 3 次有效模型调用和 1 次失败调用，本次测试额度已耗尽；当前临时服务需要本机及隧道保持运行。完整团队流程仍按下文设计开发。
+本 `agent/interview` 分支已提供 Interview Agent 本地体验和 [Agentverse 接入](agent/interview/agentverse/README.md)，包含持久档案、人工审核导出与 ACP 服务。**Considea Interview 已注册，并在 ASI 中完成模拟访谈 → 提前结束 → 审核删除 → 批准导出**，最终产生9条详细档案和8条摘要。测试使用虚构参与者，完成两轮回答，未跑满五轮；记录保留了修复前失败请求。67项Node测试和5项Python测试通过。当前临时服务需要本机及隧道保持运行；额度和质量限制见接入文档。完整团队流程与比赛提交尚未完成。
 
 - Agent 名称：**Considea Interview**
 - 地址：`agent1qvn23uk8egw36xpzl7k3nyw0tk7yvadtwqstqn3ch4yrh23hu7qhxhjvdzc`
