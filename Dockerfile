@@ -1,4 +1,4 @@
-FROM node:22-bookworm-slim AS agent-dependencies
+FROM node:24-bookworm-slim AS agent-dependencies
 RUN npm install --global pnpm@11.19.0
 WORKDIR /app
 COPY agent/pi-base/package.json agent/pi-base/pnpm-lock.yaml agent/pi-base/pnpm-workspace.yaml ./agent/pi-base/
