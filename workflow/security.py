@@ -140,6 +140,11 @@ class RoomSecurity:
                 "DEEPSEEK_API_KEY":keys.get("deepseek_api_key", "") if provider == "deepseek" else "",
                 "EVALUATOR_BASE_URL":evaluator_base_url, "TAVILY_API_KEY":keys.get("tavily_api_key", "")}
 
+    def shared_calls_remaining(self, db):
+        row = db.execute("SELECT used FROM usage_limits WHERE scope='shared-agent-calls' AND period=?",
+                         (int(time.time()) // 86400,)).fetchone()
+        return max(0, self.daily_limit - (row["used"] if row else 0))
+
     def reserve(self, db, state):
         if not self.live:
             return True
@@ -160,8 +165,7 @@ class RoomSecurity:
         result = {"funding":row["funding"] if row else "team", "keys_configured":bool(row and row["encrypted"]),
                   "can_manage_keys":admin, "own_keys_supported":bool(self.cipher), "room_call_limit":self.room_limit if self.live else 10000}
         if admin and result["funding"] == "team":
-            used=db.execute("SELECT used FROM usage_limits WHERE scope='shared-agent-calls' AND period=?",(int(time.time())//86400,)).fetchone()
-            result.update(shared_calls_remaining=max(0,self.daily_limit-(used["used"] if used else 0)),
+            result.update(shared_calls_remaining=self.shared_calls_remaining(db),
                           shared_calls_limit=self.daily_limit)
         return result
 

@@ -513,8 +513,12 @@ class Workflow:
                 if not self._matches(s, row):
                     self._stale_task(db, row)
                     continue
-                if s["paused_reason"] == "daily_limit" and timestamp >= s.get("quota_reset_at", float("inf")):
-                    s["paused_reason"] = None
+                if s["paused_reason"] == "daily_limit":
+                    security = getattr(self, "security", None)
+                    # An operator can increase the allowance during the day. Recheck
+                    # persisted usage without charging twice; reserve below stays atomic.
+                    if (security and security.shared_calls_remaining(db) > 0) or timestamp >= s.get("quota_reset_at", float("inf")):
+                        s["paused_reason"] = None
                 if s["mode"] != self.runner.mode or s["paused_reason"]:
                     continue
                 if s["calls_started"] >= s["config"]["max_agent_calls"]:

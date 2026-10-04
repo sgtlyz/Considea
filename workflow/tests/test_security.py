@@ -191,4 +191,23 @@ class SecurityTests(unittest.TestCase):
         self.assertIn("alice",after["members"])
         self.assertEqual(after["votes"],{})
 
+    def test_allowance_increase_resumes_saved_tasks_without_resetting_usage(self):
+        first = self.room()
+        self.workflow.claim(first["room_id"])
+        self.workflow.claim(first["room_id"])
+        waiting = self.room()
+        rid = waiting["room_id"]
+        self.assertIsNone(self.workflow.claim(rid))
+        self.assertEqual(self.workflow.view(waiting["admin_token"], rid)["paused_reason"], "daily_limit")
+        # Simulate a deployment with a larger finite allowance and the same DB.
+        self.workflow.security = RoomSecurity(self.workflow, {**self.env, "CONCLAVE_SHARED_DAILY_CALLS": "3"})
+        claim = self.workflow.claim(rid)
+        self.assertIsNotNone(claim)
+        self.assertEqual(claim["attempt"], 1)
+        view = self.workflow.view(waiting["admin_token"], rid)
+        self.assertIsNone(view["paused_reason"])
+        self.assertEqual(view["access"]["shared_calls_remaining"], 0)
+        self.assertIsNone(self.workflow.claim(rid))
+        self.assertEqual(self.workflow.view(waiting["admin_token"], rid)["paused_reason"], "daily_limit")
+
 if __name__ == "__main__": unittest.main()
