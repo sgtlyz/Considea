@@ -4,7 +4,6 @@ Considea aligns small teams on what to build next. Through iterative private int
 ## Try it
 
 - [Production website](https://considea.vercel.app): real DeepSeek and Tavily calls with PostgreSQL persistence. Use a team demo code or your own keys.
-- [Direct backend workspace](https://considea-dev-api.onrender.com): the same live service and saved rooms. The existing hostname is retained after promotion.
 - [Concept demo and simulated team walkthrough](https://considea.vercel.app/demo.html): no account, keys or live calls required. [Watch on YouTube](https://youtu.be/d4RyloKY-rE) · [Download the video](workflow/web/demo.mp4).
 - Development previews use a separate labelled mock backend.
 - [Setup and deployment](DEPLOYMENT.md), [workflow and HTTP API](workflow/README.md), [agent integration](workflow/INTEGRATION.md).
