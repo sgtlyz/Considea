@@ -1,10 +1,12 @@
 # Workflow：本地运行与接线
 
-实现位置：`workflow/engine.py`（状态机）、`store.py`（SQLite）、`agents.py`（mock / Pi 适配）、`server.py`（HTTP）、`web/index.html`（工作台）。
+实现位置：`workflow/engine.py`（状态机）、`store.py`（SQLite）、`agents.py`（mock / Pi 适配）、`server.py`（HTTP）、`web/`（Considea 工作台：HTML、样式、HTTP 接线与动效）。
 
 整合入口见 [INTEGRATION.md](INTEGRATION.md)：已接 Interview、Python Negotiator、Idea、Evaluator 与 SpacetimeDB 共享桥接。以下说明保留基础 mock / 自定义 Pi 模块模式，团队联调用 `--mode integrated`。
 
 Workflow 已实现四角色的调度与人工节点。业务 Agent 的 prompt、工具和实际输出由队友实现；默认 mock 仅用于验证流程，页面会明确标记，不能把演示候选或报告当成真实研究结果。
+
+界面使用方式、数据对应关系和浏览器回归见 [INTERFACE.md](INTERFACE.md)。假 login 只是测试入口，房间权限仍由邀请码和成员令牌控制。
 
 ## 启动与验证
 
@@ -15,7 +17,7 @@ python -m pip install -r workflow/requirements.txt
 python -m workflow
 ```
 
-使用 Python 3.10+，额外 Python 依赖是 jsonschema 和 python-dotenv。启动时自动加载仓库根目录 `.env`，终端环境变量优先；详见 [配置说明](INTEGRATION.md#安装与运行)。打开 http://127.0.0.1:8765 。创建房间后保存管理员令牌，将对应邀请码分别交给成员。成员在独立标签页加入；同一标签页只保持一个身份。加入后展开“保存本人的恢复凭据”，私下保存 room_id 和 token；退出或换标签页后，填写房间 ID 与已有个人令牌即可恢复。
+使用 Python 3.10+，额外 Python 依赖是 jsonschema 和 python-dotenv。启动时自动加载仓库根目录 `.env`，终端环境变量优先；详见 [配置说明](INTEGRATION.md#安装与运行)。打开 http://127.0.0.1:8765 ，点击 **Enter test workspace**。创建房间后保存管理员令牌，将对应邀请码分别交给成员。成员在独立标签页加入；同一标签页只保持一个身份。加入后展开“保存本人的恢复凭据”，私下保存 room_id 和 token；退出或换标签页后，填写房间 ID 与已有个人令牌即可恢复。
 
 ```powershell
 python -m unittest discover -s workflow/tests -v

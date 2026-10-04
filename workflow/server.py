@@ -60,6 +60,13 @@ def make_server(workflow, host="127.0.0.1", port=8765):
                 if method == "GET" and not parts:
                     html = (Path(__file__).parent / "web/index.html").read_bytes()
                     return self._send(200, html, "text/html; charset=utf-8")
+                # Explicit public assets only: never expose repository files or secrets.
+                assets = {"style.css": "text/css; charset=utf-8",
+                          "app.js": "text/javascript; charset=utf-8",
+                          "atmosphere.js": "text/javascript; charset=utf-8"}
+                if method == "GET" and len(parts) == 1 and parts[0] in assets:
+                    data = (Path(__file__).parent / "web" / parts[0]).read_bytes()
+                    return self._send(200, data, assets[parts[0]])
                 if method == "GET" and parts == ["api", "health"]:
                     return self._send(200, {"status": "ok", "agent_mode": workflow.runner.mode})
                 if parts == ["api", "rooms"] and method == "POST":

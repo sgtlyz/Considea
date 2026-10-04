@@ -4,6 +4,12 @@
 
 > **当前状态：四个 Agent 与 Vercel / Render 部署配置已整合到 `master`。** Interview、Negotiator、Idea、Evaluator 使用队友实现；Mem0 暂不启用。Evaluator 通过兼容层接入，完整报告随流程持久化；已通过真实 DeepSeek / Tavily 与本地 SpacetimeDB 的四轮讨论、生成、评估、小改重评和模拟人审闭环；Idea 曾需一次手动重试恢复，模型格式仍有波动。评估可诚实返回证据不足，不代表方案已经验证可行。完整安装、运行和测试见 [整合说明](workflow/INTEGRATION.md)。
 
+## 团队界面
+
+`feature/interface` 的视觉设计已接入真实 workflow：首页保留测试 login，工作台支持中英文、深浅主题、私人访谈与共享批准、团队分歧与收敛选择、候选评估与人审、最终简报导出。
+
+**Test login 仅打开入口，不提供账号认证。** 创建房间后仍需分别保存管理员令牌、分发成员邀请码；后端继续隔离成员的私人回答。界面数据来自房间 API，模型是否真实运行由后端模式决定；默认部署仍为明确标记的 mock。前端接线与验证见 [界面说明](workflow/INTERFACE.md)。
+
 ## 本地运行
 
 先按 [整合说明](workflow/INTEGRATION.md) 安装 Node 依赖，然后在仓库根目录执行：
@@ -13,7 +19,7 @@ python -m pip install -r workflow/requirements.txt
 python -m workflow --mode integrated --model offline --evaluator agent --db workflow/data/integrated.sqlite3
 ```
 
-打开 http://127.0.0.1:8765 ，创建房间、保存管理员令牌，将每个成员的邀请码分别交给本人。每个成员在独立浏览器标签页加入并完成私人访谈。启动参数、HTTP 输入输出、Agent 接入和恢复规则见 [Workflow 开发说明](workflow/README.md)。
+打开 http://127.0.0.1:8765 ，点击 **Enter test workspace** 后创建房间、保存管理员令牌，将每个成员的邀请码分别交给本人。每个成员在独立浏览器标签页加入并完成私人访谈。启动参数、HTTP 输入输出、Agent 接入和恢复规则见 [Workflow 开发说明](workflow/README.md)。
 
 真实模型配置：编辑根目录 `.env`，填写 `DEEPSEEK_API_KEY` 和 `TAVILY_API_KEY`，再以 `--model live` 启动。创建房间时填写项目时限，并保留“允许评估时检索公开网页”选项；未填写时限会等待管理员补充。程序会自动读取该文件；模板见 [.env.example](.env.example)，已有终端环境变量优先。
 

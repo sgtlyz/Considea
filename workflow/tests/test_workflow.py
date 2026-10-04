@@ -293,7 +293,16 @@ class WorkflowTests(unittest.TestCase):
             with urlopen(base + "/api/health") as response:
                 self.assertEqual(json.load(response)["agent_mode"], "mock")
             with urlopen(base + "/") as response:
-                self.assertIn(b"Conclave", response.read())
+                self.assertIn(b"considea", response.read())
+            for path, mime in [("/app.js", "text/javascript"), ("/atmosphere.js", "text/javascript"), ("/style.css", "text/css")]:
+                with urlopen(base + path) as response:
+                    self.assertIn(mime, response.headers["Content-Type"])
+                    self.assertEqual(response.headers["X-Content-Type-Options"], "nosniff")
+                    self.assertTrue(response.read())
+            for path in ["/.env", "/../.env", "/web/../server.py", "/%2e%2e/server.py"]:
+                with self.assertRaises(HTTPError) as missing:
+                    urlopen(base + path)
+                self.assertEqual(missing.exception.code, 404)
             with self.assertRaises(HTTPError) as caught:
                 urlopen(base + "/api/rooms/" + self.room)
             self.assertEqual(caught.exception.code, 401)

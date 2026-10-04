@@ -18,12 +18,13 @@ async function send(member,type,payload){const v=await view(member);const key={'
  const expected_revision=key?v.event_revisions[key]:v.event_revisions.review[payload.candidate_ref.id];
  const result=await api('/rooms/'+created.room_id+'/events',{contract_version:'2.0',event_id:crypto.randomUUID(),room_id:created.room_id,expected_revision,type,payload},tokens[member]);assert.equal(result.status,'accepted');}
 async function until(predicate,ms=20000){const end=Date.now()+ms;while(Date.now()<end){if(await predicate())return;await delay(100);}throw Error('Timed out waiting for browser/workflow state');}
-let browser;try{browser=await chromium.launch({headless:true});}catch{browser=await chromium.launch({headless:true,channel:'msedge'});}
+let browser;try{browser=await chromium.launch({headless:true});}catch{browser=await chromium.launch({headless:true,channel:'chrome'});}
 const pages={},errors=[];
 try{
  for(const member of ['alice','bob']){const context=await browser.newContext();const page=await context.newPage();pages[member]=page;
    page.on('pageerror',error=>errors.push(error.message));
    await page.addInitScript(({room,token,polling})=>{
+     localStorage.setItem('considea-study-lang','zh');
      sessionStorage.setItem('conclave-auth',JSON.stringify({room_id:room,token}));
      // Disable the recovery timer: UI changes below must arrive from the real SSE subscription.
      const interval=window.setInterval;window.setInterval=(fn,ms,...rest)=>ms===10000&&!polling?0:interval(fn,ms,...rest);
@@ -31,6 +32,8 @@ try{
    await page.goto(base);await page.locator('#app').waitFor({state:'visible'});
  }
  const admin=await browser.newPage();admin.on('pageerror',error=>errors.push(error.message));await admin.goto(base);
+ await admin.getByRole('button',{name:'Enter test workspace'}).click();await admin.getByRole('button',{name:'中文',exact:true}).click();
+ await admin.getByText('恢复已有会话',{exact:true}).click();
  await admin.locator('#roomId').fill(created.room_id);await admin.locator('#token').fill(created.admin_token);
  await admin.locator('#resume').click();await admin.locator('#app').waitFor({state:'visible'});
  const unauthorized=await fetch(base+'/api/rooms/'+created.room_id+'/updates');assert.equal(unauthorized.status,401);

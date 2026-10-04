@@ -46,3 +46,24 @@ jobs:
         run: |
           docker run --rm considea-ci node --test deploy/tests/vercel-config.test.mjs
           docker run --rm considea-ci node deploy/build-frontend.mjs
+
+  interface:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install isolated browser test dependencies
+        run: |
+          python -m pip install -r workflow/requirements.txt
+          npm install --prefix "$RUNNER_TEMP/interface-browser" --no-package-lock playwright@1.62.1
+          node "$RUNNER_TEMP/interface-browser/node_modules/playwright/cli.js" install --with-deps chromium
+      - name: Exercise the interface through HTTP and SQLite
+        env:
+          PLAYWRIGHT_MODULE: ${{ runner.temp }}/interface-browser/node_modules/playwright
+        run: node workflow/node/interface-smoke.mjs
