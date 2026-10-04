@@ -2,14 +2,7 @@
 (() => {
   const $ = (s) => document.querySelector(s),
     $$ = (s) => document.querySelectorAll(s);
-  let lang = "en",
-    motionPaused = false;
-  const t = (key) =>
-    ({
-      pause: ["Pause motion", "暂停动效"],
-      resume: ["Resume motion", "继续动效"],
-      reduced: ["Motion reduced by your system", "已遵循系统减少动效设置"],
-    })[key][lang === "zh" ? 1 : 0];
+  let lang = "en";
   // A procedural monochrome material. The reading desk is fully opaque.
   const canvas = $("#liquid");
   const gl = canvas.getContext("webgl", {
@@ -84,7 +77,7 @@ void main(){vec2 uv=gl_FragCoord.xy/res;vec2 p=(uv-.5)*vec2(res.x/res.y,1.)*5.5;
     gl.drawArrays(gl.TRIANGLES, 0, 6);
   }
   function animate(now) {
-    if (document.hidden || motionPaused || reduced.matches) {
+    if (document.hidden || reduced.matches) {
       raf = 0;
       lastTick = 0;
       return;
@@ -103,19 +96,10 @@ void main(){vec2 uv=gl_FragCoord.xy/res;vec2 p=(uv-.5)*vec2(res.x/res.y,1.)*5.5;
       program &&
       loggedIn &&
       !raf &&
-      !motionPaused &&
       !reduced.matches &&
       !document.hidden
     )
       raf = requestAnimationFrame(animate);
-  }
-  function updateMotionLabel() {
-    const b = $("#motion");
-    b.textContent = reduced.matches
-      ? t("reduced")
-      : t(motionPaused ? "resume" : "pause");
-    b.disabled = reduced.matches;
-    b.setAttribute("aria-pressed", String(motionPaused || reduced.matches));
   }
   function updateFocusLabel() {
     let focused = document.documentElement.classList.contains("focus-mode");
@@ -139,15 +123,6 @@ void main(){vec2 uv=gl_FragCoord.xy/res;vec2 p=(uv-.5)*vec2(res.x/res.y,1.)*5.5;
         drawLiquid(performance.now());
       }),
   );
-  $("#motion").onclick = () => {
-    motionPaused = !motionPaused;
-    if (motionPaused && raf) {
-      cancelAnimationFrame(raf);
-      raf = 0;
-      lastTick = 0;
-    } else startMotion();
-    updateMotionLabel();
-  };
   document.addEventListener("visibilitychange", () => {
     if (document.hidden && raf) {
       cancelAnimationFrame(raf);
@@ -156,7 +131,6 @@ void main(){vec2 uv=gl_FragCoord.xy/res;vec2 p=(uv-.5)*vec2(res.x/res.y,1.)*5.5;
     } else startMotion();
   });
   reduced.addEventListener("change", () => {
-    updateMotionLabel();
     if (reduced.matches && raf) {
       cancelAnimationFrame(raf);
       raf = 0;
@@ -322,7 +296,6 @@ void main(){vec2 uv=gl_FragCoord.xy/res;vec2 p=(uv-.5)*vec2(res.x/res.y,1.)*5.5;
     language(value) {
       lang = value;
       updateFocusLabel();
-      updateMotionLabel();
     },
     theme() {
       drawLiquid(performance.now());
@@ -331,6 +304,5 @@ void main(){vec2 uv=gl_FragCoord.xy/res;vec2 p=(uv-.5)*vec2(res.x/res.y,1.)*5.5;
   resizeLiquid();
   resizeCover();
   startCover();
-  updateMotionLabel();
   updateFocusLabel();
 })();
