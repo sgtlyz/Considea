@@ -4,6 +4,19 @@ import { readFileSync } from 'node:fs';
 import { runInterview } from './service.mjs';
 import { createOfflineRuntime } from '../pi-base/offline.mjs';
 const pair = name => JSON.parse(readFileSync(new URL(`./examples/${name}.json`, import.meta.url), 'utf8'));
+test('nested warnings are preserved without admitting malformed warnings or false evidence', async () => {
+  const x = pair('interview-summary-v2');
+  const raw = { status: 'ok', data: { ...structuredClone(x.response.data), warnings: ['check this'] } };
+  const run = () => runInterview({ request: x.request, runtime: createOfflineRuntime(() => raw) });
+  const r = await run();
+  assert.equal(r.status, 'ok'); assert.deepEqual(r.data, x.response.data);
+  assert.ok(r.warnings.includes('check this'));
+  raw.data.warnings = { approved: true };
+  assert.equal((await run()).error.code, 'INVALID_OUTPUT');
+  raw.data.warnings = [];
+  raw.data.profile_draft.items[0].private_message_ids = ['assistant-not-user'];
+  assert.equal((await run()).error.code, 'INVALID_OUTPUT');
+});
 test('known flattened summary with notes is repaired once locally without changing facts', async () => {
   const x = pair('interview-summary-v2'), raw = structuredClone(x.response.data);
   raw.profile_draft.notes = ['Synthetic test only']; raw.warnings = [];

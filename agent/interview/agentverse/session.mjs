@@ -108,6 +108,7 @@ export class InterviewSession {
       if (command === '/help') reply = help;
       else if (command === '/profile') reply = `当前详细档案 v${s.version}（${s.phase}）：\n${JSON.stringify({ profile_id: s.profile_id, items: s.items, unknowns: s.unknowns }, null, 2)}`;
       else if (command === '/export') reply = this.export(s);
+      else if (command === '/next' && s.phase === 'awaiting_question') reply = await this.ask(s);
       else if (command.startsWith('/approve ')) {
         if (s.phase !== 'review' || command !== `/approve ${s.revision} ${s.approval_token}`) throw new Error('Stale approval');
         s.approved = { profile_id: s.profile_id, member_id: s.member_id, version: s.version,
@@ -137,8 +138,19 @@ export class InterviewSession {
         s.messages.push({ message_id: randomUUID(), role: 'user', content: text }); s.answered_batches++;
         await this.updateProfile(s);
         if (s.answered_batches >= this.maxBatches) { s.phase = 'review'; reply = this.review(s); }
-        else reply = `已更新详细档案 v${s.version}（${s.items.length} 条，尚未批准）。\n${await this.ask(s)}`;
-      } else reply = s.phase === 'review' ? this.review(s) : '结果已保存。/export 取回；/edit、/drop、/short 修改后需重新批准。';
+        else {
+          // Commit validated personal facts before a separate, fallible question request.
+          s.phase = 'awaiting_question'; this.store.write(key, s); stored = structuredClone(s);
+          try { reply = `已更新详细档案 v${s.version}（${s.items.length} 条，尚未批准）。\n${await this.ask(s)}`; }
+          catch (error) {
+            s.phase = 'awaiting_question';
+            reply = `本轮回答和详细档案 v${s.version} 已保存，尚未批准。下一批问题生成失败；没有自动重试或共享。可用 /next 重试提问（会调用模型），或 /finish 审核已有档案。`;
+            s.events[msg_id] = { fingerprint, status: 'partial', error_code: error?.code ?? 'WORKFLOW_ERROR', result: { ok: false, text: reply, end_session: false } };
+            this.store.write(key, s); return s.events[msg_id].result;
+          }
+        }
+      } else if (s.phase === 'awaiting_question') reply = '此前回答已保存，下一批问题尚未生成。请用 /next 继续提问，或 /finish 审核；无需重新提交此前回答。';
+      else reply = s.phase === 'review' ? this.review(s) : '结果已保存。/export 取回；/edit、/drop、/short 修改后需重新批准。';
       const result = { ok: true, text: reply, end_session: false };
       s.events[msg_id] = { fingerprint, status: 'done', result }; this.store.write(key, s); return result;
     } catch (error) {

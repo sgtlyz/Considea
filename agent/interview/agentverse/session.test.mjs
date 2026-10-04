@@ -13,6 +13,31 @@ function setup() {
 }
 const message = (text, id, overrides = {}) => ({ sender: 'sender-a', session_id: 'session-a', msg_id: id, text, ...overrides });
 const key = JSON.stringify(['sender-a', 'session-a']);
+test('question failure keeps validated answer across restart, dedup and explicit next', async () => {
+  const { app, store, runtimeFor } = setup();
+  await app.handle(message('start', 'p1'));
+  const original = app.runtimeFor;
+  app.runtimeFor = op => {
+    if (op === 'interview.turn') throw Object.assign(new Error('bad question'), { code: 'INVALID_OUTPUT' });
+    return original(op);
+  };
+  const answer = message('OFFLINE SAMPLE: I build interfaces.', 'p2');
+  const r = await app.handle(answer);
+  assert.equal(r.ok, false); assert.match(r.text, /已保存/);
+  assert.equal(store.read(key).version, 1);
+  assert.equal(store.read(key).answered_batches, 1);
+  assert.equal(store.read(key).phase, 'awaiting_question');
+  const restarted = new InterviewSession({ store, runtimeFor, maxBatches: 2 });
+  assert.deepEqual(await restarted.handle(answer), r);
+  await restarted.handle(message('do not count this as an answer', 'p3'));
+  assert.equal(store.read(key).answered_batches, 1);
+  assert.equal((await restarted.handle(message('/next', 'p4'))).ok, true);
+  assert.equal(store.read(key).phase, 'answering');
+  assert.equal(store.read(key).version, 1);
+  await restarted.handle(message('OFFLINE SAMPLE: keep decisions human.', 'p5'));
+  assert.equal(store.read(key).phase, 'review');
+  assert.equal(store.read(key).answered_batches, 2);
+});
 
 test('exhausted budget explains the limit while profile commands remain available', async () => {
   const { store } = setup();

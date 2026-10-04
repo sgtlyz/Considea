@@ -18,6 +18,12 @@ export function normalizeInterviewOutput(raw, operation, validate, payload) {
   warnings.push(...notes);
   const data = structuredClone(wrapped ? raw.data : Object.fromEntries(fields.filter(k => Object.hasOwn(raw, k)).map(k => [k, raw[k]])));
   if (!object(data)) return invalid();
+  if (Object.hasOwn(data, 'warnings')) {
+    if (!strings(data.warnings)) return invalid();
+    warnings.push(...data.warnings);
+    delete data.warnings;
+    warnings.push('MODEL_FORMAT_NORMALIZED: data.warnings moved to root; content unchanged');
+  }
   if (operation === 'interview.summarize' && object(data.profile_draft) && Object.hasOwn(data.profile_draft, 'notes')) {
     if (!strings(data.profile_draft.notes)) return invalid();
     warnings.push(...data.profile_draft.notes); delete data.profile_draft.notes;
