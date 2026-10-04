@@ -102,3 +102,12 @@ Defaults: six model turns, ten tool calls, 90 seconds overall, 100 KB request-si
 Offline tests cover contract compatibility, human gate consistency, source/room/version isolation, exact candidate slots, revision references, genuine tool ledgers, quota/timeout handling, provider transport shape, cancellation, and memory reauthorization. Spacetime type checking validates SDK compatibility, and its reducer tests exercise real exported functions with a mocked host/database context. Deployment and live concurrency behavior require a real database. Structural and mock-provider tests cannot prove model quality, external search coverage, provider account access, or authenticated end-to-end product behavior.
 
 Official references: [Tavily Search](https://docs.tavily.com/documentation/api-reference/endpoint/search), [Mem0 search](https://docs.mem0.ai/api-reference/memory/search-memories), [Mem0 add](https://docs.mem0.ai/api-reference/memory/add-memories), [SpacetimeDB permissions](https://spacetimedb.com/docs/tables/access-permissions/), [DeepSeek JSON output](https://api-docs.deepseek.com/guides/json_mode/).
+
+
+## 集成分支的输出 harness
+
+输出格式从现有协议 Schema 生成，并按当前请求约束候选槽位、base_candidate_ref 和可用共享 source_id，并与校验器共用 member_input 来源白名单（当前成员陈述或真实分歧回答）；最终仍由原有结构、来源归属和证据校验决定能否发布。
+
+仅 contract 2.0 且未注入 memoryClient 的无工具模式，在 JSON/输出协议失败时最多让模型纠正一次。纠正与初次调用共用原超时（默认 90 秒）和总模型轮次限制；不是重跑整个 Idea 任务。provider 错误不自动重试，二次失败不发布部分结果。contract 2.1 研究扩展与 Mem0 工具模式不启用纠正，避免重放工具或检索。
+
+跨调用重试、SpacetimeDB 缓存/租约和提交版本校验仍按原流程执行。测试及真实闭环状态见 [整合验收记录](../../workflow/INTEGRATION.md)。

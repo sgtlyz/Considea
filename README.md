@@ -2,7 +2,7 @@
 
 面向 Hackathon 团队：先分别理解成员，通过访谈、分歧识别和真实人工回答逐步澄清方向；由成员决定何时收敛，再生成候选、评估并审阅。
 
-> **当前状态：三个 Agent 与 Workflow、SpacetimeDB 已在整合分支接通。** Interview、Negotiator、Idea 使用队友实现；Evaluator 暂用明确标记的测试占位，Mem0 暂不启用。已通过离线与本地真实数据库整合测试，真实模型质量尚未验收。完整安装、运行和测试见 [整合说明](workflow/INTEGRATION.md)。
+> **当前状态：四个 Agent 已在 `feat/integration-spacetimedb` 完成本地接线。** Interview、Negotiator、Idea、Evaluator 使用队友实现；Mem0 暂不启用。Evaluator 通过兼容层接入，完整报告随流程持久化；已通过真实 DeepSeek / Tavily 与本地 SpacetimeDB 的四轮讨论、生成、评估、小改重评和模拟人审闭环；Idea 曾需一次手动重试恢复，模型格式仍有波动。评估可诚实返回证据不足，不代表方案已经验证可行。完整安装、运行和测试见 [整合说明](workflow/INTEGRATION.md)。
 
 ## 本地运行
 
@@ -10,10 +10,12 @@
 
 ```powershell
 python -m pip install -r workflow/requirements.txt
-python -m workflow --mode integrated --model offline --evaluator stub --db workflow/data/integrated.sqlite3
+python -m workflow --mode integrated --model offline --evaluator agent --db workflow/data/integrated.sqlite3
 ```
 
 打开 http://127.0.0.1:8765 ，创建房间、保存管理员令牌，将每个成员的邀请码分别交给本人。每个成员在独立浏览器标签页加入并完成私人访谈。启动参数、HTTP 输入输出、Agent 接入和恢复规则见 [Workflow 开发说明](workflow/README.md)。
+
+真实模型配置：编辑根目录 `.env`，填写 `DEEPSEEK_API_KEY` 和 `TAVILY_API_KEY`，再以 `--model live` 启动。创建房间时填写项目时限，并保留“允许评估时检索公开网页”选项；未填写时限会等待管理员补充。程序会自动读取该文件；模板见 [.env.example](.env.example)，已有终端环境变量优先。
 
 ## 系统图
 

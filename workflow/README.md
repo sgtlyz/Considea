@@ -2,7 +2,7 @@
 
 实现位置：`workflow/engine.py`（状态机）、`store.py`（SQLite）、`agents.py`（mock / Pi 适配）、`server.py`（HTTP）、`web/index.html`（工作台）。
 
-整合入口见 [INTEGRATION.md](INTEGRATION.md)：已接 Interview、Python Negotiator、Idea 与 SpacetimeDB；Evaluator 暂用占位。以下说明保留基础 mock / 自定义 Pi 模块模式，团队联调用 `--mode integrated`。
+整合入口见 [INTEGRATION.md](INTEGRATION.md)：已接 Interview、Python Negotiator、Idea、Evaluator 与 SpacetimeDB 共享桥接。以下说明保留基础 mock / 自定义 Pi 模块模式，团队联调用 `--mode integrated`。
 
 Workflow 已实现四角色的调度与人工节点。业务 Agent 的 prompt、工具和实际输出由队友实现；默认 mock 仅用于验证流程，页面会明确标记，不能把演示候选或报告当成真实研究结果。
 
@@ -15,14 +15,14 @@ python -m pip install -r workflow/requirements.txt
 python -m workflow
 ```
 
-使用 Python 3.10+，唯一额外 Python 依赖是 jsonschema。打开 http://127.0.0.1:8765 。创建房间后保存管理员令牌，将对应邀请码分别交给成员。成员在独立标签页加入；同一标签页只保持一个身份。加入后展开“保存本人的恢复凭据”，私下保存 room_id 和 token；退出或换标签页后，填写房间 ID 与已有个人令牌即可恢复。
+使用 Python 3.10+，额外 Python 依赖是 jsonschema 和 python-dotenv。启动时自动加载仓库根目录 `.env`，终端环境变量优先；详见 [配置说明](INTEGRATION.md#安装与运行)。打开 http://127.0.0.1:8765 。创建房间后保存管理员令牌，将对应邀请码分别交给成员。成员在独立标签页加入；同一标签页只保持一个身份。加入后展开“保存本人的恢复凭据”，私下保存 room_id 和 token；退出或换标签页后，填写房间 ID 与已有个人令牌即可恢复。
 
 ```powershell
 python -m unittest discover -s workflow/tests -v
 python agent/interfaces/validate_contracts.py
 ```
 
-测试不调用模型、不联网、不依赖队友的 Agent，也不使用真实用户输入。
+默认测试不调用真实模型或网络；整合测试依赖安装后的队友 Agent 代码，使用合成模型输出与合成检索结果。
 
 参数：
 
@@ -33,7 +33,7 @@ python agent/interfaces/validate_contracts.py
 | --db | workflow/data/conclave.sqlite3 | SQLite 文件 |
 | --mode | mock | mock、旧 pi、自带队友接线的 integrated |
 | --model | offline | integrated 的 offline / live 模型 |
-| --evaluator | stub | integrated 的 stub / blocked |
+| --evaluator | agent | integrated 的 agent / stub / blocked |
 | --spacetime-config | 无 | 私有数据库连接 JSON 文件 |
 | --workers | 4 | 后台任务并发数，1–16 |
 
@@ -62,8 +62,10 @@ python agent/interfaces/validate_contracts.py
 | max_questions | 3 | 1–3 |
 | candidate_count | 3 | 1–5 |
 | max_agent_calls | 200 | 1–10000 |
+| max_task_retries | 2 | 0–3；每次人工重试周期内允许的自动重试/崩溃重领次数，0 关闭 |
 | search_enabled | false | boolean |
 | max_search_queries | 0 | 0–50 |
+| project_time_limit | null | none / duration(hours) / deadline(deadline_at) 对象；原生 Evaluator 开始前必须明确 |
 | decision_policy | unanimous | 当前仅支持这一已确认规则 |
 
 ## HTTP 输入输出
@@ -78,6 +80,7 @@ JSON 请求使用 `Content-Type: application/json`，单次请求最多 1 MiB。
 | GET /api/rooms/{room_id} | 无 body | 本身份可见的 RoomView，见下文 |
 | POST /api/rooms/{room_id}/events | v2.0 ClientEvent | EventResult，accepted 为 200，业务 rejected 为 409 |
 | POST /api/rooms/{room_id}/tasks/{task_id}/retry | {} | {task_id,status:"queued"} |
+| POST /api/rooms/{room_id}/project-time-limit | {time_limit}，管理员；只能首次设置，相同值幂等 | {project_time_limit} |
 | POST /api/rooms/{room_id}/budget | {max_agent_calls:更大的整数}，管理员 | {max_agent_calls} |
 | POST /api/rooms/{room_id}/stop | {}，管理员 | {phase:"ended"} |
 
@@ -118,7 +121,7 @@ RoomContext 字段由 [JSON Schema](../agent/interfaces/protocol.schema.json) �
 | difference / answers / votes / convergence_decision | 当前分歧、按成员索引的真实回答与选择，以及最终进入生成的决定 |
 | candidates / evaluations / reviews | 按 candidate_id 索引的当前候选、报告、按成员索引的审阅 |
 | candidate_history | 旧候选版本、对应报告和真实审阅 |
-| tasks | 允许查看的 task_id、member_id、operation、status、attempts、脱敏 error |
+| tasks | 允许查看的 task_id、member_id、operation、status、attempts、auto_retries、next_attempt_at、脱敏 error |
 | calls_started / paused_reason | 已开始的调用尝试数；暂停原因为 agent_budget 或 null |
 | selected_candidate_ref / final_output | 接受前为 null；接受后包含当前 candidate、evaluation、human_reviews |
 
@@ -198,9 +201,16 @@ Evaluator 的搜索工具由队友提供并遵守 search_policy；Workflow 校�
 
 - SQLite 短事务管理状态、事件去重、排队和任务提交；模型调用在事务外执行。
 - 独立成员 Interview 可并行。输入快照及依赖包含轮次、阶段、对应成员 revision 或 candidate_ref；旧结果不能覆盖新状态。
-- 基础任务领取使用 120 秒租约；SpacetimeDB 整合派发使用 480 秒，远端 Idea 使用 300 秒；进程中断后过期任务可重领。旧持有者不能再提交。一次远程模型请求在崩溃后可能重复执行或计费，但结果只提交一次。
-- 失败任务需显式 retry，保留原 request_id 和输入快照，仅在依赖仍有效时重试。公共任务可由成员重试，私人任务只允许本人或管理员。
+- 基础任务领取使用 120 秒租约；SpacetimeDB 整合派发使用 480 秒，远端 Idea 使用 300 秒。`run_once` 每隔 min(30 秒, 租约/3) 续租，避免正常的长调用被重复领取；过期持有者即使尚未被替换，也不能续租或提交。内置 runner 自身仍有调用超时；自定义 runner 也必须实现有界超时。
+- `MODEL_TIMEOUT` / 明确标为 retryable 的 `MODEL_ERROR` 及已知连接/超时故障默认自动重试两次，等待约 2–3、4–5 秒。等待时任务仍为 queued，不占用工作线程；`next_attempt_at` 是持久化的 Unix 秒时间，重启不清零。租约过期重领共用同一重试额度；它已经等待租约到期，不再增加短退避。重试耗尽后显示 failed。
+- `INVALID_OUTPUT`、配置/输入/工具/预算问题和未知程序异常不自动重试。JSON 错误已由 Agent harness 做有界纠正，workflow 不叠加自动整轮生成。人工 retry 保留原 request_id 和输入快照，重新检查轮次、阶段、成员 revision、候选版本；只重跑失败节点。公共任务可由成员重试，私人任务只允许本人或管理员。
+- `attempts` 是累计派发数；`auto_retries` 是最近一次人工 retry 之后已安排的自动重试/重领数。人工 retry 重置后者，不重置累计次数或房间预算。`error.recovery` 为 automatic_retry、manual_retry 或 fix_configuration，便于前端解释下一步；错误消息不包含模型原文。
+- 新增 SQLite `task_attempts` 私有审计，保存各次尝试的状态及失败响应（可序列化且不超过 1,048,576 字符的响应）；人工重试不会擦掉诊断。它不进入 RoomView 或 SpacetimeDB 看板。旧数据库只添加表/列并保留已有失败记录，无需清空房间。迁移前记录缺少精确开始时间，保留原任务创建时间，finished_at 可为空。
+- 应用结果和排队下一节点使用事务内保存点：应用异常会完整回滚房间、共享 outbox 和新任务，再记录 APPLY_FAILED。旧候选、人工回答和确认保留；修复后可重试。不会把部分应用当成成功。
+- 进程崩溃、连接丢失或超时仍可能导致远端调用重跑或再次计费；保证的是有效结果只应用一次，不是远端模型只执行一次。
 - 每次实际派发或重领计入 max_agent_calls。达到额度只暂停派发；管理员提高额度后恢复，或 stop 结束。已经开始的调用不因额度用尽自动取消。
 - stop 取消排队和运行任务并拒绝迟到结果；已完成房间不能被 stop 覆盖。
 - 已批准历史会传给后续 Agent。新画像编辑不等于撤销旧授权；授权撤回、依赖结果清理、邀请补发、令牌恢复和生产登录尚未实现。
 - 本地 HTTP 工作台用于开发联调；未实现公网部署、TLS、多租户运营管理或生产级访问入口。真实 Agent 效果需接入后另行验证。
+
+Evaluator 完整报告通过 RoomView 的 `evaluation_details` 展示，`evaluation_input_required` 为 true 时由管理员补充项目时限。输入输出映射、来源限制与真实 API 配置见 [整合说明](INTEGRATION.md#evaluator-接口与持久化)。

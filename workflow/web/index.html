@@ -22,6 +22,8 @@ details{margin:12px 0}summary{cursor:pointer;font-weight:600}section{min-width:0
 <section><h2>创建房间</h2>
 <label>成员 ID（逗号分隔）<input id="members" value="member-a,member-b,member-c,member-d"></label>
 <label>比赛背景<textarea id="context">四人 Hackathon 团队，先澄清方向再生成候选。</textarea></label>
+<div id="projectTime"></div>
+<label><input id="searchEnabled" type="checkbox" checked>允许评估时检索公开网页（最多 2 次搜索）</label>
 <button id="create">创建</button><pre id="credentials" hidden></pre>
 </section>
 <section><h2>加入或恢复</h2>
@@ -46,6 +48,22 @@ function node(tag,text,parent){const n=document.createElement(tag);if(text!==und
 function button(text,parent,fn){const b=node('button',text,parent);b.onclick=async()=>{b.disabled=true;try{await fn()}catch(e){$('error').textContent=e.message}finally{b.disabled=false}};return b}
 function area(label,parent,value=''){const wrapper=node('label',label,parent);const a=node('textarea',value,wrapper);a.value=value;return a}
 function detail(label,value,parent){const d=node('details',undefined,parent);node('summary',label,d);node('pre',JSON.stringify(value,null,2),d)}
+function timeLimitInput(parent,allowLater=false){
+ const label=node('label','项目时限',parent),select=node('select',undefined,label);
+ select.setAttribute('aria-label','项目时限');
+ for(const [value,text] of [['',allowLater?'稍后由管理员补充':'请选择'],['none','无时间限制'],['duration','可用小时数'],['deadline','截止时间']])node('option',text,select).value=value;
+ const hours=node('input',undefined,parent);hours.type='number';hours.min='0.1';hours.max='87600';hours.step='any';hours.placeholder='例如 24';hours.setAttribute('aria-label','可用小时数');hours.hidden=true;
+ const deadline=node('input',undefined,parent);deadline.type='datetime-local';deadline.setAttribute('aria-label','截止时间（本地时区）');deadline.hidden=true;
+ select.onchange=()=>{hours.hidden=select.value!=='duration';deadline.hidden=select.value!=='deadline'};
+ return ()=>{
+  if(!select.value){if(allowLater)return null;throw Error('请选择项目时限')}
+  if(select.value==='none')return {kind:'none'};
+  if(select.value==='duration'){const h=Number(hours.value);if(!(h>0&&h<=87600))throw Error('请输入有效的可用小时数');return {kind:'duration',hours:h}}
+  if(!deadline.value)throw Error('请选择截止时间');
+  return {kind:'deadline',deadline_at:new Date(deadline.value).toISOString()};
+ };
+}
+const createTimeLimit=timeLimitInput($('projectTime'),true);
 async function api(path,body,token=auth?.token){
  const r=await fetch('/api'+path,{method:body===undefined?'GET':'POST',headers:{...(body===undefined?{}:{'Content-Type':'application/json'}),...(token?{'Authorization':'Bearer '+token}:{})},body:body===undefined?undefined:JSON.stringify(body)});
  const data=await r.json();if(!r.ok)throw Error((data.error?.code?data.error.code+'：':'')+(data.error?.message||'操作未完成'));return data;
@@ -57,7 +75,7 @@ async function event(type,payload,revision){
 }
 $('create').onclick=async()=>{try{
  const member_ids=$('members').value.split(',').map(s=>s.trim()).filter(Boolean);
- const result=await api('/rooms',{room_context:{member_ids,hackathon_context:$('context').value,deadline_at:null,constraints:[]}});
+ const result=await api('/rooms',{room_context:{member_ids,hackathon_context:$('context').value,deadline_at:null,constraints:[]},config:{project_time_limit:createTimeLimit(),search_enabled:$('searchEnabled').checked,max_search_queries:$('searchEnabled').checked?2:0}});
  $('credentials').hidden=false;$('credentials').textContent='请保存管理员令牌，并分别私下发放邀请码：\n'+JSON.stringify(result,null,2);
  $('roomId').value=result.room_id;
 }catch(e){$('error').textContent=e.message}};
@@ -82,6 +100,13 @@ function render(v){
  if(v.agent_runtime?.evaluator==='stub')node('p','Evaluator 尚未接入：评估报告为流程测试占位，不代表可行性或创新性结论。',status).className='notice';
  if(v.realtime?.enabled)node('small',v.realtime.connected?'共享进度已连接实时同步':'共享同步待恢复；已保存的回答不会丢失',status);
  node('p','收敛：全员 converge 才生成；任何人 diverge 则继续。已调用 '+v.calls_started+' / '+v.config.max_agent_calls,status);
+ if(v.evaluation_input_required){
+  node('p','评估需要项目时限；请管理员补充后继续。',status).className='notice';
+  if(v.actor.role==='admin'){
+   const readLimit=timeLimitInput(status);
+   button('保存时限并继续评估',status,async()=>{await api('/rooms/'+auth.room_id+'/project-time-limit',{time_limit:readLimit()});dirty=false;await refresh()});
+  }
+ }
  if(v.paused_reason)node('p','已暂停：调用额度已用完，请管理员提高额度或结束房间。',status).className='notice';
  if(v.actor.role==='admin'){
   const budget=node('input',undefined,status);budget.type='number';budget.value=v.config.max_agent_calls+100;
@@ -131,6 +156,13 @@ function render(v){
   detail('完整方案、取舍与未知项',candidate.content,card);
   const report=v.evaluations[id];
   if(report){node('p',(report.content.report_status==='partial'?'评估尚不完整':'评估完成')+' · '+report.content.summary,card);for(const [label,key] of [['风险','risks'],['未知项','unknowns'],['建议','recommended_changes']])if(report.content[key].length)node('p',label+'：'+report.content[key].join('；'),card);detail('完整评估与证据',report.content,card)}
+  const full=v.evaluation_details?.[id];
+  if(full){
+   const verdict={pass:'通过',fail:'未通过',insufficient_evidence:'证据不足'};
+   for(const [key,label] of [['novelty','创新性'],['feasibility','可行性']])node('p',label+'：'+verdict[full.tests[key].result]+' · '+full.tests[key].reason,card);
+   if(full.fixture)node('p','离线模拟报告，未调用真实 API。',card).className='notice';
+   detail('完整评估报告（含来源和搜索记录）',full,card);
+  }
   if(v.phase==='awaiting_review'&&v.actor.member_id){
    const instructions=area('修改意见／继续讨论的问题（共享给团队）',card);
    for(const [decision,label] of [['accept','接受此版本'],['minor_revision','小改'],['more_discussion','加一轮']])

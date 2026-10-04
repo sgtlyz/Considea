@@ -23,7 +23,7 @@ class Store:
         self.path = str(path)
         Path(path).parent.mkdir(parents=True, exist_ok=True)
         with self.transaction() as db:
-            db.executescript("""
+            schema = """
                 CREATE TABLE IF NOT EXISTS rooms (id TEXT PRIMARY KEY, state TEXT NOT NULL);
                 CREATE TABLE IF NOT EXISTS credentials (
                     token_hash TEXT PRIMARY KEY, room_id TEXT NOT NULL,
@@ -46,8 +46,26 @@ class Store:
                     room_id TEXT PRIMARY KEY, revision INTEGER NOT NULL,
                     idea_revision INTEGER NOT NULL, snapshot TEXT NOT NULL,
                     delivered_revision INTEGER NOT NULL DEFAULT -1);
+                CREATE TABLE IF NOT EXISTS task_attempts (
+                    task_id TEXT NOT NULL, attempt INTEGER NOT NULL,
+                    outcome TEXT NOT NULL, started_at TEXT NOT NULL,
+                    finished_at TEXT, error TEXT, result TEXT,
+                    PRIMARY KEY(task_id,attempt));
                 CREATE INDEX IF NOT EXISTS task_status ON tasks(status,created_at);
-            """)
+            """
+            # Keep schema creation and additive migrations in the same write lock.
+            for statement in schema.split(";"):
+                if statement.strip():
+                    db.execute(statement)
+            columns = {row["name"] for row in db.execute("PRAGMA table_info(tasks)")}
+            for name, declaration in (("auto_retries", "INTEGER NOT NULL DEFAULT 0"),
+                                      ("next_attempt_at", "REAL NOT NULL DEFAULT 0"),
+                                      ("context", "TEXT")):
+                if name not in columns:
+                    db.execute(f"ALTER TABLE tasks ADD COLUMN {name} {declaration}")
+            # Preserve pre-migration failure results before a future manual retry clears tasks.result.
+            db.execute("""INSERT OR IGNORE INTO task_attempts(task_id,attempt,outcome,started_at,error,result)
+                SELECT id,attempts,status,created_at,error,result FROM tasks WHERE attempts > 0""")
 
     @contextlib.contextmanager
     def transaction(self):
@@ -80,6 +98,7 @@ class Store:
             "paused_reason", "calls_started", "difference", "answers", "votes", "convergence_decision",
             "candidates", "evaluations", "reviews", "candidate_history", "selected_candidate_ref")}
         shared["agent_runtime"] = state.get("agent_runtime", {})
+        shared["evaluation_details"] = state.get("evaluation_details", {})
         shared["shared_context"] = {"profiles": [m["profile"] for m in state["members"].values() if m["profile"]],
                                     "sources": state["sources"], "discussion_history": state["discussion_history"]}
         shared["members"] = {mid: {"stage": m["stage"], "approved_round": m["approved_round"]}

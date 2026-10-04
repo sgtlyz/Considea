@@ -23,6 +23,10 @@ async function handle(message) {
       if (!space) throw Object.assign(new Error(), { code: 'SPACETIME_CONFIG_ERROR' });
       return send({ id, result: await space.publish(message) });
     }
+    if (action === 'evaluate') {
+      const { runWorkflowEvaluation } = await import('../../agent/evaluator/workflow.mjs');
+      return send({ id, result: await runWorkflowEvaluation(message) });
+    }
     const runtime = offline_response
       ? createOfflineRuntime(() => ({ status: offline_response.status, data: offline_response.data,
           warnings: ['OFFLINE INTEGRATION: real agent code, simulated model output'] })) : liveRuntime();

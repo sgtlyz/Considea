@@ -174,3 +174,16 @@ test('only workflow retries error outcomes and cannot clear successful results',
   f.claim();f.commit();mod.retryIdea(f.ctx(workflow),args);
   assert.equal(f.row().status,'completed');assert.equal(JSON.parse(f.row().responseJson).status,'ok');
 });
+
+
+test('native evaluator reports survive board publication without allowing private root fields',()=>{
+  const f=fixture();
+  const details={'candidate-1':{report_schema_version:'1.2',candidate_id:'candidate-1',candidate_version:2,
+    passed:false,tests:{novelty:{result:'insufficient_evidence'},feasibility:{result:'pass'}},evidence:[]}};
+  const snapshot={room_id:'room-1',revision:11,phase:'awaiting_review',evaluation_details:details};
+  const publish=snapshot=>mod.publishBoard(f.ctx(workflow),{roomId:'room-1',revision:11n,ideaRevision:7n,snapshotJson:JSON.stringify(snapshot)});
+  publish(snapshot);publish(snapshot);
+  assert.deepEqual(JSON.parse(mod.myWorkflowBoards(f.ctx(workflow))[0].snapshotJson).evaluation_details,details);
+  assert.throws(()=>publish({...snapshot,private:{messages:['secret']}}),/INVALID_BOARD/);
+  assert.deepEqual(mod.myWorkflowBoards(f.ctx(outsider)),[]);
+});

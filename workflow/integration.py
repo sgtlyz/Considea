@@ -10,6 +10,7 @@ import time
 from uuid import uuid4
 
 from .agents import MockRunner, ROOT
+from .evaluation import EvaluationResult
 
 
 class IntegrationError(RuntimeError):
@@ -114,7 +115,9 @@ class EvaluatorStub:
 
 
 class IntegratedRunner:
-    def __init__(self, *, offline=False, evaluator="stub", spacetime_config=None, bridge=None):
+    def __init__(self, *, offline=False, evaluator="agent", spacetime_config=None, bridge=None):
+        if evaluator not in ("agent", "stub", "blocked"):
+            raise IntegrationError("CONFIG_ERROR")
         self.offline, self.evaluator = offline, evaluator
         self.mode = "integrated-offline" if offline else "integrated"
         self.bridge = bridge or NodeBridge(spacetime_config)
@@ -123,7 +126,8 @@ class IntegratedRunner:
             "idea_storage": "spacetimedb" if spacetime_config else "sqlite", "mem0": "disabled"}
 
     def __call__(self, request):
-        return self.run_task(request, {"attempt": 1})
+        result = self.run_task(request, {"attempt": 1})
+        return result.response if isinstance(result, EvaluationResult) else result
 
     def run_task(self, request, claim):
         op = request["operation"]
@@ -131,9 +135,13 @@ class IntegratedRunner:
             from agent.negotiate import handle_request
             return handle_request(request)
         if op == "evaluator.evaluate":
-            if self.evaluator != "stub":
+            if self.evaluator == "blocked":
                 raise IntegrationError("EVALUATOR_NOT_READY")
-            return EvaluatorStub()(request)
+            if self.evaluator == "stub":
+                return EvaluatorStub()(request)
+            result = self.bridge.call({"action": "evaluate", "request": request,
+                "context": claim.get("context"), "offline": self.offline})
+            return EvaluationResult(result["response"], result.get("report"))
         message = {"action": "agent", "request": request, "attempt": claim.get("attempt", 1)}
         if self.offline:
             message["offline_response"] = MockRunner()(copy.deepcopy(request))

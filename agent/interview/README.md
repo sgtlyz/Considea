@@ -8,6 +8,16 @@
 
 **当前状态：70 项 Node 测试与 5 项 Python 接线测试通过；独立 ACP Agent 已注册，ASI 内已完成两轮模拟回答、提前结束、审核删除和批准导出。** 测试失败及修复、剩余额度和内容质量限制见 [注册与实测记录](agentverse/README.md)。团队 followup/reopened 尚未实测。旧本地 workflow 只保存进程内状态，退出后清空；独立适配器使用磁盘存储。下文的 CLI、本地流程图和 payload 示例描述保留的旧个人体验流程；其业务定义已移到 `legacy-definition.mjs`，新团队接线请使用上面的说明。
 
+## 团队 Workflow 的 harness 约束
+
+集成分支的 `runInterview` 保持 v2/v2.1 对外协议不变，从现有 Schema 生成逐请求输出说明，约束成员、可引用的来源与私人消息 ID、问题数量及字段类型。
+
+- 模型可以省略 `member_id`、`contract_version` 和临时 question/item key，由程序从已验证请求及本批次顺序补齐。模型显式写错的身份、版本、重复 key、来源和事实不会被覆盖或删除以通过校验。
+- JSON/协议失败最多允许一次模型纠正，两次调用共用原 60 秒期限；仍失败则停止该任务。provider 错误、非法输入不走这条纠正路径；不执行工具，不代替人工批准。
+- 题目预算为零仍由代码直接返回；前三轮、第四轮人工收敛和最终批准仍由 Workflow 决定。
+- `runtime` 只注入模型和传输，不能覆盖角色定义或纠正预算；请求在异步执行前复制，防止调用方后续修改授权上下文。
+- 该机制目前只用于团队 service，旧个人 CLI 的单轮行为保留。最新真实测试状态见 [整合验收记录](../../workflow/INTEGRATION.md)。
+
 ## 自己体验真实访谈
 
 在这台电脑的 PowerShell 中执行：
@@ -57,7 +67,7 @@ flowchart TD
 | 调用限制 | `live-runtime.mjs` | 每进程最多 16 次调用，输入最多 48,000 字符，默认输出最多 2048 token；单次 operation 60 秒超时 |
 | 离线验证 | `fixtures.mjs`、`pi-base/offline.mjs`、测试文件 | 用固定响应经过真实 Pi 运行路径，验证权限边界与程序行为 |
 
-当前 Interview 的两个 operation 为 `interview.turn` 和 `interview.summarize`。每次实际需要模型的 operation 最多一个模型轮次；到达访谈上限、用户主动结束或没有个人回答时，相应结果可由程序直接返回。
+当前 Interview 的两个 operation 为 `interview.turn` 和 `interview.summarize`。旧个人流程每次需要模型的 operation 最多一个模型轮次；团队 service 最多两个模型轮次（含一次输出纠正）；到达访谈上限、用户主动结束或没有个人回答时，相应结果可由程序直接返回。
 
 多轮访谈历史保存在 workflow 中，每次只把当前成员所需历史传给一个新的 Pi 实例。模型不负责保存跨请求记忆；模型输出也不能写入 `approved_at`、成员 `stance` 或团队共识。
 

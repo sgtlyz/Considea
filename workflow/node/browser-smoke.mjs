@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 const require=createRequire(import.meta.url);
 const {chromium}=require(process.env.PLAYWRIGHT_MODULE || 'playwright');
+const polling=process.env.CONCLAVE_TEST_POLLING==='1';
 const base=process.env.CONCLAVE_TEST_URL || 'http://127.0.0.1:8779';
 if(!['127.0.0.1','localhost'].includes(new URL(base).hostname))throw Error('Browser smoke is local-only');
 const delay=ms=>new Promise(r=>setTimeout(r,ms));
@@ -22,13 +23,16 @@ const pages={},errors=[];
 try{
  for(const member of ['alice','bob']){const context=await browser.newContext();const page=await context.newPage();pages[member]=page;
    page.on('pageerror',error=>errors.push(error.message));
-   await page.addInitScript(({room,token})=>{
+   await page.addInitScript(({room,token,polling})=>{
      sessionStorage.setItem('conclave-auth',JSON.stringify({room_id:room,token}));
      // Disable the recovery timer: UI changes below must arrive from the real SSE subscription.
-     const interval=window.setInterval;window.setInterval=(fn,ms,...rest)=>ms===10000?0:interval(fn,ms,...rest);
-   },{room:created.room_id,token:tokens[member]});
+     const interval=window.setInterval;window.setInterval=(fn,ms,...rest)=>ms===10000&&!polling?0:interval(fn,ms,...rest);
+   },{room:created.room_id,token:tokens[member],polling});
    await page.goto(base);await page.locator('#app').waitFor({state:'visible'});
  }
+ const admin=await browser.newPage();admin.on('pageerror',error=>errors.push(error.message));await admin.goto(base);
+ await admin.locator('#roomId').fill(created.room_id);await admin.locator('#token').fill(created.admin_token);
+ await admin.locator('#resume').click();await admin.locator('#app').waitFor({state:'visible'});
  const unauthorized=await fetch(base+'/api/rooms/'+created.room_id+'/updates');assert.equal(unauthorized.status,401);
  for(let round=1;round<=4;round++){
    await until(async()=>{
@@ -49,12 +53,17 @@ try{
  assert.ok(!(await pages.bob.locator('body').innerText()).includes('PRIVATE-alice'));
  assert.ok(!(await pages.alice.locator('body').innerText()).includes('PRIVATE-bob'));
  for(const member of ['alice','bob']){const v=await view(member);await send(member,'convergence.vote',{difference_ref:v.difference.difference_ref,discussion_round:v.discussion_round,decision:'converge',reason:'SYNTHETIC human decision'});}
+ await until(async()=> (await view('alice')).evaluation_input_required===true);
+ await admin.locator('#refresh').click();
+ await admin.locator('#status').getByLabel('项目时限',{exact:true}).selectOption('none');
+ await admin.getByRole('button',{name:'保存时限并继续评估'}).click();
  await until(async()=> (await view('alice')).phase==='awaiting_review');
  await until(async()=> (await pages.bob.locator('#status').innerText()).includes('等待审阅'));
- assert.ok((await pages.bob.locator('#status').innerText()).includes('Evaluator'));
+ assert.ok((await pages.bob.locator('#candidates').innerText()).includes('创新性'));
+ assert.equal(Object.values((await view('alice')).evaluation_details)[0].fixture,true);
  for(const member of ['alice','bob']){const v=await view(member);const id=Object.keys(v.candidates)[0];await send(member,'candidate.review',{candidate_ref:v.candidates[id].candidate_ref,evaluation_ref:v.evaluations[id].evaluation_ref,decision:'accept',instructions:''});}
  await until(async()=> (await pages.alice.locator('#status').innerText()).includes('已完成'));
  await pages.alice.screenshot({path:new URL('../data/integration-browser.png',import.meta.url).pathname.replace(/^\/(.:)/,'$1'),fullPage:true});
  assert.deepEqual(errors,[]);
- console.log('PASS: two isolated browser sessions, real subscription updates without polling, four rounds, privacy, evaluator labels, final acceptance; no page errors.');
+ console.log('PASS: isolated member/admin sessions, '+(polling?'HTTP polling':'real subscriptions without polling')+', four rounds, privacy, explicit time gate, native evaluator report, final acceptance; no page errors.');
 }finally{await browser.close();}

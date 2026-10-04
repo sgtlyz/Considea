@@ -1,4 +1,4 @@
-> **v2 接线提示：** 下文演示保留旧业务格式。当前六个 operation 和新 payload 见 [接口契约 v2.0](../contracts.md)。新角色直接导出 definition；不要将旧 roles.mjs 或 example-role.mjs 当作四角色实现。外层 schema_version 仍为 1.0，业务 contract_version 为 2.0。本文未改变现有 runtime。
+> **v2 接线提示：** 下文演示保留旧业务格式。当前六个 operation 和新 payload 见 [接口契约 v2.0](../contracts.md)。新角色直接导出 definition；不要将旧 roles.mjs 或 example-role.mjs 当作四角色实现。外层 schema_version 仍为 1.0，业务 contract_version 为 2.0。团队 Interview 的输出约束和限次纠正见下方说明。
 
 # Pi Agent Base v0.1
 
@@ -66,12 +66,20 @@ Python 可用 `python_bridge.call_agent(request, role_module=...)` 异步调用�
 
 - 每次操作创建新的 Pi 实例，不隐式继承其他请求的上下文。连续访谈由 workflow 传入当前成员的授权历史。
 - 统一 envelope、角色 operation 检查、输入/输出校验入口、结构化错误。ID/版本从原请求复制，不采信模型生成的 envelope。
-- 默认 60 秒、最多 6 个模型轮次、最多 12 次工具执行；CLI 每次模型响应最多 4096 token。不会自动修复 JSON 或重试整次操作。
+- 默认 60 秒、最多 6 个模型轮次、最多 12 次工具执行；CLI 每次模型响应最多 4096 token。默认 `maxOutputRepairs=0`，不自动纠正输出。无工具角色可显式设为 `1`，最多再调用一次模型纠正输出；不重试整次业务操作或 provider 错误。
 - 工具需显式注入；没有内置文件读写、shell、coding agent 扩展发现或个人会话读取。
 - 进度回调只有事件类型和 request_id，不包含聊天内容、工具结果或内部思考。
 - `MODEL_TIMEOUT`、`MODEL_ERROR` 可由 workflow 判断是否重试；`INVALID_INPUT`、`INVALID_OUTPUT`、`CONFIG_ERROR`、`BUDGET_EXCEEDED` 需修正配置、输入或策略。
 
 运行层不实施用户认证、持久化去重、版本比较或房间权限；workflow 必须在调用前后实施。进程内 timeout 发出取消并返回，但无法强制终止不配合取消的自定义工具；需要硬隔离时使用 Python worker 或等价子进程。不要给工具写业务权威状态的权限。轮次/token 上限不是美元预算，需要 workflow 或模型网关额外核算。
+
+## 输出约束与一次纠正
+
+operation 可提供 `outputSchema(payload)`，从业务 Schema 生成本次输出说明；它会进入系统提示。`outputIssues(raw, payload)` 可返回 `{code, path}` 数组帮助模型纠正，但不能包含成员原文、密钥或 provider 原始错误。该机制是提示约束加本地强校验，不声称 provider 已启用严格 Schema 解码。
+
+团队 Interview v2/v2.1 service 使用 `maxOutputRepairs: 1, maxTurns: 2`；Idea v2.0 且未注入 memoryClient 时也启用一次纠正。只有 JSON/输出协议失败允许替换输出；纠正共用原总期限（Interview 60 秒，Idea 90 秒）、同一授权上下文与总 turn 限制。声明工具的 operation 不能启用该机制，避免重放副作用。Idea 研究扩展、Mem0 工具模式、其他 Agent 和旧 CLI 默认不启用纠正。
+
+启用纠正的无工具模式会先尝试两种有限本地格式修复：只补全末尾缺失的容器结束符；或将提前关闭顶层对象后独立的字符串 warnings 数组接回顶层。两者都不补字段、不改文字、不猜测来源；未闭合字符串、未知尾部字段和缺失业务字段仍拒绝。所有本地修复和模型纠正结果重新经过完整输出校验；二次失败不发布任何部分结果。模型意外请求工具也立即终止，不允许增加调用轮次。成功纠正返回 `MODEL_OUTPUT_REPAIRED` warning；失败仅包含固定错误分类，详细模型内容只可经调用方显式提供的受保护 `onDiagnostic` 回调观察，不进入公共进度。
 
 ## 文件与维护分工
 
@@ -94,3 +102,14 @@ Python 可用 `python_bridge.call_agent(request, role_module=...)` 异步调用�
 - [Coding SDK / CLI 方案参考](https://pi.dev/docs/latest/sdk)
 
 上游 main 文档可能更新；本基座以锁定的 1.0.1 实际安装和离线测试为准。Pi 是 MIT 项目，上游许可证保留在安装依赖内；这里只发布本项目的适配代码。
+
+
+### 多余右括号的本地修复
+
+已启用 `maxOutputRepairs: 1` 的无工具调用，在原有末尾闭合与 warnings 包装修复都不适用时，会尝试 `json-repair.mjs`：
+
+- 只处理原本无法解析的 JSON；一次只删除一个字符串外的 `}`，不补字段、修改事实或移动/删除正文。
+- 最多扫描 65,536 字符和 256 个右括号位置。每个可解析候选均执行原有规范化及完整 operation 校验；只有一个不同的原始对象通过时才接受。存在歧义或会覆盖重复字段（包括转义后的同名键）则拒绝。
+- 字符串中的括号、转义引号和反斜线保留。原本合法但契约错误的 JSON 不会被重新摆放层级来强行通过。
+- 成功返回 `MODEL_JSON_EXTRA_BRACE_REMOVED` warning，不增加模型调用。无法修复时走原有最多一次模型纠正和失败恢复路径；不叠加新模型重试。
+- 执行位置是 Agent 输出进入 workflow 前的解析边界；Python workflow 仍只接收并验证结构化响应，人类门控保持不变。

@@ -1,4 +1,4 @@
-"""Small local HTTP application and worker pool, using only stdlib + jsonschema."""
+"""Local HTTP application, environment configuration and agent worker pool."""
 import argparse
 import json
 import os
@@ -12,6 +12,7 @@ from .agents import MockRunner, PiRunner
 from .engine import Workflow, WorkflowError
 from .store import Store
 from .integration import IntegratedRunner, SharedSync
+from .environment import load_environment
 
 
 def make_server(workflow, host="127.0.0.1", port=8765):
@@ -108,6 +109,8 @@ def make_server(workflow, host="127.0.0.1", port=8765):
                                 raise WorkflowError("INVALID_INPUT", "Room ID mismatch")
                             result = workflow.submit(token, body)
                             return self._send(200 if result["status"] == "accepted" else 409, result)
+                        if parts[3:] == ["project-time-limit"]:
+                            return self._send(200, workflow.set_project_time_limit(token, rid, body["time_limit"]))
                         if parts[3:] == ["budget"]:
                             return self._send(200, workflow.increase_budget(token, rid, body["max_agent_calls"]))
                         if parts[3:] == ["stop"]:
@@ -140,10 +143,11 @@ def main():
     parser.add_argument("--db", default="workflow/data/conclave.sqlite3")
     parser.add_argument("--mode", choices=["mock", "pi", "integrated"], default="mock")
     parser.add_argument("--model", choices=["offline", "live"], default="offline")
-    parser.add_argument("--evaluator", choices=["stub", "blocked"], default="stub")
+    parser.add_argument("--evaluator", choices=["agent", "stub", "blocked"], default="agent")
     parser.add_argument("--spacetime-config", help="Private server-side JSON config path; never sent to browsers")
     parser.add_argument("--workers", type=int, default=4)
     args = parser.parse_args()
+    load_environment()
     if not 1 <= args.workers <= 16:
         parser.error("--workers must be between 1 and 16")
     if args.spacetime_config and args.mode != "integrated":

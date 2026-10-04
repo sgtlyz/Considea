@@ -189,7 +189,7 @@ export const publishBoard = spacetimedb.reducer({ roomId: t.string(), revision: 
   const snapshot = parseObject(args.snapshotJson);
   const allowed = ['room_id','revision','discussion_round','phase','mode','agent_runtime','room_context','config',
     'paused_reason','calls_started','difference','answers','votes','convergence_decision','candidates','evaluations',
-    'reviews','candidate_history','selected_candidate_ref','shared_context','members'];
+    'reviews','candidate_history','selected_candidate_ref','shared_context','members','evaluation_details'];
   if (Object.keys(snapshot).some(k => !allowed.includes(k)) || snapshot.room_id !== args.roomId
       || snapshot.revision !== Number(args.revision)) reject('INVALID_BOARD');
   const previous = ctx.db.board.roomId.find(args.roomId);

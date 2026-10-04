@@ -40,3 +40,23 @@ for (const [version, schema] of [['2.0', upstream], ['2.1', extended]]) {
 }
 export const validateShape = (name, value, version = value?.contract_version) =>
   validators.get(`${version}:${name}`)?.(value) === true;
+
+/** Resolve only the output definition; do not send the entire input protocol to the model. */
+export function outputShape(name, version) {
+  const schema = version === '2.1' ? extended : upstream;
+  const resolve = value => {
+    if (Array.isArray(value)) return value.map(resolve);
+    if (!value || typeof value !== 'object') return value;
+    if (value.$ref) return resolve(schema.$defs[value.$ref.split('/').at(-1)]);
+    return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, resolve(v)]));
+  };
+  return resolve(schema.$defs[name]);
+}
+
+// Return schema locations/keywords only, never private values or raw AJV messages.
+export function shapeIssues(name, value, version) {
+  const validator = validators.get(`${version}:${name}`);
+  if (!validator) return [{ code: 'CONTRACT_VERSION', path: '/contract_version' }];
+  if (validator(value)) return [];
+  return validator.errors.slice(0, 8).map(e => ({ code: 'SCHEMA_' + e.keyword.toUpperCase(), path: e.instancePath || '/' }));
+}

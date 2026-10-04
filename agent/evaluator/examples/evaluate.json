@@ -1,0 +1,38 @@
+{
+  "schema_version": "1.0",
+  "request_id": "example-evaluate",
+  "room_id": "room-1",
+  "input_revision": 1,
+  "operation": "evaluator.evaluate",
+  "payload": {
+    "room_config": {
+      "room_id": "room-1",
+      "members": ["member-a"],
+      "hackathon_context": "团队项目选题",
+      "constraints": ["首版使用文字访谈"],
+      "discussion_round_limit": 4,
+      "idea_candidate_limit": 3,
+      "status": "evaluating",
+      "time_limit": {"kind": "none"}
+    },
+    "shared_resources": [
+      {"profile_id": "p-a", "profile_version": 1, "item_id": "skill-a", "member_id": "member-a", "category": "skill", "text": "团队能使用 Node 和数据库"}
+    ],
+    "previous_report": null,
+    "tool_budget": {"max_searches": 2, "max_reads": 3, "timeout_ms": 60000, "per_call_timeout_ms": 10000},
+    "candidate": {
+      "candidate_id": "idea-1",
+      "version": 2,
+      "title": "团队选题协调员",
+      "target_user": "四人比赛团队",
+      "problem": "队员难以形成共同选题",
+      "solution": "独立访谈与画像确认 → 分歧识别与人工决策 → 深入讨论 → 生成候选 → 成员微调 → 查重和可行性评估",
+      "discussion_trace": ["decision-1：先达成共同方向再生成候选"],
+      "tradeoffs": ["首版不做语音"],
+      "mvp": "完成一个经过成员微调的候选及其评估报告",
+      "member_suggestions": ["先缩小到文字流程"],
+      "status": "refined",
+      "critical_dependencies": [{"dependency_id": "db", "description": "共享状态实时同步", "must_have": true}]
+    }
+  }
+}

@@ -29,7 +29,8 @@ class IntegrationTests(unittest.TestCase):
         self.sync = SharedSync(self.engine.store, self.runner.bridge) if self.spacetime_config else None
         self.context = {"member_ids": ["alice", "bob"], "hackathon_context": "Synthetic integration test",
                         "deadline_at": None, "constraints": []}
-        self.created = self.engine.create_room(self.context, {"candidate_count": 2})
+        self.created = self.engine.create_room(self.context, {"candidate_count": 2, "project_time_limit": {"kind": "duration", "hours": 24},
+            "search_enabled": True, "max_search_queries": 2})
         self.room = self.created["room_id"]
         self.tokens = {m: self.engine.join(self.room, invite)["token"] for m, invite in self.created["invitations"].items()}
 
@@ -63,6 +64,16 @@ class IntegrationTests(unittest.TestCase):
             for row in db.execute("SELECT request FROM tasks WHERE operation='interview.turn'"):
                 req = json.loads(row[0]); self.assertEqual(req["payload"]["contract_version"], "2.1")
         self.assertEqual(self.view()["agent_runtime"]["mem0"], "disabled")
+        reports = self.view()["evaluation_details"]
+        self.assertEqual(len(reports), 2)
+        for cid, report in reports.items():
+            self.assertTrue(report["fixture"])
+            self.assertFalse(report["passed"])
+            self.assertEqual(report["candidate_id"], cid)
+            self.assertEqual(len(report["search_log"]), 2)
+        self.assertIsNotNone(self.view()["final_output"]["evaluation_details"])
+        reopened = Workflow(Store(self.path), self.runner)
+        self.assertEqual(reopened.view(self.tokens["alice"], self.room)["evaluation_details"], reports)
 
     def test_human_diverge_and_reopened_interview(self):
         self.reach_convergence_gate(); self.vote("alice", "diverge")
@@ -85,6 +96,34 @@ class IntegrationTests(unittest.TestCase):
 
     def test_minor_revision_and_new_evaluation(self):
         base.WorkflowTests.test_minor_revision_versions_and_reconfirmation(self)
+        history = self.view()["candidate_history"][-1]["evaluation_details"]
+        cid = next(iter(history))
+        self.assertEqual(history[cid]["candidate_version"], 1)
+        self.assertEqual(self.view()["evaluation_details"][cid]["candidate_version"], 2)
+
+    def test_missing_time_waits_for_admin_then_resumes_once(self):
+        from workflow.engine import WorkflowError
+        with self.store_transaction() as db:
+            state = Store.load(db, self.room)
+            state["config"]["project_time_limit"] = None
+            Store.save(db, state)
+        self.reach_convergence_gate()
+        self.vote("alice", "converge"); self.vote("bob", "converge"); self.drain()
+        self.assertEqual(self.view()["phase"], "evaluating")
+        self.assertTrue(self.view()["evaluation_input_required"])
+        with self.assertRaises(WorkflowError):
+            self.engine.set_project_time_limit(self.tokens["alice"], self.room, {"kind": "none"})
+        admin = self.created["admin_token"]
+        self.engine.set_project_time_limit(admin, self.room, {"kind": "none"})
+        self.engine.set_project_time_limit(admin, self.room, {"kind": "none"})
+        with self.store_transaction() as db:
+            self.assertEqual(db.execute("SELECT COUNT(*) FROM tasks WHERE operation='evaluator.evaluate'").fetchone()[0], 2)
+        with self.assertRaises(WorkflowError):
+            self.engine.set_project_time_limit(admin, self.room, {"kind": "duration", "hours": 1})
+        self.drain()
+        self.assertEqual(self.view()["phase"], "awaiting_review")
+        self.assertFalse(self.view()["evaluation_input_required"])
+        self.assertFalse(self.view()["reviews"])
 
     def test_outbox_recovers_after_sync_failure(self):
         class FailedBridge:

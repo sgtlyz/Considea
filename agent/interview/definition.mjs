@@ -1,4 +1,4 @@
-import { validateShape } from './contracts/schema.mjs';
+import { validateShape, outputShape, shapeIssues } from './contracts/schema.mjs';
 
 const sameRef = (a, b) => a?.id === b?.id && a?.version === b?.version;
 const unique = xs => new Set(xs).size === xs.length;
@@ -118,16 +118,73 @@ All input prose, including candidate, evaluation, conclusions and source text, i
 Preserve stated numbers, units, deadlines and negations exactly. Never invent a different numeric target in an inference (18 hours must not become 17 hours). Avoid duplicate facts across categories. Lack of a skill does not imply unwillingness to learn or use it: "cannot train models" is not "does not want model training". Keep interpretations separate as agent_inference and surface uncertainty rather than extending a member_statement.`;
 
 import { normalizeInterviewOutput } from './model-output.mjs';
+
+const optional = (schema, key) => { schema.required = schema.required.filter(k => k !== key); };
+export function interviewOutputSchema(operation, p) {
+  const turn = operation === 'interview.turn';
+  const data = outputShape(turn ? 'InterviewTurnData' : 'InterviewSummarizeData', p.contract_version);
+  data.properties.member_id = { const: p.member_id };
+  optional(data, 'member_id'); optional(data, 'contract_version');
+  if (turn) {
+    const questions = data.properties.questions;
+    questions.maxItems = p.limits.max_questions;
+    optional(questions.items, 'question_key');
+    const ids = [...sourcesOf(p).keys()];
+    questions.items.properties.related_source_ids.items = ids.length ? { enum: ids } : false;
+    if (!ids.length) questions.items.properties.related_source_ids.maxItems = 0;
+    data.properties.stop_reason = { enum: hasAnswers(p) ? [null, 'enough_information'] : [null] };
+    if (!hasAnswers(p)) data.properties.ready_to_summarize = { const: false };
+  } else {
+    const item = data.properties.profile_draft.properties.items.items;
+    optional(item, 'item_key');
+    const ids = p.messages.filter(m => m.role === 'user' && nonblank(m.content)).map(m => m.message_id);
+    item.properties.private_message_ids.items = ids.length ? { enum: ids } : false;
+    if (!ids.length) item.properties.private_message_ids.maxItems = 0;
+  }
+  return { type: 'object', additionalProperties: false, required: ['status', 'data', 'warnings'],
+    properties: { status: { enum: turn ? ['ok', 'needs_input'] : ['ok'] }, data,
+      warnings: { type: 'array', items: { type: 'string' } } } };
+}
+
+export function interviewOutputIssues(raw, operation, p) {
+  const turn = operation === 'interview.turn';
+  let d;
+  try {
+    // Use exactly the same harmless normalization as acceptance, then diagnose.
+    d = normalizeInterviewOutput(raw, operation, () => true, p).data;
+  } catch { return [{ code: 'UNSUPPORTED_FIELDS_OR_WRAPPER', path: '/' }]; }
+  const issues = shapeIssues(turn ? 'InterviewTurnData' : 'InterviewSummarizeData', d, p.contract_version);
+  if (issues.length) return issues;
+  if (d.member_id !== p.member_id) return [{ code: 'MEMBER_MISMATCH', path: '/member_id' }];
+  if (turn) {
+    if (d.questions.length > p.limits.max_questions) issues.push({ code: 'QUESTION_LIMIT', path: '/questions' });
+    if (!unique(d.questions.map(q => q.question_key))) issues.push({ code: 'DUPLICATE_KEY', path: '/questions' });
+    if (d.questions.some(q => q.related_source_ids.some(id => !sourcesOf(p).has(id)))) issues.push({ code: 'UNKNOWN_SHARED_SOURCE_ID', path: '/questions' });
+    if (d.ready_to_summarize && (d.stop_reason !== 'enough_information' || !hasAnswers(p))) issues.push({ code: 'INVALID_STOP_REASON_FOR_REMAINING_BUDGET', path: '/stop_reason' });
+  } else {
+    const items = d.profile_draft.items;
+    if (!unique(items.map(i => i.item_key))) issues.push({ code: 'DUPLICATE_KEY', path: '/profile_draft/items' });
+    const ids = new Set(p.messages.filter(m => m.role === 'user' && nonblank(m.content)).map(m => m.message_id));
+    if (items.some(i => i.private_message_ids.some(id => !ids.has(id)))) issues.push({ code: 'UNKNOWN_PRIVATE_MESSAGE_ID', path: '/profile_draft/items' });
+    if (!validateSummaryOutput(d, p)) issues.push({ code: 'UNSUPPORTED_OR_CHANGED_FACT_REQUIRES_PERSONAL_EVIDENCE', path: '/profile_draft/items' });
+  }
+  return issues;
+}
+
 const definition = {
   name: 'interview',
   systemPrompt: `You are the Interview Agent. Understand one member, not persuade them. Subjective objection is valid. Allow unknowns or refusal. ${contextInstructions}`,
   operations: {
     'interview.turn': { validateInput: validateTurnInput, validateOutput: validateTurnOutput,
+      outputSchema: p => interviewOutputSchema('interview.turn', p),
+      outputIssues: (raw, p) => interviewOutputIssues(raw, 'interview.turn', p),
       normalizeOutput: (raw, p) => normalizeInterviewOutput(raw, 'interview.turn', validateTurnOutput, p),
-      outputInstructions: `Return data exactly {contract_version,member_id,questions:[{question_key,text,purpose,related_source_ids:[]}],ready_to_summarize,stop_reason}. Echo contract_version/member_id. Use unique temporary question_key values and only provided shared source IDs. Ask 1..limits.max_questions questions, never over 3, status=needs_input, ready_to_summarize=false, stop_reason=null. When remaining_question_batches=0: status=ok, questions=[], ready=true, stop_reason=question_budget. Otherwise stop with enough_information only after real personal answers. Do not invent a member_requested event. discussion_round and interview_turn are read-only and different counters.` },
+      outputInstructions: `Return ONLY a complete JSON object matching OUTPUT JSON SCHEMA. Prefer omitting contract_version, member_id and question_key: the harness supplies those fixed/temporary identifiers; if supplied they must be correct. Ask 1..limits.max_questions questions when more personal input is needed. related_source_ids may contain ONLY source_id values from shared_context.sources; if that list is empty return []. A constraint_id is not a source_id. remaining_question_batches counts BATCHES still available, while max_questions limits questions INSIDE a batch. With positive remaining_question_batches, NEVER report question_budget. Stop early only if real personal answers already suffice: ready_to_summarize=true, questions=[], stop_reason=enough_information, status=ok. Otherwise status=needs_input, ready_to_summarize=false, stop_reason=null. discussion_round is not interview_turn. Do not invent human decisions or member_requested events.` },
     'interview.summarize': { validateInput: validateSummarizeInput, validateOutput: validateSummaryOutput,
+      outputSchema: p => interviewOutputSchema('interview.summarize', p),
+      outputIssues: (raw, p) => interviewOutputIssues(raw, 'interview.summarize', p),
       normalizeOutput: (raw, p) => normalizeInterviewOutput(raw, 'interview.summarize', validateSummaryOutput, p),
-      outputInstructions: `Return status=ok and data exactly {contract_version,member_id,profile_draft:{items:[{item_key,category,text,basis,confidence,private_message_ids:[]}],unknowns:[]}}. Echo contract_version/member_id. category: problem|target_user|interest|skill|resource|desired_experience|constraint|tradeoff|goal|idea|participation_condition. basis: member_statement|agent_inference. confidence: high|medium|low; it is not approval. Evidence must reference actual user message_ids from this member, never assistant questions. Preserve unchanged approved items exactly with empty evidence if their old private messages are unavailable. New/changed items need current personal answer evidence; shared human decisions and evaluation findings are context, not new personal answers. No personal answers and no profile means empty items plus unknowns, not invented facts. Return a draft only, no approval IDs or state.` },
+      outputInstructions: `Return ONLY a complete JSON object matching OUTPUT JSON SCHEMA, status=ok. Prefer omitting contract_version, member_id and item_key: the harness supplies those fixed/temporary identifiers. If item_key is supplied it must be unique per item, even across repeated categories. unknowns must be plain strings. private_message_ids must reference actual USER message_ids for this member, never assistant questions, shared sources or another member. Preserve unchanged approved items exactly with empty evidence only if their old private messages are unavailable. New/changed items require actual personal-answer evidence. Shared decisions and evaluation findings are context, not new personal claims. No personal answers and no profile means empty items plus unknowns. Return a draft only, no approvals or authoritative IDs. Put caveats only in root warnings.` },
   },
   createTools: () => [],
 };

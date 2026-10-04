@@ -12,7 +12,7 @@ export const errorResponse = (request, code, message) => ({ ...headers(request),
 const toolResult = value => ({ content: [{ type: 'text', text: JSON.stringify(value) }], details: {} });
 
 /** Trusted backend entry point. Authentication and atomic publication remain Workflow responsibilities. */
-export async function runIdea({ request, runtime, searchProvider, memoryClient, onProgress = () => {}, signal,
+export async function runIdea({ request, runtime, searchProvider, memoryClient, onProgress = () => {}, onDiagnostic, signal,
   limits = {} } = {}) {
   if (!validateRequest(request)) return errorResponse(request, 'INVALID_INPUT', 'Invalid Idea request, references, or human routing context');
   if (signal?.aborted) return errorResponse(request, 'MODEL_ERROR', 'Idea request was cancelled before execution');
@@ -63,7 +63,8 @@ export async function runIdea({ request, runtime, searchProvider, memoryClient, 
     const streamFn = (model, context, options = {}) => runtime.streamFn(model, context, { ...options,
       signal: options.signal ? AbortSignal.any([options.signal, abort.signal]) : abort.signal });
     const response = await runAgent({ request, definition, model: runtime.model, streamFn,
-      timeoutMs, maxTurns, maxToolCalls, onProgress });
+      timeoutMs, maxTurns, maxToolCalls, onProgress, onDiagnostic,
+      maxOutputRepairs: !research && !memoryClient ? 1 : 0 });
     if (signal?.aborted) return attachResearch(errorResponse(request, 'MODEL_ERROR', 'Idea request was cancelled'));
     if (abort.signal.aborted) return attachResearch(errorResponse(request, 'MODEL_TIMEOUT', 'Idea request exceeded its time limit'));
     if (response.status === 'error') return attachResearch(response);

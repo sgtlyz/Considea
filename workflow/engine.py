@@ -3,10 +3,12 @@ import copy
 import json
 import secrets
 import time
+import threading
 from datetime import datetime, timezone
 from uuid import uuid4
 
 from . import protocol
+from . import evaluation
 from .store import Store, digest, encode, token_hash
 
 
@@ -35,6 +37,8 @@ def need(condition, message, code="INVALID_EVENT"):
 
 class Workflow:
     def __init__(self, store, runner, lease_seconds=120):
+        if not isinstance(lease_seconds, (int, float)) or not 0 < lease_seconds < float("inf"):
+            raise ValueError("lease_seconds must be positive and finite")
         self.store, self.runner, self.lease_seconds = store, runner, lease_seconds
 
     def _auth(self, db, token, room_id=None, admin=False):
@@ -54,15 +58,20 @@ class Workflow:
         need(len(room_context["member_ids"]) <= 12, "At most 12 members")
         settings = {"question_batches_per_round": 1, "max_questions": 3, "candidate_count": 3,
                     "max_agent_calls": 200, "search_enabled": False, "max_search_queries": 0,
-                    "decision_policy": "unanimous"}
+                    "decision_policy": "unanimous", "max_task_retries": 2, "project_time_limit": None}
         config = {} if config is None else config
         need(isinstance(config, dict) and set(config) <= set(settings), "Unknown room configuration")
         settings.update(config)
         for key, low, high in (("question_batches_per_round", 1, 7), ("max_questions", 1, 3),
                                ("candidate_count", 1, 5), ("max_agent_calls", 1, 10000),
-                               ("max_search_queries", 0, 50)):
+                               ("max_search_queries", 0, 50), ("max_task_retries", 0, 3)):
             need(type(settings[key]) is int and low <= settings[key] <= high, "Invalid " + key)
         need(type(settings["search_enabled"]) is bool, "search_enabled must be boolean")
+        if settings["project_time_limit"] is not None:
+            evaluation.TIME_LIMIT.validate(settings["project_time_limit"])
+            if room_context["deadline_at"]:
+                need(settings["project_time_limit"] == {"kind": "deadline", "deadline_at": room_context["deadline_at"]},
+                     "Project time limit conflicts with room deadline")
         need(settings["decision_policy"] == "unanimous", "Only the confirmed unanimous policy is supported")
         room_id, admin_token = uid("room"), secrets.token_urlsafe(32)
         members = {m: {"revision": 0, "messages": [], "profile": None, "approved_round": 0}
@@ -71,7 +80,7 @@ class Workflow:
                  "config": settings, "mode": self.runner.mode, "phase": "setup", "discussion_round": 1,
                  "members": members, "sources": [], "discussion_history": [], "difference": None,
                  "answers": {}, "answer_revisions": {}, "votes": {}, "vote_revisions": {},
-                 "convergence_decision": None, "candidates": {}, "evaluations": {}, "reviews": {},
+                 "convergence_decision": None, "candidates": {}, "evaluations": {}, "evaluation_details": {}, "reviews": {},
                  "review_revisions": {}, "candidate_history": [], "selected_candidate_ref": None,
                  "calls_started": 0, "paused_reason": None, "created_at": now(), "agent_runtime": getattr(self.runner, "description", {})}
         invitations = {}
@@ -129,7 +138,7 @@ class Workflow:
             deps["candidate_ref"] = s["candidates"].get(candidate_id, {}).get("candidate_ref")
         return deps
 
-    def _enqueue(self, db, s, operation, payload, member_id=None, candidate_id=None):
+    def _enqueue(self, db, s, operation, payload, member_id=None, candidate_id=None, context=None):
         s["serial"] += 1
         request = {"schema_version": "1.0", "request_id": uid("request"), "room_id": s["room_id"],
                    "operation": operation, "input_revision": s["serial"], "payload": copy.deepcopy(payload)}
@@ -139,9 +148,9 @@ class Workflow:
         deps = self._dependencies(s, operation, member_id, candidate_id)
         deps["candidate_id"] = candidate_id
         db.execute("""INSERT INTO tasks
-            (id,room_id,member_id,operation,request,dependencies,status,created_at)
-            VALUES(?,?,?,?,?,?,'queued',?)""",
-            (request["request_id"], s["room_id"], member_id, operation, encode(request), encode(deps), now()))
+            (id,room_id,member_id,operation,request,dependencies,status,created_at,context)
+            VALUES(?,?,?,?,?,?,'queued',?,?)""",
+            (request["request_id"], s["room_id"], member_id, operation, encode(request), encode(deps), now(), encode(context) if context else None))
         return request["request_id"]
 
     def _begin_round(self, db, s, mode, followup, increment=True):
@@ -198,6 +207,11 @@ class Workflow:
             evaluation = copy.deepcopy(s["evaluations"][cid])
             evaluation["feasibility"] = {"verdict": "unknown", "rationale":
                 "The stored report has no explicit aggregate feasibility verdict; use its findings and human review."}
+            native = s.get("evaluation_details", {}).get(cid)
+            if native:
+                test = native["tests"]["feasibility"]
+                evaluation["feasibility"] = {"verdict": {"pass": "feasible", "fail": "infeasible",
+                    "insufficient_evidence": "unknown"}[test["result"]], "rationale": test["reason"]}
         elif trigger == "difference_answers":
             answer_refs = [a["answer_ref"] for a in s["answers"].values()]
             decision_result = {"decision_ref": ref(uid("continue")), "discussion_round": s["discussion_round"],
@@ -380,10 +394,10 @@ class Workflow:
                           "reviews": list(reviews.values())}, candidate_id=cid)
         elif decision == "more_discussion":
             s["candidate_history"].append({"candidates": s["candidates"], "evaluations": s["evaluations"],
-                                           "reviews": s["reviews"]})
+                                           "reviews": s["reviews"], "evaluation_details": s.get("evaluation_details", {})})
             # All reviews are in shared history; singular triggering review is carried for v2 compatibility.
             followup = self._followup(s, "review_more_discussion", review)
-            s["candidates"], s["evaluations"], s["reviews"] = {}, {}, {}
+            s["candidates"], s["evaluations"], s["reviews"], s["evaluation_details"] = {}, {}, {}, {}
             self._begin_round(db, s, "reopened", followup)
 
     def _matches(self, s, row):
@@ -391,15 +405,57 @@ class Workflow:
         candidate_id = saved.pop("candidate_id")
         return saved == self._dependencies(s, row["operation"], row["member_id"], candidate_id)
 
+    @staticmethod
+    def _attempt_end(db, row, outcome, error=None, response=None):
+        # Protected audit only. The room view never exposes raw responses.
+        try:
+            result = encode(response) if response is not None else None
+            if result and len(result) > 1_048_576:
+                result = None
+        except (TypeError, ValueError, RecursionError):
+            result = None
+        db.execute("""INSERT INTO task_attempts
+            (task_id,attempt,outcome,started_at,finished_at,error,result) VALUES(?,?,?,?,?,?,?)
+            ON CONFLICT(task_id,attempt) DO UPDATE SET outcome=excluded.outcome,
+            finished_at=excluded.finished_at,error=excluded.error,result=excluded.result""",
+            (row["id"], row["attempts"], outcome, row["created_at"], now(),
+             encode(error) if error else None, result))
+
+    def _fail_task(self, db, s, row, code, *, retryable=False, response=None):
+        # INVALID_OUTPUT is already eligible for one correction inside the Agent.
+        # Workflow does not silently multiply those paid generations or retry config bugs.
+        automatic = (retryable and code in {"MODEL_ERROR", "MODEL_TIMEOUT"}
+                     and row["auto_retries"] < s["config"].get("max_task_retries", 2))
+        recovery = "automatic_retry" if automatic else (
+            "fix_configuration" if code in {"CONFIG_ERROR", "INVALID_INPUT", "APPLY_FAILED"} else "manual_retry")
+        messages = {
+            "automatic_retry": "Temporary agent failure; a bounded retry is scheduled",
+            "manual_retry": "Progress saved; retry this task when ready",
+            "fix_configuration": "Progress saved; fix the agent or server configuration before retrying",
+        }
+        error = {"code": code, "message": messages[recovery], "recovery": recovery}
+        # Persist the deadline, not a sleeping worker; other rooms can keep progressing.
+        retry_at = time.time() + 2 * (2 ** row["auto_retries"]) + secrets.randbelow(1000) / 1000 if automatic else 0
+        self._attempt_end(db, row, "failed", error, response)
+        db.execute("""UPDATE tasks SET status=?,error=?,result=NULL,lease_token=NULL,lease_until=NULL,
+            auto_retries=auto_retries+?,next_attempt_at=? WHERE id=?""",
+            ("queued" if automatic else "failed", encode(error), int(automatic), retry_at, row["id"]))
+
+    def _stale_task(self, db, row):
+        if row["status"] == "running":
+            self._attempt_end(db, row, "stale")
+        db.execute("UPDATE tasks SET status='stale',lease_token=NULL,lease_until=NULL,next_attempt_at=0 WHERE id=?", (row["id"],))
+
     def claim(self, room_id=None):
         with self.store.transaction() as db:
+            timestamp = time.time()
             rows = db.execute("""SELECT * FROM tasks
-                WHERE (status='queued' OR (status='running' AND lease_until < ?))
-                AND (? IS NULL OR room_id=?) ORDER BY created_at,id""", (time.time(), room_id, room_id)).fetchall()
+                WHERE ((status='queued' AND next_attempt_at <= ?) OR (status='running' AND lease_until <= ?))
+                AND (? IS NULL OR room_id=?) ORDER BY created_at,id""", (timestamp, timestamp, room_id, room_id)).fetchall()
             for row in rows:
                 s = self._room(db, row["room_id"])
                 if not self._matches(s, row):
-                    db.execute("UPDATE tasks SET status='stale',lease_token=NULL WHERE id=?", (row["id"],))
+                    self._stale_task(db, row)
                     continue
                 if s["mode"] != self.runner.mode or s["paused_reason"]:
                     continue
@@ -407,61 +463,122 @@ class Workflow:
                     s["paused_reason"] = "agent_budget"
                     Store.save(db, s)
                     continue
+                recovered = row["status"] == "running"
+                if recovered:
+                    if row["auto_retries"] >= s["config"].get("max_task_retries", 2):
+                        self._fail_task(db, s, row, "LEASE_EXPIRED")
+                        continue
+                    self._attempt_end(db, row, "expired", {"code": "LEASE_EXPIRED"})
                 lease = uid("lease")
                 db.execute("""UPDATE tasks SET status='running', attempts=attempts+1,
-                    lease_token=?,lease_until=? WHERE id=?""", (lease, time.time() + self.lease_seconds, row["id"]))
+                    lease_token=?,lease_until=?,next_attempt_at=0,auto_retries=auto_retries+? WHERE id=?""",
+                    (lease, timestamp + self.lease_seconds, int(recovered), row["id"]))
+                attempt = row["attempts"] + 1
+                db.execute("INSERT INTO task_attempts(task_id,attempt,outcome,started_at) VALUES(?,?,'running',?)",
+                           (row["id"], attempt, now()))
                 s["calls_started"] += 1
                 Store.save(db, s)
-                return {"task_id": row["id"], "lease_token": lease, "request": json.loads(row["request"]), "attempt": row["attempts"] + 1}
+                return {"task_id": row["id"], "lease_token": lease, "request": json.loads(row["request"]), "attempt": attempt,
+                        "context": json.loads(row["context"]) if row["context"] else None}
         return None
+
+    def renew(self, task_id, lease_token):
+        with self.store.transaction() as db:
+            row = db.execute("SELECT * FROM tasks WHERE id=?", (task_id,)).fetchone()
+            timestamp = time.time()
+            if (row is None or row["status"] != "running" or row["lease_token"] != lease_token
+                    or row["lease_until"] <= timestamp):
+                return False
+            s = self._room(db, row["room_id"])
+            if not self._matches(s, row):
+                self._stale_task(db, row)
+                return False
+            db.execute("UPDATE tasks SET lease_until=? WHERE id=?", (timestamp + self.lease_seconds, task_id))
+            return True
 
     def run_once(self, room_id=None):
         claim = self.claim(room_id)
         if claim is None:
             return False
+        stopped = threading.Event()
+
+        def heartbeat():
+            while not stopped.wait(min(30, self.lease_seconds / 3)):
+                try:
+                    if not self.renew(claim["task_id"], claim["lease_token"]):
+                        return
+                except Exception:
+                    # A lost DB connection cannot authorize a late result.
+                    return
+
+        keeper = threading.Thread(target=heartbeat, daemon=True)
+        keeper.start()
         try:
-            response = self.runner.run_task(copy.deepcopy(claim["request"]), claim) if hasattr(self.runner, "run_task") else self.runner(copy.deepcopy(claim["request"]))
-            protocol.check_response(claim["request"], response)
-        except Exception as error:
-            safe_code = getattr(error, "code", "MODEL_ERROR")
-            if safe_code not in {"CONFIG_ERROR", "EVALUATOR_NOT_READY", "SPACETIME_CONFIG_ERROR", "SPACETIME_TIMEOUT",
-                                  "SPACETIME_DISCONNECTED", "SPACETIME_CONNECT_FAILED", "SPACETIME_SUBSCRIPTION_FAILED",
-                                  "BRIDGE_DISCONNECTED", "BRIDGE_TIMEOUT", "INTEGRATION_ERROR"}:
-                safe_code = "MODEL_ERROR"
-            response = {**{k: claim["request"][k] for k in
-                           ("schema_version", "request_id", "room_id", "operation", "input_revision")},
-                        "status": "error", "data": {}, "warnings": [],
-                        "error": {"code": "CONFIG_ERROR" if safe_code in {"CONFIG_ERROR", "EVALUATOR_NOT_READY", "SPACETIME_CONFIG_ERROR"} else "MODEL_ERROR", "message": "Agent failed: " + safe_code,
-                                  "retryable": True}}
-        self.finish(claim["task_id"], claim["lease_token"], response)
+            try:
+                response = self.runner.run_task(copy.deepcopy(claim["request"]), claim) if hasattr(self.runner, "run_task") else self.runner(copy.deepcopy(claim["request"]))
+            except Exception as error:
+                code = getattr(error, "code", None)
+                temporary = code in {"MODEL_TIMEOUT", "SPACETIME_TIMEOUT", "SPACETIME_DISCONNECTED",
+                    "SPACETIME_CONNECT_FAILED", "SPACETIME_SUBSCRIPTION_FAILED", "BRIDGE_DISCONNECTED", "BRIDGE_TIMEOUT"}
+                if isinstance(error, TimeoutError):
+                    code, temporary = "MODEL_TIMEOUT", True
+                config = code in {"CONFIG_ERROR", "EVALUATOR_NOT_READY", "SPACETIME_CONFIG_ERROR"}
+                response = {**{k: claim["request"][k] for k in
+                               ("schema_version", "request_id", "room_id", "operation", "input_revision")},
+                            "status": "error", "data": {}, "warnings": [],
+                            "error": {"code": "CONFIG_ERROR" if config else "MODEL_TIMEOUT" if code in {
+                                "MODEL_TIMEOUT", "SPACETIME_TIMEOUT", "BRIDGE_TIMEOUT"} else "MODEL_ERROR",
+                                "message": "Agent execution failed", "retryable": temporary}}
+            # Validate in finish: malformed outputs must not be relabelled MODEL_ERROR.
+            details = response.report if isinstance(response, evaluation.EvaluationResult) else None
+            if isinstance(response, evaluation.EvaluationResult):
+                response = response.response
+            self.finish(claim["task_id"], claim["lease_token"], response, evaluation_report=details)
+        finally:
+            stopped.set()
+            keeper.join(timeout=1)
         return True
 
-    def finish(self, task_id, lease_token, response):
+    def finish(self, task_id, lease_token, response, *, evaluation_report=None):
         with self.store.transaction() as db:
             row = db.execute("SELECT * FROM tasks WHERE id=?", (task_id,)).fetchone()
-            if row is None or row["status"] != "running" or row["lease_token"] != lease_token:
+            if (row is None or row["status"] != "running" or row["lease_token"] != lease_token
+                    or row["lease_until"] <= time.time()):
                 return False
             s = self._room(db, row["room_id"])
             if not self._matches(s, row):
-                db.execute("UPDATE tasks SET status='stale',lease_token=NULL WHERE id=?", (task_id,))
+                self._stale_task(db, row)
                 return False
             request = json.loads(row["request"])
             try:
                 protocol.check_response(request, response)
+                if evaluation_report is not None:
+                    evaluation.check_report(request, evaluation_report)
             except Exception:
-                db.execute("UPDATE tasks SET status='failed',error=?,lease_token=NULL WHERE id=?",
-                           (encode({"code": "INVALID_OUTPUT", "message": "Agent response rejected"}), task_id))
+                self._fail_task(db, s, row, "INVALID_OUTPUT", response=response)
                 return False
             if response["status"] == "error":
-                # Never copy raw provider messages or private payloads into visible task errors.
-                error = {"code": response["error"]["code"], "message": "Agent task failed; retry or check server configuration"}
-                db.execute("UPDATE tasks SET status='failed',error=?,result=?,lease_token=NULL WHERE id=?",
-                           (encode(error), encode(response), task_id))
+                self._fail_task(db, s, row, response["error"]["code"],
+                                retryable=response["error"]["retryable"], response=response)
                 return False
-            self._apply_result(db, s, request, response["data"], row["member_id"])
-            db.execute("UPDATE tasks SET status='done',result=?,error=NULL,lease_token=NULL WHERE id=?",
-                       (encode(response), task_id))
-            Store.save(db, s)
+            # Applying an otherwise valid result can fail while queuing downstream work.
+            # Roll back all partial mutations, but persist failure and retain its response.
+            db.execute("SAVEPOINT agent_result")
+            try:
+                self._apply_result(db, s, request, response["data"], row["member_id"])
+                if evaluation_report is not None:
+                    s.setdefault("evaluation_details", {})[request["payload"]["candidate"]["candidate_ref"]["id"]] = copy.deepcopy(evaluation_report)
+                Store.save(db, s)
+            except Exception:
+                db.execute("ROLLBACK TO agent_result")
+                db.execute("RELEASE agent_result")
+                s = self._room(db, row["room_id"])
+                self._fail_task(db, s, row, "APPLY_FAILED", response=response)
+                return False
+            db.execute("RELEASE agent_result")
+            self._attempt_end(db, row, "done")
+            db.execute("""UPDATE tasks SET status='done',result=?,error=NULL,lease_token=NULL,
+                lease_until=NULL,next_attempt_at=0 WHERE id=?""", (encode(response), task_id))
             return True
 
     def _apply_result(self, db, s, request, data, member_id):
@@ -490,7 +607,7 @@ class Workflow:
             s["answer_revisions"], s["vote_revisions"] = {}, {}
             s["phase"] = "awaiting_difference_answers"
         elif op == "idea.generate":
-            s["candidates"], s["evaluations"], s["reviews"], s["review_revisions"] = {}, {}, {}, {}
+            s["candidates"], s["evaluations"], s["reviews"], s["review_revisions"], s["evaluation_details"] = {}, {}, {}, {}, {}
             s["phase"] = "evaluating"
             for entry in data["candidates"]:
                 candidate_id = uid("candidate")
@@ -501,7 +618,9 @@ class Workflow:
             old = s["candidates"][cid]
             s["candidate_history"].append({"candidates": {cid: copy.deepcopy(old)},
                                            "evaluations": {cid: copy.deepcopy(s["evaluations"][cid])},
-                                           "reviews": {cid: copy.deepcopy(s["reviews"][cid])}})
+                                           "reviews": {cid: copy.deepcopy(s["reviews"][cid])},
+                                           "evaluation_details": {cid: copy.deepcopy(s.get("evaluation_details", {}).get(cid))}})
+            s.setdefault("evaluation_details", {}).pop(cid, None)
             s["candidates"][cid] = {"candidate_ref": ref(cid, old["candidate_ref"]["version"] + 1),
                                     "content": data["draft"]}
             s["evaluations"].pop(cid)
@@ -521,15 +640,39 @@ class Workflow:
 
     def _queue_evaluation(self, db, s, candidate_id):
         candidate = s["candidates"][candidate_id]
+        native = getattr(self.runner, "evaluator", None) == "agent"
+        if native and evaluation.time_limit(s) is None:
+            return  # Keep evaluating; the owner must explicitly supply a project time limit.
+        shared_resources = evaluation.resources(s) if native else []
         # Candidate evidence references are the minimal context required by this call.
         needed = set(candidate["content"]["discussion_source_ids"])
         for contribution in candidate["content"]["contributions"]:
             needed.update(contribution["source_ids"])
+        needed.update(item["source_id"] for item in shared_resources)
         self._enqueue(db, s, "evaluator.evaluate", {**self._base_payload(s), "candidate": candidate,
             "shared_sources": [x for x in s["sources"] if x["source_id"] in needed],
             "search_policy": {"enabled": s["config"]["search_enabled"],
                               "max_queries": s["config"]["max_search_queries"]},
-            "provided_evidence": []}, candidate_id=candidate_id)
+            "provided_evidence": []}, candidate_id=candidate_id,
+            context={"time_limit": evaluation.time_limit(s), "resources": shared_resources} if native else None)
+
+    def set_project_time_limit(self, token, room_id, limit):
+        evaluation.TIME_LIMIT.validate(limit)
+        with self.store.transaction() as db:
+            self._auth(db, token, room_id, admin=True)
+            s = self._room(db, room_id)
+            need(s["phase"] not in ("completed", "ended"), "Room has ended", "STALE_INPUT")
+            existing = evaluation.time_limit(s)
+            if existing is not None:
+                need(existing == limit, "Project time limit already set; existing decisions cannot be silently changed", "CONFLICT")
+                return {"project_time_limit": existing}
+            s["config"]["project_time_limit"] = copy.deepcopy(limit)
+            if s["phase"] == "evaluating":
+                for cid in s["candidates"]:
+                    if cid not in s["evaluations"]:
+                        self._queue_evaluation(db, s, cid)
+            Store.save(db, s)
+            return {"project_time_limit": limit}
 
     def retry(self, token, room_id, task_id):
         with self.store.transaction() as db:
@@ -540,7 +683,8 @@ class Workflow:
             need(actor["role"] == "admin" or row["member_id"] is None or row["member_id"] == actor["member_id"],
                  "Private task belongs to another member", "UNAUTHORIZED")
             need(row["status"] == "failed" and self._matches(s, row), "Task cannot be retried", "STALE_INPUT")
-            db.execute("UPDATE tasks SET status='queued',error=NULL,result=NULL WHERE id=?", (task_id,))
+            db.execute("""UPDATE tasks SET status='queued',error=NULL,result=NULL,auto_retries=0,
+                next_attempt_at=0,lease_token=NULL,lease_until=NULL WHERE id=?""", (task_id,))
             return {"task_id": task_id, "status": "queued"}
 
     def increase_budget(self, token, room_id, max_agent_calls):
@@ -561,8 +705,10 @@ class Workflow:
             need(s["phase"] != "completed", "Completed output already recorded", "CONFLICT")
             s["phase"] = "ended"
             s["idea_revision"] = s["serial"] + 1
-            db.execute("UPDATE tasks SET status='cancelled',lease_token=NULL WHERE room_id=? AND status IN ('queued','running')",
-                       (room_id,))
+            for row in db.execute("SELECT * FROM tasks WHERE room_id=? AND status='running'", (room_id,)).fetchall():
+                self._attempt_end(db, row, "cancelled")
+            db.execute("""UPDATE tasks SET status='cancelled',lease_token=NULL,lease_until=NULL,next_attempt_at=0
+                WHERE room_id=? AND status IN ('queued','running')""", (room_id,))
             Store.save(db, s)
             return {"phase": "ended"}
 
@@ -571,7 +717,7 @@ class Workflow:
             actor = self._auth(db, token, room_id)
             s = self._room(db, room_id)
             member_id = actor["member_id"]
-            tasks = db.execute("""SELECT id,member_id,operation,status,attempts,error FROM tasks
+            tasks = db.execute("""SELECT id,member_id,operation,status,attempts,error,auto_retries,next_attempt_at FROM tasks
                                    WHERE room_id=? ORDER BY created_at,id""", (room_id,)).fetchall()
             public = {key: copy.deepcopy(s[key]) for key in (
                 "room_id", "revision", "discussion_round", "phase", "mode", "room_context", "config",
@@ -579,12 +725,16 @@ class Workflow:
                 "candidates", "evaluations", "reviews", "candidate_history", "selected_candidate_ref",
             )}
             public["agent_runtime"] = s.get("agent_runtime", {})
+            public["evaluation_details"] = copy.deepcopy(s.get("evaluation_details", {}))
+            public["evaluation_input_required"] = (getattr(self.runner, "evaluator", None) == "agent" and
+                s["phase"] == "evaluating" and evaluation.time_limit(s) is None)
             public["shared_context"] = copy.deepcopy(self._shared(s))
             public["members"] = {mid: {"stage": m["stage"], "approved_round": m["approved_round"]}
                                  for mid, m in s["members"].items()}
             public["tasks"] = [
                 {"task_id": t["id"], "operation": t["operation"], "status": t["status"], "attempts": t["attempts"],
-                 "member_id": t["member_id"], "error": json.loads(t["error"]) if t["error"] else None}
+                 "member_id": t["member_id"], "error": json.loads(t["error"]) if t["error"] else None,
+                 "auto_retries": t["auto_retries"], "next_attempt_at": t["next_attempt_at"] or None}
                 for t in tasks if t["member_id"] is None or t["member_id"] == member_id or actor["role"] == "admin"
             ]
             public["actor"] = {"role": actor["role"], "member_id": member_id}
@@ -604,7 +754,8 @@ class Workflow:
             if s["selected_candidate_ref"]:
                 cid = s["selected_candidate_ref"]["id"]
                 public["final_output"] = {"candidate": s["candidates"][cid], "evaluation": s["evaluations"][cid],
-                                          "human_reviews": list(s["reviews"][cid].values())}
+                                          "human_reviews": list(s["reviews"][cid].values()),
+                                          "evaluation_details": copy.deepcopy(s.get("evaluation_details", {}).get(cid))}
             else:
                 public["final_output"] = None
             return public

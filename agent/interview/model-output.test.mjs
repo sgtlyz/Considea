@@ -26,3 +26,37 @@ test('normalization never launders extra approvals, foreign evidence, IDs or uns
     assert.equal(r.error?.code,'INVALID_OUTPUT');
   }
 });
+
+// Observed with live DeepSeek: three different constraints reused item_key=constraint.
+test('summary rejects duplicate temporary item keys without dropping member facts', async () => {
+  const x = pair('interview-summary-v2');
+  const raw = { status: 'ok', data: structuredClone(x.response.data), warnings: [] };
+  const first = raw.data.profile_draft.items[0];
+  raw.data.profile_draft.items.push({ ...structuredClone(first), text: 'A second distinct member constraint.' });
+  const result = await runInterview({ request: x.request, runtime: createOfflineRuntime(() => raw) });
+  assert.equal(result.error?.code, 'INVALID_OUTPUT');
+  assert.deepEqual(result.data, {});
+});
+
+test('summary rejects structured unknowns that do not match the string-array contract', async () => {
+  const x = pair('interview-summary-v2');
+  const raw = { status: 'ok', data: structuredClone(x.response.data), warnings: [] };
+  raw.data.profile_draft.unknowns = [{ text: 'Which feature is essential?', related_item_keys: ['item-1'] }];
+  const result = await runInterview({ request: x.request, runtime: createOfflineRuntime(() => raw) });
+  assert.equal(result.error?.code, 'INVALID_OUTPUT');
+});
+
+test('nested transport warnings move to the envelope without changing validated summary facts', async () => {
+  const x = pair('interview-summary-v2');
+  const original = structuredClone(x.response.data);
+  const raw = { status: 'ok', data: { ...structuredClone(original), warnings: ['Synthetic caveat'] }, warnings: ['Envelope caveat'] };
+  const result = await runInterview({ request: x.request, runtime: createOfflineRuntime(() => raw) });
+  assert.equal(result.status, 'ok');
+  assert.deepEqual(result.data, original);
+  assert.ok(result.warnings.includes('Synthetic caveat'));
+  assert.ok(result.warnings.includes('Envelope caveat'));
+  assert.deepEqual(raw.data.warnings, ['Synthetic caveat']);
+  raw.data.warnings = [{ approved: true }];
+  const rejected = await runInterview({ request: x.request, runtime: createOfflineRuntime(() => raw) });
+  assert.equal(rejected.error?.code, 'INVALID_OUTPUT');
+});

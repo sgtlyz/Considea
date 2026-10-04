@@ -78,20 +78,23 @@ function validSharedContext(payload) {
   return true;
 }
 
+function memberInputSourceIds(payload) {
+  const profileIds = new Set(payload.shared_context.profiles.flatMap(profile =>
+    profile.items.filter(item => item.basis === 'member_statement').map(item => item.source_id)));
+  return new Set(payload.shared_context.sources.filter(source => source.member_id !== null &&
+    (source.kind === 'difference_answer' || (source.kind === 'profile_item' && profileIds.has(source.source_id))))
+    .map(source => source.source_id));
+}
+
 function validDraftReferences(draft, payload) {
   const sources = catalog(payload);
   if (!unique(draft.critical_dependencies.map(dependency => dependency.key))) return false;
   if (!draft.discussion_source_ids.every(id => sources.has(id))) return false;
-  const memberStatementProfileIds = new Set(payload.shared_context.profiles.flatMap(profile =>
-    profile.items.filter(item => item.basis === 'member_statement').map(item => item.source_id)));
+  const memberSources = memberInputSourceIds(payload);
   for (const contribution of draft.contributions) {
     if (!contribution.source_ids.every(id => sources.has(id))) return false;
     if (contribution.origin === 'member_input' && (contribution.source_ids.length === 0 ||
-        !contribution.source_ids.every(id => {
-          const source = sources.get(id);
-          return source.member_id !== null && (source.kind === 'difference_answer' ||
-            (source.kind === 'profile_item' && memberStatementProfileIds.has(id)));
-        }))) return false;
+        !contribution.source_ids.every(id => memberSources.has(id)))) return false;
   }
   if (payload.contract_version === '2.1' && !unique(draft.inspiration_refs.map(ref => ref.evidence_key))) return false;
   // Inspiration keys can come from tools run after input validation. The service
@@ -216,6 +219,82 @@ Return status ok for a completed Idea operation, with warnings for uncertainty. 
 
 const draftInstructions = `Every draft has exactly these required fields: title:string, target_users:nonempty string[], problem:string, solution:string, core_flow:nonempty string[], mvp_scope:nonempty string[], out_of_scope:string[], critical_dependencies:[{key:string,description:string,must_have:boolean}], contributions:nonempty [{description:string,origin:"member_input"|"agent_synthesis",source_ids:string[]}], discussion_source_ids:nonempty string[], tradeoffs:string[], unknowns:string[], change_summary:string. No empty required strings. Dependency keys and references are unique. For contract_version "2.1", every draft also requires inspiration_refs:[{evidence_key:string,borrowed_mechanism:string,adaptation:string,known_difference:string}], which may be empty. For "2.0" inspiration_refs is forbidden. Arrays are required even when empty. Do not add evidence/search_log/research or authority fields to data or draft.`;
 
+function normalizeTransport(raw, p) {
+  if (p.contract_version !== '2.0' || !raw || typeof raw !== 'object' || !raw.data ||
+      typeof raw.data !== 'object' || !Object.hasOwn(raw.data, 'warnings')) return raw;
+  const result = structuredClone(raw);
+  const warnings = result.warnings ?? [], nested = result.data.warnings;
+  if (!Array.isArray(warnings) || !Array.isArray(nested) || [...warnings, ...nested].some(w => typeof w !== 'string')) return raw;
+  result.warnings = [...warnings, ...nested, 'MODEL_FORMAT_NORMALIZED: advisory warnings moved to envelope'];
+  delete result.data.warnings;
+  return result;
+}
+
+export function ideaOutputSchema(operation, p) {
+  const defs = schemaFor(p.contract_version).$defs;
+  const resolve = value => {
+    if (Array.isArray(value)) return value.map(resolve);
+    if (!value || typeof value !== 'object') return value;
+    if (value.$ref) return resolve(defs[value.$ref.split('/').at(-1)]);
+    return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, resolve(v)]));
+  };
+  const generate = operation === 'idea.generate';
+  const data = resolve(defs[generate ? 'IdeaGenerateData' : 'IdeaReviseData']);
+  let draft;
+  if (generate) {
+    data.properties.candidates.minItems = p.candidate_slots.length;
+    data.properties.candidates.maxItems = p.candidate_slots.length;
+    data.properties.candidates.items.properties.slot_id = { enum: p.candidate_slots };
+    draft = data.properties.candidates.items.properties.draft;
+  } else {
+    data.properties.base_candidate_ref = { const: p.candidate.candidate_ref };
+    draft = data.properties.draft;
+  }
+  const ids = [...catalog(p).keys()];
+  const memberIds = [...memberInputSourceIds(p)];
+  draft.properties.discussion_source_ids.items = { $ref: '#/$defs/SharedSourceId' };
+  const contribution = draft.properties.contributions.items;
+  contribution.properties.source_ids.items = { $ref: '#/$defs/SharedSourceId' };
+  contribution.allOf = [...(contribution.allOf ?? []), {
+    if: { properties: { origin: { const: 'member_input' } } },
+    then: { properties: { source_ids: { minItems: 1, items: { $ref: '#/$defs/MemberInputSourceId' } } } },
+  }];
+  return { type: 'object', additionalProperties: false, required: ['status', 'data', 'warnings'],
+    $defs: { SharedSourceId: ids.length ? { enum: ids } : false, MemberInputSourceId: memberIds.length ? { enum: memberIds } : false },
+    properties: { status: { const: 'ok' }, data, warnings: { type: 'array', items: { type: 'string' } } } };
+}
+
+export function ideaOutputIssues(raw, operation, p) {
+  raw = normalizeTransport(raw, p);
+  if (!raw || typeof raw !== 'object' || Object.keys(raw).some(k => !['status', 'data', 'warnings'].includes(k))) return [{ code: 'UNSUPPORTED_ENVELOPE_FIELD', path: '/' }];
+  const generate = operation === 'idea.generate';
+  const check = validators.get(p.contract_version)[generate ? 'IdeaGenerateData' : 'IdeaReviseData'];
+  if (!check(raw?.data)) return check.errors.slice(0, 8).map(e => ({ code: 'SCHEMA_' + e.keyword.toUpperCase(), path: e.instancePath || '/' }));
+  if (generate) {
+    const slots = raw.data.candidates.map(c => c.slot_id);
+    if (slots.length !== p.candidate_slots.length || !unique(slots) || slots.some(s => !p.candidate_slots.includes(s))) {
+      return [{ code: 'EXACT_CANDIDATE_SLOTS_REQUIRED', path: '/candidates' }];
+    }
+  } else if (!equalRef(raw.data.base_candidate_ref, p.candidate.candidate_ref)) {
+    return [{ code: 'BASE_CANDIDATE_REF_MISMATCH', path: '/base_candidate_ref' }];
+  }
+  const sources = catalog(p), memberSources = memberInputSourceIds(p);
+  const drafts = generate ? raw.data.candidates.map(c => c.draft) : [raw.data.draft];
+  const issues = [];
+  for (const draft of drafts) {
+    if (!unique(draft.critical_dependencies.map(d => d.key))) issues.push({ code: 'DUPLICATE_DEPENDENCY_KEY', path: '/draft/critical_dependencies' });
+    if (draft.discussion_source_ids.some(id => !sources.has(id))) issues.push({ code: 'UNKNOWN_DISCUSSION_SOURCE', path: '/draft/discussion_source_ids' });
+    for (const [index, contribution] of draft.contributions.entries()) {
+      if (contribution.source_ids.some(id => !sources.has(id))) issues.push({ code: 'UNKNOWN_CONTRIBUTION_SOURCE', path: `/draft/contributions/${index}/source_ids` });
+      if (contribution.origin === 'member_input' && (!contribution.source_ids.length || contribution.source_ids.some(id => !memberSources.has(id)))) {
+        issues.push({ code: 'MEMBER_INPUT_REQUIRES_CURRENT_MEMBER_STATEMENT_OR_ANSWER', path: `/draft/contributions/${index}/source_ids` });
+      }
+    }
+    if (!generate && !nonblank(draft.change_summary)) issues.push({ code: 'REVISION_REQUIRES_CHANGE_SUMMARY', path: '/draft/change_summary' });
+  }
+  return issues.length ? issues : [{ code: 'OUTPUT_WRAPPER_OR_STATUS', path: '/' }];
+}
+
 export function createIdeaDefinition({ createTools } = {}) {
   return {
     name: 'idea', systemPrompt,
@@ -223,11 +302,17 @@ export function createIdeaDefinition({ createTools } = {}) {
       'idea.generate': {
         validateInput: validateGenerateInput,
         validateOutput: validateGenerateData,
+        normalizeOutput: normalizeTransport,
+        outputSchema: p => ideaOutputSchema('idea.generate', p),
+        outputIssues: (raw, p) => ideaOutputIssues(raw, 'idea.generate', p),
         outputInstructions: `data = {contract_version: same as payload, candidates:[{slot_id: supplied slot string, draft: CandidateDraft}]}. Exact input slots, once each, with no other keys. ${draftInstructions}`,
       },
       'idea.revise': {
         validateInput: validateReviseInput,
         validateOutput: validateReviseData,
+        normalizeOutput: normalizeTransport,
+        outputSchema: p => ideaOutputSchema('idea.revise', p),
+        outputIssues: (raw, p) => ideaOutputIssues(raw, 'idea.revise', p),
         outputInstructions: `data = {contract_version: same as payload, base_candidate_ref:{id: exact input candidate id,version: exact input candidate version}, draft:CandidateDraft}. No other keys. change_summary must explain the changes and cannot be blank. ${draftInstructions}`,
       },
     },

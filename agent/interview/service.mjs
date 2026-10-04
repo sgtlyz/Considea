@@ -45,7 +45,7 @@ export async function runLegacyInterview({ request, runtime, onProgress }) {
 }
 
 /** v2 role entry point. Human event authenticity/completeness remain Workflow responsibilities. */
-export async function runInterview({ request, runtime, onProgress }) {
+export async function runInterview({ request, runtime, onProgress, onDiagnostic }) {
   const spec = definition.operations[request?.operation];
   if (!request || request.schema_version !== '1.0' ||
       Object.keys(request).some(k => ![...envelopeKeys, 'payload'].includes(k)) ||
@@ -53,13 +53,15 @@ export async function runInterview({ request, runtime, onProgress }) {
       !Number.isSafeInteger(request.input_revision) || request.input_revision < 0 || !spec || !spec.validateInput(request.payload)) {
     return errorResponse(request, 'INVALID_INPUT', 'Invalid v2 Interview context. Use 2.1 for human_diverge or reopened; provide matching human decisions, candidate and evaluation.');
   }
+  request = structuredClone(request);
   const p = request.payload;
   if (request.operation === 'interview.turn' && p.limits.remaining_question_batches === 0) {
     return { ...headers(request), status: 'ok', data: { contract_version: p.contract_version, member_id: p.member_id,
       questions: [], ready_to_summarize: true, stop_reason: 'question_budget' }, warnings: [], error: null };
   }
   if (!runtime?.model || typeof runtime.streamFn !== 'function') return errorResponse(request, 'CONFIG_ERROR', 'Configure an offline or DeepSeek runtime');
-  const response = await runAgent({ request, definition, ...runtime, timeoutMs: 60_000, maxTurns: 1, maxToolCalls: 1, onProgress });
+  const response = await runAgent({ request, definition, model: runtime.model, streamFn: runtime.streamFn,
+    timeoutMs: 60_000, maxTurns: 2, maxToolCalls: 1, maxOutputRepairs: 1, onProgress, onDiagnostic });
   if (response.status === 'error') return response;
   const expected = request.operation === 'interview.turn' && !response.data.ready_to_summarize ? 'needs_input' : 'ok';
   if (response.status !== expected) return errorResponse(request, 'INVALID_OUTPUT', 'Interview status does not match its result');
