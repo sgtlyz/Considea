@@ -1032,10 +1032,27 @@
     );
     if (v.difference) {
       const d = v.difference,
-        c = d.content;
-      el("h2", c.question, out);
-      el("p", c.why_it_matters, out, "candidate-lead");
-      for (const [id, a] of Object.entries(v.answers)) {
+        c = d.content,
+        personal = d.visibility === "private" ||
+          (c.kind === "clarification" && c.affected_member_ids.length === 1),
+        ownConfirmation = personal && c.affected_member_ids.includes(v.actor.member_id),
+        hiddenConfirmation = personal && !ownConfirmation;
+      el("h2", hiddenConfirmation
+        ? (v.phase === "awaiting_difference_answers"
+          ? tr("A member is confirming their statements", "一位成员正在确认自己的陈述")
+          : tr("A member's private clarification", "成员的私人澄清"))
+        : c.question, out);
+      el("p", hiddenConfirmation
+        ? (v.phase === "awaiting_difference_answers"
+          ? tr("One member needs to confirm their own statements before the team can continue.",
+            "需要由该成员本人确认陈述，团队才能继续。")
+          : tr("The member has answered privately. Their clarification is not a team split.",
+            "该成员已私下回答。这项个人澄清不属于团队分歧。"))
+        : c.why_it_matters, out, "candidate-lead");
+      if (ownConfirmation)
+        note(tr("Your clarification and answer stay private. Only the profile you approve is shared with the team.",
+          "澄清内容和回答仅你可见。只有你批准的访谈总结才会共享给团队。"), out);
+      for (const [id, a] of Object.entries(hiddenConfirmation ? {} : v.answers)) {
         const p = el("p", undefined, out);
         el("strong", id + " · ", p);
         const option = c.options.find((o) => o.key === a.selected_option_key);
@@ -1068,10 +1085,9 @@
         }
         const text = field(
           "textarea",
-          tr(
-            "Your answer or context (shared with the team)",
-            "回答或补充说明（共享给团队）",
-          ),
+          ownConfirmation
+            ? tr("Your answer or context (private)", "回答或补充说明（仅自己可见）")
+            : tr("Your answer or context (shared with the team)", "回答或补充说明（共享给团队）"),
           out,
           prefix + "|text",
         );
@@ -1082,13 +1098,14 @@
         reject.checked = !!draft[reject.dataset.field];
         el(
           "span",
-          tr(
-            "This question does not describe the difference accurately.",
-            "这个问题没有准确表达分歧。",
-          ),
+          ownConfirmation
+            ? tr("This question does not describe my statements accurately.", "这个问题没有准确表达我的陈述。")
+            : tr("This question does not describe the difference accurately.", "这个问题没有准确表达分歧。"),
           wrap,
         );
-        action(tr("Submit difference answer", "提交分歧回答"), out, () =>
+        action(ownConfirmation
+          ? tr("Confirm my statements", "确认我的陈述")
+          : tr("Submit difference answer", "提交分歧回答"), out, () =>
           event(
             "difference.answer",
             {
@@ -1104,10 +1121,10 @@
       } else if (v.phase === "awaiting_difference_answers")
         el(
           "p",
-          tr(
-            "Waiting for every affected member to answer.",
-            "等待所有相关成员回答分歧。",
-          ),
+          hiddenConfirmation
+            ? tr("Waiting for that member's private confirmation. No action is needed from you yet.",
+              "正在等待该成员私下确认，你暂时无需操作。")
+            : tr("Waiting for every affected member to answer.", "等待所有相关成员回答分歧。"),
           out,
           "muted",
         );

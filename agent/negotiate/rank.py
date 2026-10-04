@@ -269,10 +269,10 @@ def single_member_clarifications(view):
         shown = "；".join(f"「{clip(text, 40)}」" for text in texts[:3]) if lang == "zh" else "; ".join(f"\"{clip(text, 40)}\"" for text in texts[:3])
         if lang == "zh":
             question = f"你的两条陈述指向不同方向：{shown}。哪一条才算数？"
-            why = "同一个人的陈述互相冲突时，先由本人确认，不能把它当成团队分歧。"
+            why = "这些相互冲突的陈述需要你先确认，才能判断是否构成团队分歧。"
         else:
             question = f"Your statements point different ways: {shown}. Which one counts?"
-            why = "One member's conflicting statements need that member's confirmation before they become a team split."
+            why = "These conflicting statements need your confirmation before they become a team split."
         topics.append((clarification(category, question, "open", [], people, why, source_ids, view), 0))
     return topics
 

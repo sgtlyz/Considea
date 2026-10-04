@@ -31,6 +31,11 @@ Every generated candidate is evaluated before review. All members must choose th
 
 Away members remain required. No admin impersonation, majority fallback or automatic approval is implemented.
 
+A `clarification` with one `affected_member_ids` entry is private to that member. They see the question and answer form; other members and the administrator receive a generic waiting card, without the question, cited profile items or answer. The same filtering applies to source history and SpacetimeDB snapshots. `RoomView.difference.visibility` is `private`; its ref and round remain available for the later team vote. Team differences and multi-member clarifications remain shared.
+
+Only the respondent's interview Agent receives the personal clarification and answer. Other interview Agents continue from their own messages/current profile and authorized shared context (`mode: initial`, no followup payload under contract 2.1). This does not reset the discussion round or bypass any human gate. New summaries are shared only after approval; historical personal clarification sources stay private. Generation and evaluation receive public sources only. Stored state remains intact; read projections and pending task dispatch enforce the policy for existing rooms too. This cannot revoke information already seen before the policy was applied.
+
+
 ## Creation options
 
 | Field | Engine default | Accepted values |

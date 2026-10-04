@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 from uuid import uuid4
 
 from . import protocol
-from . import evaluation
+from . import evaluation, privacy
 from .store import Store, digest, encode, token_hash
 
 
@@ -165,8 +165,7 @@ class Workflow:
             return {"available": available}
 
     def _shared(self, s):
-        return {"profiles": [m["profile"] for m in s["members"].values() if m["profile"] is not None],
-                "discussion_history": s["discussion_history"], "sources": s["sources"]}
+        return privacy.shared_context(s)
 
     def _source(self, s, kind, object_ref, text, member=None):
         source_id = uid("source")
@@ -214,7 +213,9 @@ class Workflow:
             "discussion_round": s["discussion_round"], "profile_source_ids": [], "difference_source_ids": [],
             "answer_source_ids": [], "convergence_source_ids": [], "review_source_ids": [],
         })
-        shared = copy.deepcopy(self._shared(s))
+        # Private server snapshot; each recipient gets a separately filtered projection.
+        shared = {"profiles": [copy.deepcopy(m["profile"]) for m in s["members"].values() if m["profile"]],
+                  "discussion_history": copy.deepcopy(s["discussion_history"]), "sources": copy.deepcopy(s["sources"])}
         s["round_shared_context"] = shared
         for member_id, member in s["members"].items():
             member.update(revision=member["revision"] + 1, mode=mode, stage="queued_turn",
@@ -232,7 +233,9 @@ class Workflow:
         m = s["members"][member_id]
         payload = {**self._base_payload(s), "contract_version": "2.1", "member_id": member_id, "mode": m["mode"],
                    "messages": m["messages"], "current_profile": m["profile"],
-                   "shared_context": s["round_shared_context"], "followup_context": m["followup_context"]}
+                   "shared_context": s["round_shared_context"], "followup_context": copy.deepcopy(m["followup_context"])}
+        privacy.scope_interview(s, payload)
+        m["mode"], m["followup_context"] = payload["mode"], copy.deepcopy(payload["followup_context"])
         if summarize:
             m["stage"] = "queued_summary"
             payload["stop_reason"] = stop_reason
@@ -527,6 +530,21 @@ class Workflow:
                         self._fail_task(db, s, row, "LEASE_EXPIRED")
                         continue
                     self._attempt_end(db, row, "expired", {"code": "LEASE_EXPIRED"})
+                request = json.loads(row["request"])
+                payload = request["payload"]
+                context = json.loads(row["context"]) if row["context"] else None
+                if row["operation"].startswith("interview."):
+                    privacy.scope_interview(s, payload)
+                elif "shared_context" in payload:
+                    payload["shared_context"] = privacy.shared_context(s, context=payload["shared_context"])
+                elif "shared_sources" in payload:
+                    hidden = privacy.private_sources(s)
+                    payload["shared_sources"] = [x for x in payload["shared_sources"] if x["source_id"] not in hidden]
+                    if context and "resources" in context:
+                        context["resources"] = [x for x in context["resources"] if x["source_id"] not in hidden]
+                protocol.REQUEST.validate(request)
+                db.execute("UPDATE tasks SET request=?,context=? WHERE id=?",
+                           (encode(request), encode(context) if context else None, row["id"]))
                 lease = uid("lease")
                 db.execute("""UPDATE tasks SET status='running', attempts=attempts+1,
                     lease_token=?,lease_until=?,next_attempt_at=0,auto_retries=auto_retries+? WHERE id=?""",
@@ -536,8 +554,8 @@ class Workflow:
                            (row["id"], attempt, now()))
                 s["calls_started"] += 1
                 Store.save(db, s)
-                return {"task_id": row["id"], "lease_token": lease, "request": json.loads(row["request"]), "attempt": attempt,
-                        "context": json.loads(row["context"]) if row["context"] else None}
+                return {"task_id": row["id"], "lease_token": lease, "request": request, "attempt": attempt,
+                        "context": context}
         return None
 
     def renew(self, task_id, lease_token):
@@ -701,14 +719,15 @@ class Workflow:
         native = getattr(self.runner, "evaluator", None) == "agent"
         if native and evaluation.time_limit(s) is None:
             return  # Keep evaluating; the owner must explicitly supply a project time limit.
-        shared_resources = evaluation.resources(s) if native else []
+        shared = self._shared(s)
+        shared_resources = evaluation.resources(s, profiles=shared["profiles"]) if native else []
         # Candidate evidence references are the minimal context required by this call.
         needed = set(candidate["content"]["discussion_source_ids"])
         for contribution in candidate["content"]["contributions"]:
             needed.update(contribution["source_ids"])
         needed.update(item["source_id"] for item in shared_resources)
         self._enqueue(db, s, "evaluator.evaluate", {**self._base_payload(s), "candidate": candidate,
-            "shared_sources": [x for x in s["sources"] if x["source_id"] in needed],
+            "shared_sources": [x for x in shared["sources"] if x["source_id"] in needed],
             "search_policy": {"enabled": s["config"]["search_enabled"],
                               "max_queries": s["config"]["max_search_queries"]},
             "provided_evidence": []}, candidate_id=candidate_id,
@@ -782,11 +801,12 @@ class Workflow:
                 "paused_reason", "calls_started", "difference", "answers", "votes", "convergence_decision",
                 "candidates", "evaluations", "reviews", "candidate_history", "selected_candidate_ref",
             )}
+            public.update(privacy.discussion_view(s, member_id))
             public["agent_runtime"] = s.get("agent_runtime", {})
             public["evaluation_details"] = copy.deepcopy(s.get("evaluation_details", {}))
             public["evaluation_input_required"] = (getattr(self.runner, "evaluator", None) == "agent" and
                 s["phase"] == "evaluating" and evaluation.time_limit(s) is None)
-            public["shared_context"] = copy.deepcopy(self._shared(s))
+            public["shared_context"] = privacy.shared_context(s, member_id)
             joined_ids = {r["member_id"] for r in db.execute("SELECT member_id FROM credentials WHERE room_id=? AND role='member'", (room_id,))}
             public["members"] = {mid: {"stage": m["stage"], "approved_round": m["approved_round"],
                                      "joined": mid in joined_ids, "available": m.get("available", True)}
