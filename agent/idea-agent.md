@@ -1,5 +1,7 @@
 # Idea Generator：并行开发交付说明
 
+可运行实现位于 [agent/idea](idea/README.md)，包含生成/修订、受限网页检索、mem0 记忆与 SpacetimeDB 持久化接线。保留以下 v2.0 接口；新增研究能力显式使用 [Idea 2.1 扩展](idea/contracts/README.md)。离线演示不是实际模型效果或线上服务验证。
+
 负责人实现 `idea.generate`、`idea.revise`。模块约定为 `agent/idea/definition.mjs`，name 为 `idea`。当前 roles.mjs 不含该角色，直接 default-export definition，参考 [契约](contracts.md) 第 10 节。
 
 ## 生成
