@@ -1,6 +1,6 @@
 # Negotiator
 
-The integrated live workflow calls `service.mjs` through the existing Node/Pi bridge and DeepSeek runtime. Each operation gets an isolated model instance and only authorized shared profiles, history and sources. The Negotiator selects one consequential semantic difference or clarification; it cannot generate candidates, answer for members or decide convergence.
+The integrated live workflow calls `service.mjs` through the existing Node/Pi bridge and the room-selected DeepSeek or OpenAI runtime. Each operation gets an isolated model instance and only authorized shared profiles, history and sources. The Negotiator selects one consequential semantic difference or clarification; it cannot generate candidates, answer for members or decide convergence.
 
 The prompt distinguishes compatible preferences, genuine team differences, missing information and a single member's contradictory statements. A personal clarification targets only its respondent and the workflow enforces its privacy. The model uses the shared discussion's language and must respect earlier human answers and framing corrections.
 
@@ -14,7 +14,7 @@ The existing Python `handle_request` / `python -m agent.negotiate` entry point i
 
 ## Run and verify
 
-Install `agent/negotiate` and the other packages in [the integration guide](../../workflow/INTEGRATION.md). Existing `PI_PROVIDER`, `PI_MODEL`, `DEEPSEEK_API_KEY` and `DEEPSEEK_MODEL` configuration is reused; no separate Negotiator key is needed. Room-supplied DeepSeek keys remain isolated per call.
+Install `agent/negotiate` and the other packages in [the integration guide](../../workflow/INTEGRATION.md). Existing provider configuration is reused; no separate Negotiator key is needed. DeepSeek uses `DEEPSEEK_API_KEY` / `DEEPSEEK_MODEL`; OpenAI uses `OPENAI_API_KEY` / `OPENAI_MODEL` (or `PI_MODEL`) with `PI_PROVIDER=openai`. Room-supplied keys remain isolated per call.
 
 ```sh
 pnpm --dir agent/negotiate install --frozen-lockfile
@@ -22,7 +22,7 @@ pnpm --dir agent/negotiate test
 python -m unittest agent.negotiate.test_negotiator workflow.tests.test_negotiator_integration -v
 ```
 
-The opt-in live smoke test uses three synthetic cases: incompatible target users, compatible conditional preferences and one person's contradictory participation conditions. With DeepSeek credentials already in the process environment, run:
+The opt-in live smoke test uses three synthetic cases: incompatible target users, compatible conditional preferences and one person's contradictory participation conditions. With the selected provider and its credentials already in the process environment, run:
 
 ```sh
 CONCLAVE_RUN_LIVE=1 node agent/negotiate/live-smoke.mjs --live

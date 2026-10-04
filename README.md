@@ -16,7 +16,7 @@ The free live server can take a moment to wake up. The database is a 30-day Rend
 
 ![Considea architecture: private interviews, LLM-based deliberation, evidence-grounded proposals and workflow execution](docs/assets/considea-architecture.svg)
 
-All four roles use LLMs in integrated live mode. The Negotiator interprets approved shared evidence to identify a consequential difference or clarification; code validates its output, member identities and citations. Human gates control disclosure, generation and acceptance. The workflow orchestrator mediates every transition, keeps personal clarifications private and persists state in PostgreSQL. The diagram shows the deployed stack with the LLM Negotiator introduced on this branch; it excludes inactive optional integrations.
+All four roles use LLMs in integrated live mode, with DeepSeek or OpenAI selected per room. The Negotiator interprets approved shared evidence to identify a consequential difference or clarification; code validates its output, member identities and citations. Human gates control disclosure, generation and acceptance. The workflow orchestrator mediates every transition, keeps personal clarifications private and persists state in PostgreSQL. The diagram shows the production architecture and excludes inactive optional integrations.
 
 ## The conversation
 

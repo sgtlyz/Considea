@@ -4,12 +4,40 @@ import { readFileSync } from 'node:fs';
 import { runNegotiator, outputIssues } from './service.mjs';
 import { createOfflineRuntime } from '../pi-base/offline.mjs';
 import { createDeepSeekRuntime } from '../idea/runtime.mjs';
+import { liveRuntime } from '../pi-base/integration-runtime.mjs';
+import { openaiResponse } from '../pi-base/test-fixtures/openai.mjs';
 
 const fixture = name => JSON.parse(readFileSync(new URL(`../interfaces/fixtures/negotiate-${name}.json`, import.meta.url), 'utf8'));
 const pair = fixture('difference'), clarification = fixture('clarification');
 const result = (data = pair.response.data) => ({ status: 'ok', data: structuredClone(data), warnings: [] });
 const request = () => structuredClone(pair.request);
 const run = (responder, options = {}) => runNegotiator({ request: request(), runtime: createOfflineRuntime(responder), ...options });
+
+test('OpenAI Negotiator uses the room model and key, and repairs unsupported citations', async () => {
+  const observed = [];
+  const runtime = liveRuntime({ env: { PI_PROVIDER: 'openai', OPENAI_MODEL: 'gpt-4.1-mini',
+    OPENAI_API_KEY: 'sk-room-negotiator-test', DEEPSEEK_API_KEY: 'unused-shared-key' }, maxModelRequests: 2,
+    fetch: async (url, init) => {
+      observed.push({ url: String(url), key: new Headers(init.headers).get('authorization'), body: JSON.parse(init.body) });
+      const output = result();
+      if (observed.length === 1) output.data.difference.source_ids = ['invented-source'];
+      return openaiResponse(JSON.stringify(output));
+    } });
+  const response = await runNegotiator({ request: request(), runtime });
+  assert.equal(response.status, 'ok');
+  assert.deepEqual(response.data, pair.response.data);
+  assert.equal(runtime.requestCount, 2);
+  for (const call of observed) {
+    assert.equal(call.url, 'https://api.openai.com/v1/responses');
+    assert.equal(call.key, 'Bearer sk-room-negotiator-test');
+    assert.equal(call.body.model, 'gpt-4.1-mini');
+    assert.equal(call.body.store, false);
+    assert.deepEqual(call.body.text.format, { type: 'json_object' });
+    assert.doesNotMatch(JSON.stringify(call.body), /sk-room-negotiator-test|unused-shared-key/);
+  }
+  assert.match(JSON.stringify(observed[1].body), /UNKNOWN_SOURCE/);
+  assert.ok(response.warnings.some(w => w.startsWith('MODEL_OUTPUT_REPAIRED')));
+});
 
 test('the Pi loop returns the model topic, preserving the workflow envelope and authorized inputs', async () => {
   const model = result(); model.data.difference.question = 'Which execution boundary should we adopt?';

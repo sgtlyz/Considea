@@ -184,6 +184,13 @@ try {
   await admin.locator("#room-model").fill("gpt-4.1-mini");
   await admin.locator("#room-tavily").fill("test-browser-private-tavily");
   const openaiSaved = admin.waitForResponse(r => r.url().endsWith("/keys") && r.request().method() === "POST");
+  for (const language of ['zh', 'en']) {
+    await admin.locator(`#workspace [data-language="${language}"]`).click();
+    assert.equal(await admin.locator('#room-provider').inputValue(), 'openai');
+    assert.equal(await admin.locator('#room-model').inputValue(), 'gpt-4.1-mini');
+    assert.equal(await admin.locator('#room-openai').inputValue(), 'sk-test-browser-private-openai');
+    assert.equal(await admin.locator('#room-deepseek').isVisible(), false);
+  }
   await admin.getByRole("button", {name:"Save room keys",exact:true}).click();
   assert.equal((await openaiSaved).status(), 200);
   assert.equal(await admin.locator("#room-openai").inputValue(), "");
@@ -463,6 +470,13 @@ try {
   await creator.locator("#context").fill("Synthetic OpenAI room creation");
   await creator.locator("#create-openai").fill("sk-test-create-private-openai");
   await creator.locator("#create-tavily").fill("test-create-private-tavily");
+  for (const language of ['zh', 'en']) {
+    await creator.locator(`#workspace [data-language="${language}"]`).click();
+    assert.equal(await creator.locator('#create-provider').inputValue(), 'openai');
+    assert.equal(await creator.locator('#create-model').inputValue(), 'gpt-4.1-mini');
+    assert.equal(await creator.locator('#create-openai').inputValue(), 'sk-test-create-private-openai');
+    assert.equal(await creator.locator('#create-openai').isVisible(), true);
+  }
   const openaiCreated = creator.waitForResponse(r => r.url().endsWith("/api/rooms") && r.request().method() === "POST");
   await creator.locator("#create").click();
   const creation = await openaiCreated;

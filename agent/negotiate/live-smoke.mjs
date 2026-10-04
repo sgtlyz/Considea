@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import { runNegotiator } from './service.mjs';
-import { createDeepSeekRuntime } from '../idea/runtime.mjs';
+import { liveRuntime } from '../pi-base/integration-runtime.mjs';
 
 if (!process.argv.includes('--live') || process.env.CONCLAVE_RUN_LIVE !== '1') {
-  throw new Error('Opt in with --live and CONCLAVE_RUN_LIVE=1; this calls DeepSeek with synthetic inputs.');
+  throw new Error('Opt in with --live and CONCLAVE_RUN_LIVE=1; this calls the configured provider with synthetic inputs.');
 }
 
 function requestFor(name, entries) {
@@ -42,7 +42,7 @@ const cases = [
 
 let totalRequests = 0;
 for (const item of cases) {
-  const runtime = createDeepSeekRuntime({ maxModelRequests: 2, maxTokens: 2048, timeoutMs: 60_000 });
+  const runtime = liveRuntime({ maxModelRequests: 2, maxTokens: 2048, timeoutMs: 60_000 });
   const response = await runNegotiator({ request: requestFor(item.name, item.entries), runtime });
   totalRequests += runtime.requestCount;
   assert.equal(response.status, 'ok', `${item.name}: ${response.error?.code}`);
