@@ -1,8 +1,8 @@
 # Development release acceptance
 
-Verified on October 4, 2026. All work is integrated into `dev`; `master` remains at `4f1b067053d1202f265a4e5a5aa3bce813d960a4`.
+Verified on October 4, 2026 before promotion. At that checkpoint, all work was integrated into `dev` and `master` remained at `4f1b067053d1202f265a4e5a5aa3bce813d960a4`. The accepted release was subsequently merged into `master` as `f9c2750` and its existing live backend was promoted to serve the production website. See [current deployment](../DEPLOYMENT.md).
 
-- [Live development workspace](https://considea-dev-api.onrender.com)
+- [Direct live workspace](https://considea-dev-api.onrender.com)
 - [Public recorded walkthrough](https://considea-dev-api.onrender.com/demo.html)
 - [83-second video](../workflow/web/demo.mp4)
 
@@ -47,4 +47,4 @@ The free Render development server can sleep. Its free PostgreSQL instance expir
 
 SpacetimeDB cloud deployment is **not enabled** in this preview. PostgreSQL is the source of truth; the optional SpacetimeDB integration and its submission remain separate work. The room access system is not a complete account service. User-supplied model keys currently support DeepSeek, with Tavily for research.
 
-The Vercel `dev` preview uses the development backend but is protected by the project's existing Vercel login settings. Use the public Render URL for team or judge access. Production remains the existing labelled mock deployment on `master`.
+After promotion, the production website uses the existing live backend and database. Vercel development previews use the separate mock backend and remain protected by the project's Vercel login settings. Use the production URL for team or judge access. The evidence above records the original pre-promotion acceptance.

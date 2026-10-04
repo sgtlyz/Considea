@@ -4,12 +4,13 @@ Considea helps a small team choose a project together. Each person talks private
 
 ## Try it
 
-- [Development workspace](https://considea-dev-api.onrender.com): real model and web-research calls, separate from production. Use a team demo code or your own DeepSeek and Tavily keys.
-- [83-second walkthrough and saved results](https://considea-dev-api.onrender.com/demo.html): no account, keys or live calls required. [Download the video](workflow/web/demo.mp4).
-- [Production website](https://considea.vercel.app): the existing master deployment. Its backend is currently a labelled mock demo.
+- [Production website](https://considea.vercel.app): real DeepSeek and Tavily calls with PostgreSQL persistence. Use a team demo code or your own keys.
+- [Direct backend workspace](https://considea-dev-api.onrender.com): the same live service and saved rooms. The existing hostname is retained after promotion.
+- [83-second walkthrough and saved results](https://considea.vercel.app/demo.html): no account, keys or live calls required. [Download the video](workflow/web/demo.mp4).
+- Development previews use a separate labelled mock backend.
 - [Setup and deployment](DEPLOYMENT.md), [workflow and HTTP API](workflow/README.md), [agent integration](workflow/INTEGRATION.md).
 
-The free development server can take a moment to wake up. The development database is a 30-day Render PostgreSQL instance that expires on **November 3, 2026**. Export accepted briefs and migrate the database before expiry if you need to keep using it.
+The free live server can take a moment to wake up. The database is a 30-day Render PostgreSQL instance that expires on **November 3, 2026**. Export accepted briefs and migrate the database before expiry if you need to keep using it.
 
 ## The conversation
 
@@ -74,4 +75,4 @@ node --test deploy/tests/*.test.mjs
 
 CI checks the deployment image, all agent packages, PostgreSQL transactions and a complete browser flow with simulated responses. Real API acceptance is separate and uses synthetic participants. Passing a technical test does not prove interview quality or project novelty. Evidence for this development release is collected in [DEV-ACCEPTANCE.md](docs/DEV-ACCEPTANCE.md).
 
-New features are committed on feature branches and integrated into `dev`. `master` is left unchanged until the team accepts the development release.
+New features are committed on feature branches and integrated into `dev`. Accepted releases are merged into `master`. The live backend follows `master` and uses controlled manual deployments; see [DEPLOYMENT.md](DEPLOYMENT.md).
