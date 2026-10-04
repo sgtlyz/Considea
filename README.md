@@ -1,4 +1,4 @@
-# Conclave — AI 选题协调员
+# Considea - Reach consensus, create better ideas and move faster
 
 面向 Hackathon 团队：先分别理解成员，通过访谈、分歧识别和真实人工回答逐步澄清方向；由成员决定何时收敛，再生成候选、评估并审阅。
 
