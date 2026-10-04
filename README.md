@@ -15,6 +15,10 @@ python -m workflow
 
 打开 http://127.0.0.1:8765 ，创建房间、保存管理员令牌，将每个成员的邀请码分别交给本人。每个成员在独立浏览器标签页加入并完成私人访谈。启动参数、HTTP 输入输出、Agent 接入和恢复规则见 [Workflow 开发说明](workflow/README.md)。
 
+## 网页部署
+
+Vercel 前端 + Render 后端的部署配置、环境变量、免费实例的数据限制和验收步骤见 [部署说明](DEPLOYMENT.md)。部署默认保留明确标记的 mock 模式；真实 Agent 接入后再启用 pi 模式。
+
 ## 系统图
 
 ![Conclave 系统架构：访谈、人工回答分歧、人工决定收敛、生成与评估、人工审阅及两条回路](docs/assets/conclave-workflow.png)

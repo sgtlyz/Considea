@@ -1,0 +1,14 @@
+.git
+.vercel
+.venv
+**/node_modules
+**/__pycache__
+**/*.pyc
+**/.env
+**/.env.*
+**/*.sqlite3*
+**/*.db
+workflow/data
+dist
+work
+outputs

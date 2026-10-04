@@ -1,0 +1,39 @@
+name: Deployment checks
+
+on:
+  push:
+    branches: [deploy/vercel-render]
+  pull_request:
+    paths:
+      - '.github/workflows/deployment-checks.yml'
+      - 'Dockerfile'
+      - '.dockerignore'
+      - 'deploy/**'
+      - 'workflow/**'
+      - 'agent/**'
+      - 'vercel.ts'
+      - 'render.yaml'
+
+permissions:
+  contents: read
+
+jobs:
+  container:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the Render image
+        run: docker build -t considea-ci .
+      - name: Verify workflow inside the deployment image
+        run: docker run --rm considea-ci python -m unittest discover -s workflow/tests -v
+      - name: Verify cloud entry point and HTTP persistence
+        run: docker run --rm considea-ci python -m unittest discover -s deploy/tests -p 'test_*.py' -v
+      - name: Verify agent contracts
+        run: docker run --rm considea-ci python agent/interfaces/validate_contracts.py
+      - name: Verify Node agent runtime
+        run: docker run --rm --workdir /app/agent/pi-base considea-ci node --test
+      - name: Verify frontend routing and build
+        run: |
+          docker run --rm considea-ci node --test deploy/tests/vercel-config.test.mjs
+          docker run --rm considea-ci node deploy/build-frontend.mjs
