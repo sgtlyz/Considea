@@ -1,0 +1,48 @@
+name: Deployment checks
+
+on:
+  push:
+    branches: [master, feat/integration-spacetimedb, deploy/vercel-render]
+  pull_request:
+    paths:
+      - '.github/workflows/deployment-checks.yml'
+      - 'Dockerfile'
+      - '.dockerignore'
+      - 'deploy/**'
+      - 'workflow/**'
+      - 'agent/**'
+      - 'vercel.ts'
+      - 'render.yaml'
+      - 'package.json'
+
+permissions:
+  contents: read
+
+jobs:
+  container:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the Render image
+        run: docker build -t considea-ci .
+      - name: Verify workflow inside the deployment image
+        run: docker run --rm considea-ci python -m unittest discover -s workflow/tests -v
+      - name: Verify cloud entry point and HTTP persistence
+        run: docker run --rm considea-ci python -m unittest discover -s deploy/tests -p 'test_*.py' -v
+      - name: Verify agent contracts
+        run: docker run --rm considea-ci python agent/interfaces/validate_contracts.py
+      - name: Verify all teammate agents and SpacetimeDB reducers
+        run: |
+          docker run --rm considea-ci python -m unittest agent.negotiate.test_negotiator -v
+          docker run --rm considea-ci python -m unittest discover -s agent/evaluator/test -p '*_test.py' -v
+          docker run --rm --workdir /app/agent/interview considea-ci node --test '*.test.mjs' 'agentverse/*.test.mjs' '../pi-base/*.test.mjs'
+          docker run --rm --workdir /app/agent/idea considea-ci node --test '*.test.mjs'
+          docker run --rm --workdir /app/agent/evaluator considea-ci node --test 'test/*.test.mjs'
+          docker run --rm --workdir /app/agent/idea/spacetime considea-ci node node_modules/typescript/bin/tsc --noEmit
+          docker run --rm --workdir /app/agent/idea/spacetime considea-ci node --test module.test.mjs
+          docker run --rm --workdir /app/workflow/node considea-ci node --input-type=module -e "await import('./spacetime.mjs')"
+      - name: Verify frontend routing and build
+        run: |
+          docker run --rm considea-ci node --test deploy/tests/vercel-config.test.mjs
+          docker run --rm considea-ci node deploy/build-frontend.mjs

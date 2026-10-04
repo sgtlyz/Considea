@@ -1,6 +1,6 @@
-# 整合分支：运行、接口与验收
+# Agent 整合：运行、接口与验收
 
-分支：`feat/integration-spacetimedb`。四个角色均使用队友代码；Evaluator 已通过 `agent/evaluator/workflow.mjs` 接入当前工作流。Mem0 保留原实现，但没有启用，也不会上传任何记忆到 Mem0。
+当前主线：`master`（已整合 `feat/integration-spacetimedb` 与 `deploy/vercel-render`）；云端配置见 [部署说明](../DEPLOYMENT.md)。四个角色均使用队友代码；Evaluator 已通过 `agent/evaluator/workflow.mjs` 接入当前工作流。Mem0 保留原实现，但没有启用，也不会上传任何记忆到 Mem0。
 
 ## 安装与运行
 

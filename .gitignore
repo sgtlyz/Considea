@@ -1,5 +1,8 @@
 __pycache__/
 *.py[cod]
+.venv/
+.vercel/
+dist/
 node_modules/
 .env
 .env.*

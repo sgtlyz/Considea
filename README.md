@@ -2,7 +2,7 @@
 
 面向 Hackathon 团队：先分别理解成员，通过访谈、分歧识别和真实人工回答逐步澄清方向；由成员决定何时收敛，再生成候选、评估并审阅。
 
-> **当前状态：四个 Agent 已在 `feat/integration-spacetimedb` 完成本地接线。** Interview、Negotiator、Idea、Evaluator 使用队友实现；Mem0 暂不启用。Evaluator 通过兼容层接入，完整报告随流程持久化；已通过真实 DeepSeek / Tavily 与本地 SpacetimeDB 的四轮讨论、生成、评估、小改重评和模拟人审闭环；Idea 曾需一次手动重试恢复，模型格式仍有波动。评估可诚实返回证据不足，不代表方案已经验证可行。完整安装、运行和测试见 [整合说明](workflow/INTEGRATION.md)。
+> **当前状态：四个 Agent 与 Vercel / Render 部署配置已整合到 `master`。** Interview、Negotiator、Idea、Evaluator 使用队友实现；Mem0 暂不启用。Evaluator 通过兼容层接入，完整报告随流程持久化；已通过真实 DeepSeek / Tavily 与本地 SpacetimeDB 的四轮讨论、生成、评估、小改重评和模拟人审闭环；Idea 曾需一次手动重试恢复，模型格式仍有波动。评估可诚实返回证据不足，不代表方案已经验证可行。完整安装、运行和测试见 [整合说明](workflow/INTEGRATION.md)。
 
 ## 本地运行
 
@@ -16,6 +16,10 @@ python -m workflow --mode integrated --model offline --evaluator agent --db work
 打开 http://127.0.0.1:8765 ，创建房间、保存管理员令牌，将每个成员的邀请码分别交给本人。每个成员在独立浏览器标签页加入并完成私人访谈。启动参数、HTTP 输入输出、Agent 接入和恢复规则见 [Workflow 开发说明](workflow/README.md)。
 
 真实模型配置：编辑根目录 `.env`，填写 `DEEPSEEK_API_KEY` 和 `TAVILY_API_KEY`，再以 `--model live` 启动。创建房间时填写项目时限，并保留“允许评估时检索公开网页”选项；未填写时限会等待管理员补充。程序会自动读取该文件；模板见 [.env.example](.env.example)，已有终端环境变量优先。
+
+## 网页部署
+
+Vercel 前端 + Render 后端从 `master` 部署，配置与验收见 [部署说明](DEPLOYMENT.md)。默认保留标记清楚的 mock 模式；真实四 Agent 使用 `CONCLAVE_MODE=integrated`、`CONCLAVE_MODEL=live`、`CONCLAVE_EVALUATOR=agent`，密钥仅配置在 Render。SpacetimeDB 可选，SQLite 仍需单独持久化。
 
 ## 系统图
 
@@ -65,7 +69,7 @@ flowchart TD
 | Human | 回答 difference；从 `n ≥ 4` 起判断 diverge/converge；评估后决定接受、小改或加一轮 |
 | Workflow / 应用层 | 管理身份、权限、真实人工事件、任务、状态、轮数和版本 |
 
-这是四个业务 Agent 角色，加上普通应用代码实现的 Workflow。角色数量不等于开发者人数，新增 Idea Generator 的具体负责人尚待团队分配。
+这是四个业务 Agent 角色，加上普通应用代码实现的 Workflow。角色数量不等于开发者人数；四个角色的实现均已接入。
 
 ## 什么是 difference
 

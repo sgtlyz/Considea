@@ -1,0 +1,24 @@
+# Free, disposable demo. SQLite is lost on restart/redeploy/spin-down.
+# See DEPLOYMENT.md before using real team data or enabling integrated live mode.
+services:
+  - type: web
+    name: considea-api
+    branch: master
+    runtime: docker
+    plan: free
+    region: ohio
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/health
+    autoDeployTrigger: commit
+    envVars:
+      - key: CONCLAVE_MODE
+        value: mock
+      - key: CONCLAVE_MODEL
+        value: offline
+      - key: CONCLAVE_EVALUATOR
+        value: agent
+      - key: CONCLAVE_DB
+        value: /data/conclave.sqlite3
+      - key: CONCLAVE_WORKERS
+        value: "2"
