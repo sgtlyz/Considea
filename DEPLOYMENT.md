@@ -1,171 +1,70 @@
-# Deploy Considea: Vercel frontend + Render backend
+# Deploy Considea
 
-`master` contains the four integrated agents and the deployment configuration.
-The default deployment is explicitly labelled **mock**. Enable real model calls
-with the environment settings below after verifying the disposable demo.
+The release under review is on `dev`. New work is not merged into `master` or promoted to the production website automatically.
 
 ```text
-Browser -> Vercel static workbench
-              /api/* -> Render Python workflow + workers
-                          -> SQLite: private history and authoritative state
-                          -> Interview / Negotiator / Idea / Evaluator
-                          -> optional SpacetimeDB: shared board and Idea jobs
+Browser -> Vercel static workspace -> /api/* -> Render workflow + workers
+                                             -> PostgreSQL authoritative state
+                                             -> Interview / Negotiator / Idea / Evaluator
+                                             -> optional SpacetimeDB shared projection
 ```
 
-Vercel forwards same-origin `/api` requests to Render, retaining the prefix.
-Authenticated API responses are not cached. Only `workflow/web` is published as
-static content; API keys, private database files and agent source stay on the server.
+The Render service also serves the same workspace directly. This gives the dev release a public test URL even when Vercel preview protection requires a team login.
 
-## Production branch
+## Current environments
 
-Use `master` from https://github.com/sgtlyz/Considea (formerly MHacks) on both hosts.
-If an existing deployment still tracks `deploy/vercel-render`, change its branch
-in the Render and Vercel dashboards to `master`, then redeploy. A Git merge alone
-does not change an existing host's dashboard settings. This repository update
-does not create or verify a cloud deployment.
+| Environment | Frontend | Backend | Data / model mode |
+| --- | --- | --- | --- |
+| Existing production, master | https://considea.vercel.app | https://considea-api.onrender.com | Disposable SQLite, labelled mock |
+| Development, dev | https://considea-git-dev-yingzeng.vercel.app (Vercel login required) | https://considea-dev-api.onrender.com (public workspace) | PostgreSQL, live DeepSeek and Tavily |
 
-## Render backend
+The free development PostgreSQL instance expires **2026-11-03**. It is persistent across web-service restarts, but is a temporary database, not permanent hosting. Render's free tier does not include database backups. Keep accepted-brief exports and arrange a database migration or paid plan before expiry. See [Render free-service limits](https://render.com/docs/free).
 
-Create a Blueprint from `master` using root `render.yaml`, or update the existing
-service. The Blueprint retains one free Docker service:
+## Backend configuration
 
-| Setting | Value |
+Build the root `Dockerfile` with repository root as context. It runs Python 3.12 and Node 24, installs locked agent dependencies, and starts `python -m deploy.start` as an unprivileged user. Listen on `0.0.0.0:$PORT`; health check is `/api/health`.
+
+| Variable | Development value |
 | --- | --- |
-| Dockerfile / context | `./Dockerfile` / repository root |
-| Start | `python -m deploy.start` (Docker CMD) |
-| Listen address | `0.0.0.0:$PORT` |
-| Health check | `/api/health` |
-| `CONCLAVE_MODE` | `mock` (initial demo) |
-| `CONCLAVE_MODEL` | `offline` (when using integrated mode) |
-| `CONCLAVE_EVALUATOR` | `agent` |
-| `CONCLAVE_WORKERS` | `2` |
-| `CONCLAVE_DB` | `/data/conclave.sqlite3` |
+| CONCLAVE_MODE / CONCLAVE_MODEL / CONCLAVE_EVALUATOR | integrated / live / agent |
+| DATABASE_URL | Render PostgreSQL internal connection string |
+| CONCLAVE_WORKERS | 2 |
+| PI_PROVIDER / EVALUATOR_PROVIDER | deepseek / deepseek |
+| DEEPSEEK_MODEL | deepseek-flash |
+| DEEPSEEK_API_KEY / TAVILY_API_KEY | Existing private team keys |
+| EVALUATOR_RETRIEVAL | api |
+| CONCLAVE_SECRET_KEY | Persistent Fernet encryption key |
+| CONCLAVE_DEMO_ACCESS_CODE | Private team/judge demo access code |
+| CONCLAVE_SHARED_DAILY_CALLS | 120 |
+| CONCLAVE_ROOM_CALL_LIMIT | 80 |
+| CONCLAVE_TRUST_PROXY | 1 only behind the trusted deployment proxy |
 
-The Linux image includes Python 3.12, Node 24, locked dependencies for all four
-agents, and compiled SpacetimeDB client bindings. It runs as an unprivileged user.
-The Python Negotiator uses rules and does not call an LLM.
+Keep secrets in the hosting environment. `.env`, workflow data and private connection files are excluded from Git and Docker. Preserve the encryption key independently from database backups. Losing it means stored user keys must be entered again.
 
-**Free-tier SQLite is disposable:** restart, redeploy and spin-down lose local
-state. Wake the service and create a new demo room before inviting teammates.
-For durable rooms, choose a paid instance and persistent disk mounted at `/data`
-after agreeing the cost. Keep one service instance. SpacetimeDB does not replace
-SQLite's private interviews, credentials, event history or recovery records.
-This Blueprint neither purchases a disk nor adds a paid service.
+`DATABASE_URL` takes precedence over `CONCLAVE_DB`. Without it, SQLite is stored at the configured local path. SQLite on a free ephemeral web-service filesystem does not survive service replacement or spin-down. Optional SpacetimeDB does not replace the private workflow database.
 
-### Real agents
+The dev web service is free and has autodeploy disabled for controlled acceptance. Deploy it explicitly after merging a verified feature into `dev`. Production retains its own branch and autodeploy settings. Do not trigger a second manual deployment immediately after a push to an autodeploy-enabled service.
 
-Set these variables **on Render only**, then restart and create a fresh room:
+The root `render.yaml` remains the original mock production blueprint. Do not sync it over the live dev service. `render.dev.yaml` describes the separate dev setup; reusing an existing database avoids creating a duplicate instance.
 
-| Variable | Real model configuration |
-| --- | --- |
-| `CONCLAVE_MODE` | `integrated` |
-| `CONCLAVE_MODEL` | `live` |
-| `CONCLAVE_EVALUATOR` | `agent` |
-| `PI_PROVIDER` | `deepseek` |
-| `DEEPSEEK_MODEL` | `deepseek-flash` |
-| `DEEPSEEK_API_KEY` | Private provider key |
-| `EVALUATOR_PROVIDER` | `deepseek` |
-| `EVALUATOR_RETRIEVAL` | `api` |
-| `TAVILY_API_KEY` | Private search/read key |
+## Frontend configuration
 
-`EVALUATOR_MODEL` can override the model used for evaluation. Other providers
-use the configuration documented in [integration instructions](workflow/INTEGRATION.md).
-Do not put credentials in Vercel, source files or `render.yaml`. Existing process
-variables take precedence over a root `.env` during local development; `.env`
-and local databases are excluded from both Git and the Docker image.
+Vercel publishes only `workflow/web`, copied into `dist`. `BACKEND_URL` must be an HTTPS origin with no path, query or credentials. `vercel.ts` forwards `/api/:path*` to the backend while retaining `/api`, and disables authenticated response caching.
 
-For an offline smoke check, use `CONCLAVE_MODE=integrated` and
-`CONCLAVE_MODEL=offline`. The actual agent code runs with clearly marked model
-and retrieval fixtures. `/api/health` reports `integrated-offline`; live reports
-`integrated`. RoomView also reports `agent_runtime.model` as `fixture` or `live`.
-Providing an API key alone does not activate live calls. The legacy `pi` mode
-requires separate compatible role definitions; use `integrated` for this team.
+The preview variable scoped to branch `dev` points at the dev backend. The production variable still points at the production backend. Redeploy after changing this value because it is used at build time. Vercel preview protection may require login; the public Render dev URL is available for invited judges.
 
-Create live rooms separately from mock/offline rooms. Specify the project time
-limit when creating a room and enable public web search if desired. If the time
-limit is missing, the workflow waits for administrator input before evaluation.
-An evaluation may return insufficient evidence; a working deployment is not
-proof that a candidate is novel or feasible.
+The static frontend never contains model keys or database credentials. Invite secrets use the URL fragment and are removed from the address bar when read. Recovery and room-key actions still require the proper room credentials.
 
-When managing the service through a Blueprint, keep the Blueprint values and
-intended dashboard settings aligned before a later Blueprint sync. The checked-in
-Blueprint intentionally retains mock/offline defaults.
+## Acceptance
 
-### Optional SpacetimeDB
+Check `/api/capabilities` for `live:true`, `storage:"postgres"` and supported encrypted key entry. `/api/health` being healthy is not enough to prove real calls.
 
-Publish the repository's module to the intended reachable SpacetimeDB server
-using CLI/SDK **2.10.2** and the [preparation instructions](workflow/INTEGRATION.md#接-spacetimedb).
-Use that server's URL in the private configuration; a laptop's `127.0.0.1` URL
-cannot reach the database from Render. Module publishing remains an explicit
-step, not an action performed during an application build or start.
+Use two independent browser sessions. Complete four rounds of private answers, approved shared summaries and difference answers. Confirm generation waits for both convergence votes. Review actual retrieval evidence, request a revision, verify a new report, and accept the same version from both members. Export the result.
 
-Provide the private JSON configuration on Render at a writable server-side path,
-for example `/data/spacetime.json`, and set
-`CONCLAVE_SPACETIME_CONFIG=/data/spacetime.json`. It contains `uri`, `database`,
-`owner_token`, and the generated `workflow_token` / `worker_token`. First connection
-writes the latter two identities back, so the file and its directory must be
-writable by the container user. If using a Render secret file, provision a private
-writable copy before startup; do not point at a read-only secret file for initial
-identity creation. Never commit this file or expose it to the browser.
+Restart or redeploy the dev service, then restore the same identities and compare the accepted result. Also check invalid credentials, used invitations, old tokens after recovery, key removal and spending limits. Use synthetic data for recorded demos. [DEV-ACCEPTANCE.md](docs/DEV-ACCEPTANCE.md) records what was actually verified.
 
-The prepared private file must survive restarts on persistent storage, or be
-securely provisioned again. SQLite needs its own persistence even when
-SpacetimeDB is enabled. Without this setting, integrated agents use SQLite and
-HTTP polling; the frontend does not need a direct database credential.
+## Backup and operational limits
 
-## Vercel frontend
+An accepted brief is a portable product output, not a complete database backup. For full recovery, use a PostgreSQL logical dump to a private location and keep the encryption key separately. Restrict external database access to a specific administrative address only for the export, or run the export over a trusted connection. Never commit a dump: it includes private interviews and credentials.
 
-Import the repository with the repository root as Root Directory, framework
-**Other**, Node 24, and production branch **master**.
-
-Set `BACKEND_URL` in each intended environment (Production and Preview) to the
-actual Render HTTPS **origin**, without `/api`, credentials, path or query.
-Example format: `https://your-assigned-service.onrender.com`.
-
-`vercel.ts` configures `node deploy/build-frontend.mjs`, the `dist` output,
-API rewrites, and cache policy. Missing or malformed `BACKEND_URL` fails the
-configuration. Redeploy Vercel after changing the variable because routes are
-built at deploy time. The build copies only `workflow/web` to `dist`.
-
-## Verification
-
-The `Deployment checks` workflow builds the actual Linux image on pushes to
-`master`, `feat/integration-spacetimedb` and `deploy/vercel-render`, and relevant
-pull requests. It checks workflow recovery and human gates, cloud HTTP startup
-and persistence, all four agents, SpacetimeDB reducer contracts, client imports,
-Vercel routing and the static build. CI uses offline fixtures and no model keys;
-a running SpacetimeDB server and real APIs are separate integration checks.
-
-After installing the dependencies in [integration instructions](workflow/INTEGRATION.md):
-
-```sh
-python -m unittest discover -s workflow/tests -v
-python -m unittest discover -s deploy/tests -p 'test_*.py' -v
-python agent/interfaces/validate_contracts.py
-node --test deploy/tests/*.test.mjs
-node deploy/build-frontend.mjs
-docker build -t considea-deploy .
-docker run --rm -p 10000:10000 considea-deploy
-```
-
-The restart test preserves a room only when using the same database file; it
-does not make Render's ephemeral filesystem persistent.
-
-After deployment, check the actual Vercel URL:
-
-1. `/api/health` reaches Render and reports the expected mode.
-2. Create a disposable room, save its administrator token privately and join as
-   two members in independent browser sessions.
-3. Confirm interviews respond and each member sees only their own private data.
-4. Complete four discussion rounds, answer differences, then explicitly converge.
-5. Generate and evaluate a candidate; request a small revision, reevaluate, and
-   accept the current version from both members.
-6. With SpacetimeDB enabled, confirm the shared board synchronizes. Record the
-   public demo URLs only after this check passes.
-
-## References
-
-- [Render Blueprint specification](https://render.com/docs/blueprint-spec)
-- [Render free-tier storage limits](https://render.com/docs/free)
-- [Vercel programmatic configuration](https://vercel.com/docs/project-configuration/vercel-ts)
-- [Vercel external rewrites](https://vercel.com/docs/routing/rewrites)
+Free web instances may sleep. Start the demo shortly before presenting, and keep the recorded replay available. Shared API limits are measured in tasks, not dollars; provider-side spending controls remain useful. Live evaluation establishes documented evidence, not a working implementation of a generated project.
