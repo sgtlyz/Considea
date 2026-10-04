@@ -57,6 +57,16 @@ The static frontend never contains model keys or database credentials. Invite se
 
 ## Acceptance
 
+### Agentverse adapter (optional)
+
+The ACP adapter can share this service and PostgreSQL database. Enable it with the
+private `CONSIDEA_AGENTVERSE_SEEDS_JSON` environment variable, preserving all four
+stable identities. Initial rollout keeps `CONSIDEA_AGENTVERSE_ALLOW_CREATE=0` and
+checks `/agentverse/status` plus signed `/agentverse/{role}/chat` delivery before
+updating Agentverse registrations. The existing encryption key protects adapter
+sessions and replies. See [adapter deployment and rollback](agent/agentverse/README.md).
+This is optional; without the seeds variable the existing service behaves as before.
+
 Check `/api/capabilities` for `live:true`, `storage:"postgres"` and supported encrypted key entry. `/api/health` being healthy is not enough to prove real calls.
 
 Use two independent browser sessions. Complete four rounds of private answers, approved shared summaries and difference answers. Confirm generation waits for both convergence votes. Review actual retrieval evidence, request a revision, verify a new report, and accept the same version from both members. Export the result.

@@ -33,7 +33,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends libstdc++6 \
 COPY --from=agent-dependencies /usr/local/bin/node /usr/local/bin/node
 WORKDIR /app
 COPY workflow/requirements.txt /app/workflow/requirements.txt
-RUN pip install --no-cache-dir -r workflow/requirements.txt
+COPY agent/agentverse/requirements.txt /app/agent/agentverse/requirements.txt
+RUN pip install --no-cache-dir -r workflow/requirements.txt -r agent/agentverse/requirements.txt
 COPY --chown=appuser:appuser . /app
 COPY --from=agent-dependencies --chown=appuser:appuser /app/agent /app/agent
 COPY --from=agent-dependencies --chown=appuser:appuser /app/workflow/node /app/workflow/node

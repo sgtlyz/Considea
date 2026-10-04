@@ -20,6 +20,10 @@ from .localization import Localization
 def make_server(workflow, host="127.0.0.1", port=8765):
     security = RoomSecurity(workflow)
     workflow.security = security
+    agentverse = None
+    if os.environ.get("CONSIDEA_AGENTVERSE_SEEDS_JSON"):
+        from agent.agentverse.hosted import from_environment
+        agentverse = from_environment(workflow)
     localization = Localization(workflow)
     if hasattr(workflow.runner, "credentials_for"):
         workflow.runner.credentials_for = security.credentials_for
@@ -90,6 +94,20 @@ def make_server(workflow, host="127.0.0.1", port=8765):
                     security.limit("writes:"+client, 180, 60)
                 if method == "GET" and parts == ["api", "health"]:
                     return self._send(200, {"status": "ok", "agent_mode": workflow.runner.mode})
+                if agentverse and parts[:1] == ["agentverse"]:
+                    if method == "GET" and parts == ["agentverse", "status"]:
+                        status, body = agentverse.request("GET", "/status")
+                        return self._send(status, body)
+                    if method == "POST" and len(parts) == 3 and parts[2] == "chat":
+                        try:
+                            length = int(self.headers.get("Content-Length", "0"))
+                        except ValueError:
+                            return self._send(400, {"error": "INVALID_LENGTH"})
+                        if not 0 < length <= 100_000:
+                            return self._send(413, {"error": "INVALID_SIZE"})
+                        status, body = agentverse.request("POST", "/" + "/".join(parts[1:]), self.rfile.read(length))
+                        return self._send(status, body)
+                    return self._send(404, {"error": "NOT_FOUND"})
                 if parts == ["api", "rooms"] and method == "POST":
                     body = self._body()
                     security.limit("create:"+client, 6, 3600)
@@ -186,6 +204,14 @@ def make_server(workflow, host="127.0.0.1", port=8765):
 
     server = ThreadingHTTPServer((host, port), Handler)
     server.daemon_threads = True
+    if agentverse:
+        original_close = server.server_close
+        def close():
+            try:
+                agentverse.close()
+            finally:
+                original_close()
+        server.server_close = close
     return server
 
 
