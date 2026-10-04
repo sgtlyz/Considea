@@ -1,12 +1,11 @@
 # Considea
-
-Considea helps a small team choose a project together. Each person talks privately with an interview agent, approves what to share, and answers the differences that matter. The team decides when to generate ideas and which evaluated version to accept.
+Considea aligns small teams on what to build next. Through iterative private interviews, our AI uncovers each member’s skills, preferences, and perspective gaps. It then bridges those differences to generate tailored project directions—evaluated collaboratively by AI and the team to reach high-conviction consensus.
 
 ## Try it
 
 - [Production website](https://considea.vercel.app): real DeepSeek and Tavily calls with PostgreSQL persistence. Use a team demo code or your own keys.
 - [Direct backend workspace](https://considea-dev-api.onrender.com): the same live service and saved rooms. The existing hostname is retained after promotion.
-- [83-second walkthrough and saved results](https://considea.vercel.app/demo.html): no account, keys or live calls required. [Download the video](workflow/web/demo.mp4).
+- [Concept demo and saved results](https://considea.vercel.app/demo.html): no account, keys or live calls required. [Download the video](workflow/web/demo.mp4).
 - Development previews use a separate labelled mock backend.
 - [Setup and deployment](DEPLOYMENT.md), [workflow and HTTP API](workflow/README.md), [agent integration](workflow/INTEGRATION.md).
 - [Agentverse / ASI:One adapter](docs/AGENTVERSE.md): optional chat access to the same workflow; new shared endpoints await deployment and registration.

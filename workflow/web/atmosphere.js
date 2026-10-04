@@ -284,12 +284,22 @@ void main(){vec2 uv=gl_FragCoord.xy/res;vec2 p=(uv-.5)*vec2(res.x/res.y,1.)*5.5;
   });
 
   window.consideaAtmosphere = {
+    home() {
+      loggedIn = false;
+      if (raf) cancelAnimationFrame(raf);
+      raf = 0;
+      lastTick = 0;
+      coverLast = 0;
+      resizeCover();
+      startCover();
+    },
     enter() {
       loggedIn = true;
       if (coverFrame) {
         cancelAnimationFrame(coverFrame);
         coverFrame = 0;
       }
+      coverLast = 0;
       resizeLiquid();
       startMotion();
     },

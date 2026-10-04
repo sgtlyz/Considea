@@ -1,11 +1,58 @@
 <!doctype html>
-<html lang="en" data-theme="light"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Considea · Recorded walkthrough</title><link rel="stylesheet" href="/style.css"><link rel="stylesheet" href="/demo.css"></head>
-<body class="replay-page"><header class="replay-header"><a class="wordmark" href="/#home">considea</a><a href="/" data-en="Open a live workspace" data-zh="进入真实工作区">Open a live workspace</a><div class="preference"><button data-language="en" data-en="EN" data-zh="英文">EN</button><button data-language="zh">中文</button></div></header>
-<main class="replay-main"><p class="tag" data-en="Recorded walkthrough · no account or API key needed" data-zh="已保存的流程演示 · 无需账号或服务密钥">Recorded walkthrough · no account or API key needed</p><h1 data-en="From different ideas to one shared project." data-zh="从不同的想法，走向共同的项目。">From different ideas<br>to one shared project.</h1>
-<p class="replay-intro" data-en="A real DeepSeek and Tavily run with two scripted test participants. This page replays saved shared results; it does not call a model or create a room." data-zh="两位测试成员按预设脚本完成了一次真实的模型调用和网页检索。本页展示保存下来的共享结果，不会调用模型或创建房间。">A real DeepSeek and Tavily run with two scripted test participants. This page replays saved shared results; it does not call a model or create a room.</p>
-<video id="demo-video" controls preload="metadata" poster="/demo-poster.png"><source src="/demo.mp4" type="video/mp4"><span data-en="Your browser cannot play this video." data-zh="你的浏览器无法播放此视频。">Your browser cannot play this video.</span></video><p class="muted" data-en="Edited from the actual browser recording. Waiting periods are shortened; the test participants and their decisions are scripted." data-zh="视频剪辑自原始浏览器实录（英文界面），缩短了等待时间；测试成员及其决定采用预设脚本。下方提供中文流程记录。">Edited from the actual browser recording. Waiting periods are shortened; the test participants and their decisions are scripted.</p>
-<p id="demo-status" role="status" data-en="Loading the recorded conversation…" data-zh="正在加载讨论记录……">Loading the recorded conversation…</p>
-<section class="replay-stage" aria-live="polite"><p class="tag" id="step-number"></p><h2 id="step-title"></h2><div id="step-body"></div></section>
-<nav class="replay-controls" aria-label="Walkthrough steps" data-aria-en="Walkthrough steps" data-aria-zh="演示步骤"><button id="previous" class="quiet-button" data-en="Previous" data-zh="上一步">Previous</button><span id="step-position"></span><button id="next" class="primary-button" data-en="Next step" data-zh="下一步">Next step</button></nav>
-<section class="replay-notes"><h2 data-en="What this demonstrates" data-zh="这段演示展示了什么">What this demonstrates</h2><ul><li data-en="Private interviews and member-approved shared summaries." data-zh="私人访谈，以及由成员本人确认后共享的总结。">Private interviews and member-approved shared summaries.</li><li data-en="Human answers in every round; generation starts only after both participants agree." data-zh="每轮都有成员回答；只有两位成员都同意后才进入生成。">Human answers in every round; generation starts only after both participants agree.</li><li data-en="Real research, a requested revision, a new evaluation and fresh acceptance." data-zh="真实检索、提出修改、重新评估，以及再次确认接受。">Real research, a requested revision, a new evaluation and fresh acceptance.</li><li data-en="Saved work survives service replacement." data-zh="服务重新部署后，已保存的进度仍然保留。">Saved work survives service replacement.</li></ul><p id="run-notes"></p><p data-en="A successful run does not make the generated project novel or feasible. The evaluator&#x27;s actual findings and missing evidence are shown in the record." data-zh="流程跑通不代表生成项目已经具备创新性或可行性。记录保留了评估助手的实际结论和证据缺口。">A successful run does not make the generated project novel or feasible. The evaluator's actual findings and missing evidence are shown in the record.</p></section>
-</main><script src="/demo.js" defer></script></body></html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Considea · Demo walkthrough</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect width='48' height='48' rx='12' fill='%23101418'/%3E%3Ctext x='13' y='34' font-size='38' font-family='Georgia' fill='white'%3Ec%3C/text%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Instrument+Serif&family=Noto+Serif+SC:wght@400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="/demo.css">
+</head>
+<body class="replay-page">
+  <a class="skip-link" href="#recording" data-en="Skip to the walkthrough" data-zh="跳到流程演示">Skip to the walkthrough</a>
+  <header class="replay-header">
+    <a class="wordmark" href="/#home" aria-label="considea home">considea</a>
+    <nav aria-label="Main navigation" data-aria-en="Main navigation" data-aria-zh="主导航">
+      <a href="/#cover-about" data-en="How it works" data-zh="如何使用">How it works</a>
+      <a class="replay-workspace" href="/#workspace" data-en="Open workspace" data-zh="进入工作区">Open workspace</a>
+    </nav>
+    <div class="preference"><button data-language="en" data-en="EN" data-zh="英文">EN</button><button data-language="zh">中文</button></div>
+  </header>
+  <main>
+    <section class="replay-opening" aria-labelledby="walkthrough-title">
+      <div class="replay-title-row">
+        <div>
+          <p class="replay-eyebrow"><span aria-hidden="true"></span><span data-en="The walkthrough" data-zh="流程演示">The walkthrough</span></p>
+          <h1 id="walkthrough-title"><span data-en="Different minds." data-zh="不同的想法，">Different minds.</span><span data-en="One way forward." data-zh="共同的下一步。">One way forward.</span></h1>
+        </div>
+        <div class="replay-intro">
+          <p data-en="Follow a team from their first thoughts to a project they both want to build." data-zh="跟随一支团队，从最初的想法，走到双方都愿意投入的项目。">Follow a team from their first thoughts to a project they both want to build.</p>
+          <a href="#conversation" data-en="Explore the conversation ↓" data-zh="看看他们如何达成共识 ↓">Explore the conversation ↓</a>
+        </div>
+      </div>
+      <figure class="replay-film" id="recording">
+        <div class="film-bar"><span data-en="A shared direction" data-zh="看看共同的方向如何形成">A shared direction</span><span data-en="Concept demo" data-zh="概念演示">Concept demo</span></div>
+        <video id="demo-video" controls playsinline preload="metadata" aria-label="Considea walkthrough video" data-aria-en="Considea walkthrough video" data-aria-zh="Considea 概念演示视频"><source src="/demo.mp4?v=20261004-concept" type="video/mp4"><span data-en="Your browser cannot play this video." data-zh="你的浏览器无法播放此视频。">Your browser cannot play this video.</span></video>
+        <figcaption data-en="Concept demo; some details are illustrative and do not reflect the current implementation. The saved conversation below is a separate record." data-zh="概念演示：部分内容为示意，与当前实现不完全一致。下方为另一次运行的已保存记录。">Concept demo; some details are illustrative and do not reflect the current implementation. The saved conversation below is a separate record.</figcaption>
+      </figure>
+    </section>
+    <section class="replay-conversation" id="conversation" aria-labelledby="conversation-title">
+      <div class="conversation-heading"><h2 id="conversation-title" data-en="See how they got there." data-zh="看看共识是如何形成的。">See how they got there.</h2><p data-en="Take it one step at a time. These are the team's saved, shared results." data-zh="一步一步慢慢看。这里展示的是团队已保存的共享记录。">Take it one step at a time. These are the team's saved, shared results.</p></div>
+      <p id="demo-status" role="status" data-en="Loading the recorded conversation…" data-zh="正在加载讨论记录……">Loading the recorded conversation…</p>
+      <div class="conversation-layout">
+        <nav class="replay-timeline" id="step-links" aria-label="Jump to a moment" data-aria-en="Jump to a moment" data-aria-zh="选择一个步骤"></nav>
+        <div class="conversation-detail">
+          <section class="replay-stage" aria-labelledby="step-title" aria-live="polite"><p class="replay-eyebrow" id="step-number"></p><h3 id="step-title" tabindex="-1"></h3><div id="step-body"></div></section>
+          <nav class="replay-controls" aria-label="Walkthrough steps" data-aria-en="Walkthrough steps" data-aria-zh="演示步骤"><button id="previous" class="quiet-button" disabled data-en="Previous" data-zh="上一步">Previous</button><span id="step-position"></span><button id="next" class="primary-button" disabled data-en="Next step" data-zh="下一步">Next step</button></nav>
+        </div>
+      </div>
+      <details class="replay-notes"><summary data-en="About the saved conversation" data-zh="关于下方保存的讨论">About the saved conversation</summary><p data-en="Alice and Bob are example participants with scripted answers. Their session used real AI responses and web research. This page shows a saved recording; exploring it won't create a workspace." data-zh="Alice 和 Bob 是使用预设回答的示例成员。演示使用了真实的 AI 回答和网页检索。此页面展示已保存的记录，浏览演示不会创建工作区。">Alice and Bob are example participants with scripted answers. Their session used real AI responses and web research. This page shows a saved recording; exploring it won't create a workspace.</p><p data-en="The research includes open questions and missing evidence. A finished conversation is a starting point for your team to investigate further." data-zh="研究记录保留了待回答的问题与缺失的证据。达成共识，是团队进一步探索的起点。">The research includes open questions and missing evidence. A finished conversation is a starting point for your team to investigate further.</p><details><summary data-en="Recording notes" data-zh="录制备注">Recording notes</summary><p id="run-notes"></p></details></details>
+    </section>
+    <section class="replay-closing"><p data-en="Your team. Your next idea." data-zh="你的团队，你们的下一个想法。">Your team. Your next idea.</p><h2 data-en="What will you build together?" data-zh="你们会一起做出什么？">What will you build together?</h2><a class="cover-login" href="/#workspace" data-en="Open workspace" data-zh="进入工作区">Open workspace</a><a class="replay-back" href="/#home" data-en="Back to home" data-zh="返回首页">Back to home</a></section>
+  </main>
+  <script src="/demo.js" defer></script>
+</body>
+</html>
