@@ -11,6 +11,8 @@ from uuid import uuid4
 
 from .agents import MockRunner, ROOT
 from .evaluation import EvaluationResult
+from .privacy import public_snapshot
+from .store import Store
 
 
 class IntegrationError(RuntimeError):
@@ -166,6 +168,8 @@ class SharedSync:
     def run_once(self):
         with self.store.transaction() as db:
             row = db.execute("SELECT * FROM shared_outbox WHERE delivered_revision < revision ORDER BY room_id LIMIT 1").fetchone()
+            # Rebuild legacy pending snapshots before sending anything to the shared service.
+            snapshot = public_snapshot(Store.load(db, row["room_id"])) if row else None
         if row is None:
             if time.monotonic() - self.last_probe >= 5:
                 self.last_probe = time.monotonic()
@@ -177,7 +181,7 @@ class SharedSync:
             return False
         try:
             result = self.bridge.call({"action": "publish", "room_id": row["room_id"], "revision": row["revision"],
-                "idea_revision": row["idea_revision"], "snapshot": json.loads(row["snapshot"])}, timeout=65)
+                "idea_revision": row["idea_revision"], "snapshot": snapshot}, timeout=65)
             with self.store.transaction() as db:
                 db.execute("UPDATE shared_outbox SET delivered_revision=CASE WHEN delivered_revision < ? THEN ? ELSE delivered_revision END WHERE room_id=?",
                            (result["revision"], result["revision"], row["room_id"]))

@@ -26,11 +26,13 @@ def time_limit(state):
     return {"kind": "deadline", "deadline_at": deadline} if deadline else None
 
 
-def resources(state):
-    return [{"profile_id": m["profile"]["profile_ref"]["id"], "profile_version": m["profile"]["profile_ref"]["version"],
-             "item_id": item["item_id"], "member_id": mid, "category": item["category"], "text": item["text"], "source_id": item["source_id"]}
-            for mid, m in state["members"].items() if m["profile"]
-            for item in m["profile"]["items"] if item["category"] in ("skill", "resource") and item["basis"] == "member_statement"]
+def resources(state, profiles=None):
+    if profiles is None:
+        profiles = [{**m["profile"], "member_id": mid} for mid, m in state["members"].items() if m["profile"]]
+    return [{"profile_id": profile["profile_ref"]["id"], "profile_version": profile["profile_ref"]["version"],
+             "item_id": item["item_id"], "member_id": profile["member_id"], "category": item["category"], "text": item["text"], "source_id": item["source_id"]}
+            for profile in profiles
+            for item in profile["items"] if item["category"] in ("skill", "resource") and item["basis"] == "member_statement"]
 
 
 def check_report(request, report):

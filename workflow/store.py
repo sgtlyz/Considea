@@ -7,6 +7,8 @@ import re
 import sqlite3
 from pathlib import Path
 
+from .privacy import public_snapshot
+
 
 def encode(value):
     return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
@@ -119,16 +121,7 @@ class Store:
         db.execute("UPDATE rooms SET state=? WHERE id=?", (encode(state), state["room_id"]))
 
         # Updated in the same transaction as state; a crash cannot lose the sync intent.
-        shared = {key: state[key] for key in (
-            "room_id", "revision", "discussion_round", "phase", "mode", "room_context", "config",
-            "paused_reason", "calls_started", "difference", "answers", "votes", "convergence_decision",
-            "candidates", "evaluations", "reviews", "candidate_history", "selected_candidate_ref")}
-        shared["agent_runtime"] = state.get("agent_runtime", {})
-        shared["evaluation_details"] = state.get("evaluation_details", {})
-        shared["shared_context"] = {"profiles": [m["profile"] for m in state["members"].values() if m["profile"]],
-                                    "sources": state["sources"], "discussion_history": state["discussion_history"]}
-        shared["members"] = {mid: {"stage": m["stage"], "approved_round": m["approved_round"]}
-                             for mid, m in state["members"].items()}
+        shared = public_snapshot(state)
         db.execute("""INSERT INTO shared_outbox(room_id,revision,idea_revision,snapshot) VALUES(?,?,?,?)
             ON CONFLICT(room_id) DO UPDATE SET revision=excluded.revision,
             idea_revision=excluded.idea_revision,snapshot=excluded.snapshot""",

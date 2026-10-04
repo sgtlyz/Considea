@@ -237,6 +237,7 @@ class NegotiatorRankingTest(unittest.TestCase):
         difference = detect_difference(payload_from(profiles))["data"]["difference"]
         self.assertEqual(difference["kind"], "clarification")
         self.assertEqual(difference["affected_member_ids"], ["member-a"])
+        self.assertIn("你先确认", difference["why_it_matters"])
 
     def test_disputed_constraint_is_a_clarification(self):
         profiles = [profile("member-a", [item("a-user", "大学生", "target_user")])]

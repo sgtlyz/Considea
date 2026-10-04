@@ -66,7 +66,9 @@ jobs:
       - name: Exercise the interface through HTTP and SQLite
         env:
           PLAYWRIGHT_MODULE: ${{ runner.temp }}/interface-browser/node_modules/playwright
-        run: node workflow/node/interface-smoke.mjs
+        run: |
+          node workflow/node/interface-smoke.mjs
+          node workflow/node/privacy-smoke.mjs
 
   postgres:
     runs-on: ubuntu-latest
