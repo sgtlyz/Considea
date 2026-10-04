@@ -56,6 +56,13 @@ class TransportTests(unittest.TestCase):
         self.assertEqual(self.client.post('/chat', json=env.model_dump(mode='json')).status_code, 200)
         self.assertEqual(self.sent, [])
 
+    def test_asi_routing_mention_is_removed_before_command_dispatch(self):
+        for original, expected in [(f'@{self.target.address}  /help', '/help'),
+                                   (f'@{self.sender.address} /help', f'@{self.sender.address} /help')]:
+            env = self.envelope(ChatMessage(content=[TextContent(type='text', text=original)]))
+            self.assertEqual(self.client.post('/chat', json=env.model_dump(mode='json')).status_code, 200)
+            self.assertEqual(self.bridge.calls[-1]['text'], expected)
+
     def test_python_node_bridge_runs_real_offline_profile_flow(self):
         async def run():
             bridge = NodeBridge(state_dir=tempfile.mkdtemp())

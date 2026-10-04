@@ -2,6 +2,7 @@
 import asyncio
 import json
 import time
+import re
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -45,6 +46,9 @@ def create_app(config, *, bridge=None, send=None):
         try:
             await deliver(env, ChatAcknowledgement(acknowledged_msg_id=msg.msg_id))
             text = "\n".join(c.text for c in msg.content if isinstance(c, TextContent)).strip()
+            # ASI direct-chat text may carry this agent's routing mention.
+            # Strip only our exact address, never arbitrary users' mentions.
+            text = re.sub(r"^@" + re.escape(identity.address) + r"\s+", "", text).strip()
             if not text:
                 return
             result = await bridge.call({"sender": env.sender, "session_id": str(env.session),
