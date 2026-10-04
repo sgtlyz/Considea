@@ -1,4 +1,4 @@
-# MHacks — AI 选题协调员
+# IdeaSync - Sync your perspectives. Shape better ideas. Move faster
 
 面向 Hackathon 团队：先分别听懂每个人，找出真正影响方向的分歧，由成员做关键决定，再把讨论推进到更深层。方向大致收敛后，才生成候选方案并做可行性验证。
 
