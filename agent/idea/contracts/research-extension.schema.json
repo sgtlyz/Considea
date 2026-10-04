@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Idea Generator 2.1 research extension definitions",
+  "description": "Merged into the canonical 2.0 Idea definitions by schema.mjs. Does not change any other role. Model data contains inspiration_refs but never the service-owned research ledger.",
+  "$defs": {
+    "IdeaSearchPolicy": {
+      "type": "object",
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "max_queries": { "type": "integer", "minimum": 0, "maximum": 8 },
+        "max_results_per_query": { "type": "integer", "minimum": 1, "maximum": 5 },
+        "required": { "type": "boolean" }
+      },
+      "required": ["enabled", "max_queries", "max_results_per_query", "required"],
+      "additionalProperties": false
+    },
+    "IdeaResearchEvidence": {
+      "type": "object",
+      "properties": {
+        "evidence_key": { "type": "string", "minLength": 1 },
+        "url": { "type": "string", "format": "uri", "pattern": "^https://", "maxLength": 2048 },
+        "title": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "accessed_at": { "type": "string", "format": "date-time" },
+        "source_kind": { "enum": ["reddit", "devpost", "web"] },
+        "excerpt": { "type": "string", "minLength": 1, "maxLength": 1200 },
+        "content_level": { "const": "snippet" },
+        "limitation": { "type": "string", "minLength": 1 }
+      },
+      "required": ["evidence_key", "url", "title", "accessed_at", "source_kind", "excerpt", "content_level", "limitation"],
+      "additionalProperties": false
+    },
+    "IdeaResearchLogEntry": {
+      "type": "object",
+      "properties": {
+        "query": { "type": "string", "minLength": 1, "maxLength": 300 },
+        "source_kind": { "enum": ["reddit", "devpost", "web"] },
+        "result_status": { "enum": ["results", "no_results", "failed", "disabled", "budget_exceeded"] },
+        "evidence_keys": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true }
+      },
+      "required": ["query", "source_kind", "result_status", "evidence_keys"],
+      "additionalProperties": false
+    },
+    "IdeaResearchLedger": {
+      "type": "object",
+      "description": "Service-owned sidecar on every final 2.1 response, never produced by the model. Entries come from actual tools or Workflow-provided evidence.",
+      "properties": {
+        "evidence": { "type": "array", "items": { "$ref": "#/$defs/IdeaResearchEvidence" } },
+        "search_log": { "type": "array", "items": { "$ref": "#/$defs/IdeaResearchLogEntry" } }
+      },
+      "required": ["evidence", "search_log"],
+      "additionalProperties": false
+    },
+    "IdeaInspirationRef": {
+      "type": "object",
+      "properties": {
+        "evidence_key": { "type": "string", "minLength": 1 },
+        "borrowed_mechanism": { "type": "string", "minLength": 1 },
+        "adaptation": { "type": "string", "minLength": 1 },
+        "known_difference": { "type": "string", "minLength": 1 }
+      },
+      "required": ["evidence_key", "borrowed_mechanism", "adaptation", "known_difference"],
+      "additionalProperties": false
+    }
+  }
+}

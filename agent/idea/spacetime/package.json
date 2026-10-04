@@ -1,0 +1,9 @@
+{
+  "name": "mhacks-idea-spacetime",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": { "typecheck": "tsc --noEmit", "test": "node --test module.test.mjs", "build": "spacetime build" },
+  "dependencies": { "@noble/hashes": "2.0.1", "spacetimedb": "2.10.2" },
+  "devDependencies": { "typescript": "5.9.3" }
+}

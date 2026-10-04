@@ -1,0 +1,701 @@
+{
+  "description": "OFFLINE MOCK: fabricated team, evidence and approvals; no API calls.",
+  "request": {
+    "schema_version": "1.0",
+    "request_id": "req-idea-revise",
+    "room_id": "room-demo",
+    "operation": "idea.revise",
+    "input_revision": 22,
+    "payload": {
+      "contract_version": "2.1",
+      "discussion_round": 4,
+      "room_context": {
+        "member_ids": [
+          "member-a",
+          "member-b",
+          "member-c",
+          "member-d"
+        ],
+        "hackathon_context": "Offline fixture: four-person hackathon team.",
+        "deadline_at": null,
+        "constraints": []
+      },
+      "shared_context": {
+        "profiles": [
+          {
+            "profile_ref": {
+              "id": "profile-1",
+              "version": 1
+            },
+            "member_id": "member-a",
+            "items": [
+              {
+                "item_id": "item-1",
+                "category": "desired_experience",
+                "text": "保留用户对重要决定的控制。",
+                "basis": "member_statement",
+                "confidence": "high",
+                "source_id": "profile-1-v1-item-1"
+              }
+            ],
+            "unknowns": []
+          },
+          {
+            "profile_ref": {
+              "id": "profile-2",
+              "version": 1
+            },
+            "member_id": "member-b",
+            "items": [
+              {
+                "item_id": "item-1",
+                "category": "desired_experience",
+                "text": "通过 AI 减少规划中的重复操作。",
+                "basis": "member_statement",
+                "confidence": "high",
+                "source_id": "profile-2-v1-item-1"
+              }
+            ],
+            "unknowns": []
+          },
+          {
+            "profile_ref": {
+              "id": "profile-3",
+              "version": 1
+            },
+            "member_id": "member-c",
+            "items": [
+              {
+                "item_id": "item-1",
+                "category": "desired_experience",
+                "text": "通过 AI 减少规划中的重复操作。",
+                "basis": "member_statement",
+                "confidence": "high",
+                "source_id": "profile-3-v1-item-1"
+              }
+            ],
+            "unknowns": []
+          },
+          {
+            "profile_ref": {
+              "id": "profile-4",
+              "version": 1
+            },
+            "member_id": "member-d",
+            "items": [
+              {
+                "item_id": "item-1",
+                "category": "desired_experience",
+                "text": "通过 AI 减少规划中的重复操作。",
+                "basis": "member_statement",
+                "confidence": "high",
+                "source_id": "profile-4-v1-item-1"
+              }
+            ],
+            "unknowns": []
+          }
+        ],
+        "discussion_history": [
+          {
+            "discussion_round": 1,
+            "profile_source_ids": [
+              "profile-1-v1-item-1",
+              "profile-2-v1-item-1",
+              "profile-3-v1-item-1",
+              "profile-4-v1-item-1"
+            ],
+            "difference_source_ids": [
+              "difference-1-source"
+            ],
+            "answer_source_ids": [
+              "answer-1-1-source",
+              "answer-1-2-source",
+              "answer-1-3-source",
+              "answer-1-4-source"
+            ],
+            "convergence_source_ids": [],
+            "review_source_ids": []
+          },
+          {
+            "discussion_round": 2,
+            "profile_source_ids": [
+              "profile-1-v1-item-1",
+              "profile-2-v1-item-1",
+              "profile-3-v1-item-1",
+              "profile-4-v1-item-1"
+            ],
+            "difference_source_ids": [
+              "difference-2-source"
+            ],
+            "answer_source_ids": [
+              "answer-2-1-source",
+              "answer-2-2-source",
+              "answer-2-3-source",
+              "answer-2-4-source"
+            ],
+            "convergence_source_ids": [],
+            "review_source_ids": []
+          },
+          {
+            "discussion_round": 3,
+            "profile_source_ids": [
+              "profile-1-v1-item-1",
+              "profile-2-v1-item-1",
+              "profile-3-v1-item-1",
+              "profile-4-v1-item-1"
+            ],
+            "difference_source_ids": [
+              "difference-3-source"
+            ],
+            "answer_source_ids": [
+              "answer-3-1-source",
+              "answer-3-2-source",
+              "answer-3-3-source",
+              "answer-3-4-source"
+            ],
+            "convergence_source_ids": [],
+            "review_source_ids": []
+          },
+          {
+            "discussion_round": 4,
+            "profile_source_ids": [
+              "profile-1-v1-item-1",
+              "profile-2-v1-item-1",
+              "profile-3-v1-item-1",
+              "profile-4-v1-item-1"
+            ],
+            "difference_source_ids": [
+              "difference-4-source"
+            ],
+            "answer_source_ids": [
+              "answer-4-1-source",
+              "answer-4-2-source",
+              "answer-4-3-source",
+              "answer-4-4-source"
+            ],
+            "convergence_source_ids": [
+              "convergence-4-source"
+            ],
+            "review_source_ids": []
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "profile-1-v1-item-1",
+            "kind": "profile_item",
+            "object_ref": {
+              "id": "profile-1",
+              "version": 1
+            },
+            "member_id": "member-a",
+            "discussion_round": 1,
+            "text": "保留用户对重要决定的控制。"
+          },
+          {
+            "source_id": "profile-2-v1-item-1",
+            "kind": "profile_item",
+            "object_ref": {
+              "id": "profile-2",
+              "version": 1
+            },
+            "member_id": "member-b",
+            "discussion_round": 1,
+            "text": "通过 AI 减少规划中的重复操作。"
+          },
+          {
+            "source_id": "profile-3-v1-item-1",
+            "kind": "profile_item",
+            "object_ref": {
+              "id": "profile-3",
+              "version": 1
+            },
+            "member_id": "member-c",
+            "discussion_round": 1,
+            "text": "通过 AI 减少规划中的重复操作。"
+          },
+          {
+            "source_id": "profile-4-v1-item-1",
+            "kind": "profile_item",
+            "object_ref": {
+              "id": "profile-4",
+              "version": 1
+            },
+            "member_id": "member-d",
+            "discussion_round": 1,
+            "text": "通过 AI 减少规划中的重复操作。"
+          },
+          {
+            "source_id": "difference-1-source",
+            "kind": "difference",
+            "object_ref": {
+              "id": "difference-1",
+              "version": 1
+            },
+            "member_id": null,
+            "discussion_round": 1,
+            "text": "是否让 AI 自动执行重要决定？"
+          },
+          {
+            "source_id": "answer-1-1-source",
+            "kind": "difference_answer",
+            "object_ref": {
+              "id": "answer-1-1",
+              "version": 1
+            },
+            "member_id": "member-a",
+            "discussion_round": 1,
+            "text": "重要决定需要我确认。"
+          },
+          {
+            "source_id": "answer-1-2-source",
+            "kind": "difference_answer",
+            "object_ref": {
+              "id": "answer-1-2",
+              "version": 1
+            },
+            "member_id": "member-b",
+            "discussion_round": 1,
+            "text": "希望先提出自动化方案。"
+          },
+          {
+            "source_id": "answer-1-3-source",
+            "kind": "difference_answer",
+            "object_ref": {
+              "id": "answer-1-3",
+              "version": 1
+            },
+            "member_id": "member-c",
+            "discussion_round": 1,
+            "text": "希望先提出自动化方案。"
+          },
+          {
+            "source_id": "answer-1-4-source",
+            "kind": "difference_answer",
+            "object_ref": {
+              "id": "answer-1-4",
+              "version": 1
+            },
+            "member_id": "member-d",
+            "discussion_round": 1,
+            "text": "希望先提出自动化方案。"
+          },
+          {
+            "source_id": "difference-2-source",
+            "kind": "difference",
+            "object_ref": {
+              "id": "difference-2",
+              "version": 1
+            },
+            "member_id": null,
+            "discussion_round": 2,
+            "text": "是否让 AI 自动执行重要决定？"
+          },
+          {
+            "source_id": "answer-2-1-source",
+            "kind": "difference_answer",
+            "object_ref": {
+              "id": "answer-2-1",
+              "version": 1
+            },
+            "member_id": "member-a",
+            "discussion_round": 2,
+            "text": "AI 提建议，重要执行由用户确认。"
+          },
+          {
+            "source_id": "answer-2-2-source",
+            "kind": "difference_answer",
+            "object_ref": {
+              "id": "answer-2-2",
+              "version": 1
+            },
+            "member_id": "member-b",
+            "discussion_round": 2,
+            "text": "AI 提建议，重要执行由用户确认。"
+          },
+          {
+            "source_id": "answer-2-3-source",
+            "kind": "difference_answer",
+            "object_ref": {
+              "id": "answer-2-3",
+              "version": 1
+            },
+            "member_id": "member-c",
+            "discussion_round": 2,
+            "text": "AI 提建议，重要执行由用户确认。"
+          },
+          {
+            "source_id": "answer-2-4-source",
+            "kind": "difference_answer",
+            "object_ref": {
+              "id": "answer-2-4",
+              "version": 1
+            },
+            "member_id": "member-d",
+            "discussion_round": 2,
+            "text": "AI 提建议，重要执行由用户确认。"
+          },
+          {
+            "source_id": "difference-3-source",
+            "kind": "difference",
+            "object_ref": {
+              "id": "difference-3",
+              "version": 1
+            },
+            "member_id": null,
+            "discussion_round": 3,
+            "text": "是否让 AI 自动执行重要决定？"
+          },
+          {
+            "source_id": "answer-3-1-source",
+            "kind": "difference_answer",
+            "object_ref": {
+              "id": "answer-3-1",
+              "version": 1
+            },
+            "member_id": "member-a",
+            "discussion_round": 3,
+            "text": "AI 提建议，重要执行由用户确认。"
+          },
+          {
+            "source_id": "answer-3-2-source",
+            "kind": "difference_answer",
+            "object_ref": {
+              "id": "answer-3-2",
+              "version": 1
+            },
+            "member_id": "member-b",
+            "discussion_round": 3,
+            "text": "AI 提建议，重要执行由用户确认。"
+          },
+          {
+            "source_id": "answer-3-3-source",
+            "kind": "difference_answer",
+            "object_ref": {
+              "id": "answer-3-3",
+              "version": 1
+            },
+            "member_id": "member-c",
+            "discussion_round": 3,
+            "text": "AI 提建议，重要执行由用户确认。"
+          },
+          {
+            "source_id": "answer-3-4-source",
+            "kind": "difference_answer",
+            "object_ref": {
+              "id": "answer-3-4",
+              "version": 1
+            },
+            "member_id": "member-d",
+            "discussion_round": 3,
+            "text": "AI 提建议，重要执行由用户确认。"
+          },
+          {
+            "source_id": "difference-4-source",
+            "kind": "difference",
+            "object_ref": {
+              "id": "difference-4",
+              "version": 1
+            },
+            "member_id": null,
+            "discussion_round": 4,
+            "text": "是否让 AI 自动执行重要决定？"
+          },
+          {
+            "source_id": "answer-4-1-source",
+            "kind": "difference_answer",
+            "object_ref": {
+              "id": "answer-4-1",
+              "version": 1
+            },
+            "member_id": "member-a",
+            "discussion_round": 4,
+            "text": "AI 提建议，重要执行由用户确认。"
+          },
+          {
+            "source_id": "answer-4-2-source",
+            "kind": "difference_answer",
+            "object_ref": {
+              "id": "answer-4-2",
+              "version": 1
+            },
+            "member_id": "member-b",
+            "discussion_round": 4,
+            "text": "AI 提建议，重要执行由用户确认。"
+          },
+          {
+            "source_id": "answer-4-3-source",
+            "kind": "difference_answer",
+            "object_ref": {
+              "id": "answer-4-3",
+              "version": 1
+            },
+            "member_id": "member-c",
+            "discussion_round": 4,
+            "text": "AI 提建议，重要执行由用户确认。"
+          },
+          {
+            "source_id": "answer-4-4-source",
+            "kind": "difference_answer",
+            "object_ref": {
+              "id": "answer-4-4",
+              "version": 1
+            },
+            "member_id": "member-d",
+            "discussion_round": 4,
+            "text": "AI 提建议，重要执行由用户确认。"
+          },
+          {
+            "source_id": "convergence-4-source",
+            "kind": "convergence_decision",
+            "object_ref": {
+              "id": "convergence-4",
+              "version": 1
+            },
+            "member_id": null,
+            "discussion_round": 4,
+            "text": "Offline human converge fixture; no vote aggregation policy implied."
+          }
+        ]
+      },
+      "candidate": {
+        "candidate_ref": {
+          "id": "candidate-a",
+          "version": 1
+        },
+        "content": {
+          "title": "讨论与人工决策工作台",
+          "target_users": [
+            "四人 Hackathon 团队"
+          ],
+          "problem": "偏好不清晰导致选题争论。",
+          "solution": "结构化访谈与人工决策。",
+          "core_flow": [
+            "访谈",
+            "分歧回答",
+            "审阅"
+          ],
+          "mvp_scope": [
+            "文字访谈",
+            "候选卡片"
+          ],
+          "out_of_scope": [
+            "自动部署项目"
+          ],
+          "critical_dependencies": [
+            {
+              "key": "llm-api",
+              "description": "结构化文本模型接口。",
+              "must_have": true
+            }
+          ],
+          "contributions": [
+            {
+              "description": "保留人的决定权。",
+              "origin": "member_input",
+              "source_ids": [
+                "profile-1-v1-item-1"
+              ]
+            }
+          ],
+          "discussion_source_ids": [
+            "profile-1-v1-item-1",
+            "answer-4-2-source",
+            "convergence-4-source"
+          ],
+          "tradeoffs": [
+            "先支持文字。"
+          ],
+          "unknowns": [
+            "搜索服务选择"
+          ],
+          "change_summary": "",
+          "inspiration_refs": []
+        }
+      },
+      "evaluation": {
+        "evaluation_ref": {
+          "id": "evaluation-a-1",
+          "version": 1
+        },
+        "content": {
+          "candidate_ref": {
+            "id": "candidate-a",
+            "version": 1
+          },
+          "report_status": "partial",
+          "summary": "离线未检索，接口尚待核实。",
+          "findings": [
+            {
+              "finding_key": "finding-1",
+              "dependency_key": "llm-api",
+              "finding": "需要选择并测试模型接口。",
+              "conclusion": "needs_test",
+              "evidence_keys": [],
+              "next_check": "阅读官方文档并运行最小请求。"
+            }
+          ],
+          "similar_projects": [],
+          "risks": [
+            "服务访问条件未核实。"
+          ],
+          "unknowns": [
+            "模型与搜索服务限制"
+          ],
+          "recommended_changes": [
+            "缩小 demo 范围。"
+          ],
+          "evidence": [],
+          "search_log": [
+            {
+              "query": "model API structured output",
+              "result_status": "disabled"
+            }
+          ]
+        }
+      },
+      "reviews": [
+        {
+          "review_ref": {
+            "id": "review-a-1",
+            "version": 1
+          },
+          "candidate_ref": {
+            "id": "candidate-a",
+            "version": 1
+          },
+          "evaluation_ref": {
+            "id": "evaluation-a-1",
+            "version": 1
+          },
+          "member_id": "member-a",
+          "decision": "minor_revision",
+          "instructions": "MVP 暂时只保留文字卡片。"
+        }
+      ],
+      "search_policy": {
+        "enabled": true,
+        "max_queries": 3,
+        "max_results_per_query": 3,
+        "required": false
+      },
+      "provided_evidence": []
+    }
+  },
+  "response": {
+    "schema_version": "1.0",
+    "request_id": "req-idea-revise",
+    "room_id": "room-demo",
+    "operation": "idea.revise",
+    "input_revision": 22,
+    "status": "ok",
+    "data": {
+      "contract_version": "2.1",
+      "base_candidate_ref": {
+        "id": "candidate-a",
+        "version": 1
+      },
+      "draft": {
+        "title": "讨论与人工决策工作台",
+        "target_users": [
+          "四人 Hackathon 团队"
+        ],
+        "problem": "偏好不清晰导致选题争论。",
+        "solution": "结构化访谈与人工决策。",
+        "core_flow": [
+          "访谈",
+          "分歧回答",
+          "审阅"
+        ],
+        "mvp_scope": [
+          "文字访谈",
+          "文字评估卡"
+        ],
+        "out_of_scope": [
+          "自动部署项目"
+        ],
+        "critical_dependencies": [
+          {
+            "key": "llm-api",
+            "description": "结构化文本模型接口。",
+            "must_have": true
+          }
+        ],
+        "contributions": [
+          {
+            "description": "保留人的决定权。",
+            "origin": "member_input",
+            "source_ids": [
+              "profile-1-v1-item-1"
+            ]
+          }
+        ],
+        "discussion_source_ids": [
+          "profile-1-v1-item-1",
+          "answer-4-2-source",
+          "convergence-4-source"
+        ],
+        "tradeoffs": [
+          "先支持文字。"
+        ],
+        "unknowns": [
+          "搜索服务选择"
+        ],
+        "change_summary": "按人工意见收缩为文字卡片。",
+        "inspiration_refs": [
+          {
+            "evidence_key": "external-1",
+            "borrowed_mechanism": "OFFLINE MOCK: explicit decision checkpoints",
+            "adaptation": "Tie checkpoints to this team’s shared constraints.",
+            "known_difference": "Only a fabricated demonstration; comparison has not been verified."
+          }
+        ]
+      }
+    },
+    "warnings": [
+      "OFFLINE MOCK: fabricated outputs and sources; no live model or search."
+    ],
+    "error": null,
+    "research": {
+      "evidence": [
+        {
+          "evidence_key": "external-1",
+          "url": "https://www.reddit.com/r/hackathon/comments/offline/mock/",
+          "title": "OFFLINE MOCK — fabricated search example",
+          "accessed_at": "2026-10-04T03:25:15.470Z",
+          "source_kind": "reddit",
+          "excerpt": "OFFLINE MOCK: A team used human decision checkpoints. This is not a real search result.",
+          "content_level": "snippet",
+          "limitation": "Search-provider snippet only; the original page was not fetched or independently verified."
+        },
+        {
+          "evidence_key": "external-2",
+          "url": "https://devpost.com/software/offline-mock",
+          "title": "OFFLINE MOCK — fabricated search example",
+          "accessed_at": "2026-10-04T03:25:15.470Z",
+          "source_kind": "devpost",
+          "excerpt": "OFFLINE MOCK: A team used human decision checkpoints. This is not a real search result.",
+          "content_level": "snippet",
+          "limitation": "Search-provider snippet only; the original page was not fetched or independently verified."
+        }
+      ],
+      "search_log": [
+        {
+          "query": "hackathon team choosing project disagreements",
+          "source_kind": "reddit",
+          "result_status": "results",
+          "evidence_keys": [
+            "external-1"
+          ]
+        },
+        {
+          "query": "team decision making project",
+          "source_kind": "devpost",
+          "result_status": "results",
+          "evidence_keys": [
+            "external-2"
+          ]
+        }
+      ]
+    }
+  }
+}
