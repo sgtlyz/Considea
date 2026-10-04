@@ -22,7 +22,8 @@ class EvaluatorContextTests(unittest.TestCase):
         state["room_context"]["deadline_at"] = "2026-10-05T18:00:00Z"
         self.assertEqual(time_limit(state), {"kind": "deadline", "deadline_at": "2026-10-05T18:00:00Z"})
         for invalid in [{"kind": "duration", "hours": 0}, {"kind": "none", "hours": 3}, {"kind": "deadline", "deadline_at": "tomorrow"}]:
-            with self.assertRaises(ValidationError): TIME_LIMIT.validate(invalid)
+            with self.subTest(invalid=invalid), self.assertRaises(ValidationError):
+                TIME_LIMIT.validate(invalid)
 
     def test_reopened_interview_uses_explicit_feasibility_not_report_status(self):
         from workflow.engine import Workflow
