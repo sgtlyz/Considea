@@ -45,7 +45,7 @@ body {
   margin: 0;
   color: var(--ink);
   font:
-    15px/1.55 "DM Sans",
+    18px/1.6 "DM Sans",
     "Segoe UI",
     sans-serif;
   min-height: 100vh;
@@ -153,7 +153,7 @@ button {
 }
 .primary-nav [data-view] {
   padding: 10px 0;
-  font-size: 14px;
+  font-size: 18px;
   color: var(--muted);
   position: relative;
   white-space: nowrap;
@@ -186,7 +186,7 @@ button {
 }
 .preference button {
   padding: 6px 12px;
-  font-size: 12px;
+  font-size: 15px;
   min-height: 32px;
   border-radius: 999px;
   white-space: nowrap;
@@ -227,14 +227,14 @@ button {
   padding: 15px 18px;
   background: rgba(var(--veil), 0.87);
   border-radius: 12px;
-  font-size: 14px;
+  font-size: 18px;
   line-height: 1.6;
 }
 .hero-note p {
   margin: 0 0 18px;
 }
 .hero-note small {
-  font-size: 12px;
+  font-size: 15px;
   color: var(--muted);
 }
 .people-orbit {
@@ -251,7 +251,7 @@ button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 600;
   flex-shrink: 0;
 }
@@ -299,13 +299,13 @@ button {
 }
 .demo-label {
   color: var(--muted);
-  font-size: 12px;
+  font-size: 15px;
   border-left: 1px solid var(--line);
   padding-left: 16px;
 }
 .quiet-button {
   color: var(--muted);
-  font-size: 13px;
+  font-size: 17px;
   padding: 0 4px;
   text-decoration: underline;
   text-underline-offset: 5px;
@@ -315,7 +315,7 @@ button {
 }
 .stage-label {
   color: var(--muted);
-  font-size: 12px;
+  font-size: 15px;
 }
 .round {
   display: inline-block;
@@ -344,11 +344,11 @@ button {
   justify-content: space-between;
   align-items: center;
   margin: 0 0 22px;
-  font-size: 14px;
+  font-size: 18px;
   font-weight: 500;
 }
 .section-title small {
-  font-size: 12px;
+  font-size: 15px;
   font-weight: 400;
   color: var(--muted);
 }
@@ -379,7 +379,7 @@ button {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 12px;
+  font-size: 15px;
   margin-bottom: 10px;
 }
 .source-dot {
@@ -392,10 +392,10 @@ button {
 .source-type {
   margin-left: auto;
   color: var(--muted);
-  font-size: 11px;
+  font-size: 14px;
 }
 .source p {
-  font-size: 14px;
+  font-size: 18px;
   line-height: 1.6;
   margin: 0;
   color: var(--ink);
@@ -416,7 +416,7 @@ button {
   --person: var(--person-d);
 }
 .source-legend {
-  font-size: 12px;
+  font-size: 15px;
   color: var(--muted);
   margin-top: 24px;
 }
@@ -442,7 +442,7 @@ button {
 .direction-tabs button {
   color: var(--muted);
   padding: 0 0 13px;
-  font-size: 12px;
+  font-size: 15px;
   text-align: left;
   min-width: 0;
   position: relative;
@@ -465,7 +465,7 @@ button {
   display: flex;
   justify-content: space-between;
   color: var(--muted);
-  font-size: 12px;
+  font-size: 15px;
   margin-bottom: 15px;
 }
 .direction h2 {
@@ -479,19 +479,19 @@ button {
   overflow-wrap: anywhere;
 }
 .candidate-lead {
-  font-size: 16px;
+  font-size: 19px;
   line-height: 1.65;
   max-width: 530px;
   margin: 0 0 25px;
   color: var(--muted);
 }
 .direction h3 {
-  font-size: 13px;
+  font-size: 17px;
   font-weight: 500;
   margin: 0 0 9px;
 }
 .candidate-demo {
-  font-size: 14px;
+  font-size: 18px;
   line-height: 1.65;
   margin: 0 0 24px;
 }
@@ -502,7 +502,7 @@ button {
   margin-bottom: 18px;
 }
 .tradeoff p {
-  font-size: 13px;
+  font-size: 17px;
   line-height: 1.6;
   color: var(--muted);
   margin: 0;
@@ -517,7 +517,7 @@ button {
 }
 .direction-actions small {
   color: var(--muted);
-  font-size: 12px;
+  font-size: 15px;
 }
 .evidence-trigger {
   display: flex;
@@ -525,18 +525,18 @@ button {
   justify-content: space-between;
   width: 100%;
   padding: 16px 0 0;
-  font-size: 13px;
+  font-size: 17px;
   text-align: left;
 }
 .evidence-trigger small {
-  font-size: 12px;
+  font-size: 15px;
   color: var(--muted);
 }
 .source-explanation {
   margin: 10px 0;
   padding: 10px 12px;
   background: var(--soft);
-  font-size: 13px;
+  font-size: 17px;
   color: var(--muted);
   border-radius: 8px;
 }
@@ -570,7 +570,7 @@ button {
   margin: 0 0 9px;
 }
 .ready-note {
-  font-size: 12px;
+  font-size: 15px;
   color: var(--muted);
   margin: 0 0 17px;
 }
@@ -584,18 +584,18 @@ button {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 12px;
+  font-size: 15px;
   font-weight: 500;
   gap: 6px;
 }
 .member-state {
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 400;
   color: var(--muted);
   text-align: right;
 }
 .member p {
-  font-size: 12px;
+  font-size: 15px;
   line-height: 1.55;
   color: var(--muted);
   margin: 5px 0 0;
@@ -606,7 +606,7 @@ button {
   margin-top: 11px;
 }
 .my-stance h3 {
-  font-size: 13px;
+  font-size: 17px;
   font-weight: 500;
   margin: 0 0 12px;
 }
@@ -618,7 +618,7 @@ button {
 .stance-options button {
   border: 1px solid var(--edge);
   border-radius: 8px;
-  font-size: 11px;
+  font-size: 14px;
   padding: 9px 6px;
   line-height: 1.4;
   min-height: 44px;
@@ -629,7 +629,7 @@ button {
   border-color: var(--button);
 }
 .stance-note {
-  font-size: 11px;
+  font-size: 14px;
   color: var(--muted);
   margin: 13px 0 0;
 }
@@ -640,12 +640,12 @@ button {
   width: 100%;
   padding: 10px;
   border-radius: 8px;
-  font-size: 14px;
+  font-size: 18px;
   resize: vertical;
   margin-top: 12px;
 }
 .condition-label {
-  font-size: 12px;
+  font-size: 15px;
   display: block;
   margin-top: 12px;
 }
@@ -655,7 +655,7 @@ button {
   display: flex;
   align-items: center;
   gap: 16px;
-  font-size: 12px;
+  font-size: 15px;
 }
 .activity-summary {
   color: var(--muted);
@@ -674,11 +674,11 @@ button {
   align-items: center;
   gap: 16px;
   padding: 17px 0 0;
-  font-size: 12px;
+  font-size: 15px;
   color: var(--muted);
 }
 .page-footer button {
-  font-size: 12px;
+  font-size: 15px;
   padding: 0;
   min-height: 36px;
   text-decoration: underline;
@@ -691,7 +691,7 @@ button {
 .activity-panel {
   padding: 20px 30px;
   border-top: 1px solid var(--line);
-  font-size: 13px;
+  font-size: 17px;
 }
 .activity-panel p {
   margin: 8px 0;
@@ -715,11 +715,11 @@ button {
 }
 .private-tag {
   color: var(--muted);
-  font-size: 12px;
+  font-size: 15px;
 }
 .other-view label {
   display: block;
-  font-size: 13px;
+  font-size: 17px;
   margin: 14px 0 10px;
 }
 .answer {
@@ -732,14 +732,14 @@ button {
   border-radius: 10px;
   resize: vertical;
   color: var(--ink);
-  font-size: 16px;
+  font-size: 19px;
 }
 .primary-button {
   background: var(--button);
   color: var(--on-button);
   padding: 11px 21px;
   border-radius: 10px;
-  font-size: 13px;
+  font-size: 17px;
   margin-top: 15px;
 }
 .summary-items {
@@ -749,13 +749,13 @@ button {
 .summary-items li {
   border-bottom: 1px solid var(--line);
   padding: 13px 0;
-  font-size: 14px;
+  font-size: 18px;
 }
 .summary-items small {
   display: block;
   color: var(--muted);
   margin-bottom: 4px;
-  font-size: 12px;
+  font-size: 15px;
 }
 .brief-view {
   display: block;
@@ -763,18 +763,18 @@ button {
   margin: auto;
 }
 .brief-view h3 {
-  font-size: 16px;
+  font-size: 19px;
   font-weight: 500;
   margin-top: 30px;
 }
 .brief-view p {
   color: var(--muted);
-  font-size: 16px;
+  font-size: 19px;
   line-height: 1.7;
 }
 .brief-status {
   color: var(--muted);
-  font-size: 13px;
+  font-size: 17px;
 }
 dialog {
   background: var(--paper);
@@ -812,17 +812,17 @@ dialog::backdrop {
   border-radius: 50%;
   min-width: 44px;
   min-height: 44px;
-  font-size: 24px;
+  font-size: 27px;
 }
 dialog p {
-  font-size: 15px;
+  font-size: 18px;
   color: var(--muted);
   line-height: 1.7;
 }
 dialog table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 13px;
+  font-size: 17px;
 }
 dialog td,
 dialog th {
@@ -848,7 +848,7 @@ dialog th {
   border-radius: 12px;
   z-index: 5;
   max-width: calc(100% - 32px);
-  font-size: 13px;
+  font-size: 17px;
 }
 .skip-link {
   position: fixed;
@@ -913,7 +913,7 @@ html[lang="zh-CN"] .direction h2 {
     gap: 10px;
   }
   .direction-tabs button {
-    font-size: 11px;
+    font-size: 14px;
   }
   .direction h2 {
     font-size: 53px;
@@ -1003,7 +1003,7 @@ html[lang="zh-CN"] .direction h2 {
     gap: 8px;
   }
   .preference button {
-    font-size: 11px;
+    font-size: 14px;
     min-height: 38px;
     padding: 5px 9px;
   }
@@ -1013,7 +1013,7 @@ html[lang="zh-CN"] .direction h2 {
     overflow: visible;
   }
   .primary-nav [data-view] {
-    font-size: 12px;
+    font-size: 15px;
   }
   .hero {
     min-height: 235px;
@@ -1040,11 +1040,11 @@ html[lang="zh-CN"] .direction h2 {
     gap: 8px;
   }
   .demo-label {
-    font-size: 11px;
+    font-size: 14px;
     padding-left: 8px;
   }
   .session-label strong {
-    font-size: 13px;
+    font-size: 17px;
   }
   .stage-label {
     display: none;
@@ -1078,16 +1078,16 @@ html[lang="zh-CN"] .direction h2 {
     padding: 11px 12px;
   }
   .source-type {
-    font-size: 12px;
+    font-size: 15px;
   }
   .source .source-head {
-    font-size: 13px;
+    font-size: 17px;
   }
   .source p {
-    font-size: 15px;
+    font-size: 18px;
   }
   .section-title {
-    font-size: 15px;
+    font-size: 18px;
   }
   .source-legend {
     margin-top: 14px;
@@ -1097,20 +1097,20 @@ html[lang="zh-CN"] .direction h2 {
     margin-bottom: 21px;
   }
   .direction-tabs button {
-    font-size: 12px;
+    font-size: 15px;
   }
   .direction h2 {
     font-size: 56px;
     margin-top: 8px;
   }
   .candidate-lead {
-    font-size: 16px;
+    font-size: 19px;
   }
   .candidate-demo {
-    font-size: 15px;
+    font-size: 18px;
   }
   .tradeoff p {
-    font-size: 14px;
+    font-size: 18px;
   }
   .connection-map {
     display: none;
@@ -1130,7 +1130,7 @@ html[lang="zh-CN"] .direction h2 {
   .member-state,
   .member p,
   .member-name {
-    font-size: 13px;
+    font-size: 17px;
   }
   .member {
     padding: 12px 0;
@@ -1141,10 +1141,10 @@ html[lang="zh-CN"] .direction h2 {
     margin-top: 16px;
   }
   .stance-options button {
-    font-size: 13px;
+    font-size: 17px;
   }
   .stance-note {
-    font-size: 12px;
+    font-size: 15px;
   }
   .desk-footer {
     padding: 12px 18px;
@@ -1174,7 +1174,7 @@ html[lang="zh-CN"] .direction h2 {
     margin-top: 36px;
   }
   .summary-items small {
-    font-size: 13px;
+    font-size: 17px;
   }
   .dialog-head h2 {
     font-size: 30px;
@@ -1199,7 +1199,7 @@ html[lang="zh-CN"] .direction h2 {
     content: attr(data-label);
     display: block;
     color: var(--muted);
-    font-size: 12px;
+    font-size: 15px;
     margin-bottom: 4px;
   }
   dialog td:first-child {
@@ -1233,12 +1233,12 @@ html[lang="zh-CN"] .direction h2 {
 }
 .focus-button {
   color: var(--muted);
-  font-size: 12px;
+  font-size: 15px;
   text-decoration: underline;
   text-underline-offset: 5px;
 }
 html[lang="zh-CN"] .source-type {
-  font-size: 12px;
+  font-size: 15px;
 }
 .source:focus-visible {
   outline-offset: 2px;
@@ -1355,7 +1355,7 @@ html[lang="zh-CN"] .source-type {
   display: flex;
   align-items: center;
   gap: 30px;
-  font-size: 13px;
+  font-size: 17px;
 }
 .cover-header a {
   text-decoration: none;
@@ -1368,7 +1368,7 @@ html[lang="zh-CN"] .source-type {
   border-bottom: 1px solid #aaa;
   padding: 9px 0;
   min-height: 44px;
-  font-size: 13px;
+  font-size: 17px;
   color: #f8f8f8;
 }
 .cover-content {
@@ -1394,7 +1394,7 @@ html[lang="zh-CN"] .source-type {
   display: block;
 }
 .cover-content p {
-  font-size: 16px;
+  font-size: 19px;
   line-height: 1.65;
   color: #dedee1;
   max-width: 470px;
@@ -1407,7 +1407,7 @@ html[lang="zh-CN"] .source-type {
   border-radius: 3px;
   min-height: 48px;
   padding: 13px 26px;
-  font-size: 13px;
+  font-size: 17px;
 }
 .cover-login:hover {
   background: #ddd;
@@ -1431,7 +1431,7 @@ html[lang="zh-CN"] .source-type {
   color: #646964;
   max-width: 330px;
   margin: 0 0 4px auto;
-  font-size: 16px;
+  font-size: 19px;
 }
 .cover-about h2 {
   font:
@@ -1472,7 +1472,7 @@ html[lang="zh-CN"] .source-type {
   border: 1px solid #9da99e;
   border-radius: 50%;
   color: #43604f;
-  font-size: 12px;
+  font-size: 15px;
 }
 .process-step:last-child .process-node { background: #344b3f; color: #fff; border-color: #344b3f; }
 .process-step h3 {
@@ -1480,12 +1480,12 @@ html[lang="zh-CN"] .source-type {
   margin: 25px 0 14px;
   min-height: 2.24em;
 }
-.process-step > p { margin: 0 0 26px; color: #646964; font-size: 14px; max-width: 280px; min-height: 3.1em; }
+.process-step > p { margin: 0 0 26px; color: #646964; font-size: 18px; max-width: 280px; min-height: 3.1em; }
 .process-branches { list-style: none; margin: 0 0 0 21px; padding: 0; }
 .process-branches li {
   position: relative;
   padding: 0 0 24px 24px;
-  font-size: 14px;
+  font-size: 18px;
   line-height: 1.65;
   border-left: 1px solid #c4cbc0;
 }
@@ -1495,11 +1495,11 @@ html[lang="zh-CN"] .source-type {
 .process-branches li:last-child::before { top: 0; height: 12px; background: none; border-left: 1px solid #c4cbc0; border-bottom: 1px solid #c4cbc0; }
 .project-footer { margin-top: 74px; padding-top: 32px; border-top: 1px solid #d4d6cd; text-align: center; }
 .project-links { display: flex; justify-content: center; align-items: center; gap: 26px; }
-.project-links a { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; text-decoration: none; font-size: 13px; }
+.project-links a { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; text-decoration: none; font-size: 17px; }
 .project-links a:hover { color: #53785e; }
 .project-links svg { width: 23px; height: 23px; }
 .project-link-divider { height: 18px; width: 1px; background: #c9cec4; }
-.project-footer p { font-size: 12px; color: #646964; margin: 16px 0 0; }
+.project-footer p { font-size: 15px; color: #646964; margin: 16px 0 0; }
 @media (max-width: 850px) {
   .about-heading { display: block; margin-bottom: 45px; }
   .about-heading > p { margin: 20px 0 0; max-width: 420px; }
@@ -1543,7 +1543,7 @@ html[lang="zh-CN"] .source-type {
   }
   .cover-header nav {
     gap: 18px;
-    font-size: 12px;
+    font-size: 15px;
   }
   .cover-content {
     padding: 125px 20px;
@@ -1552,7 +1552,7 @@ html[lang="zh-CN"] .source-type {
     font-size: clamp(67px, 13vw, 85px);
   }
   .cover-content p {
-    font-size: 14px;
+    font-size: 18px;
     max-width: 315px;
   }
   .cover-about {
@@ -1563,19 +1563,20 @@ html[lang="zh-CN"] .source-type {
   }
   .project-footer { margin-top: 48px; }
   .cover-header nav { order: 3; flex-basis: 100%; justify-content: space-between; gap: 10px; }
-  .cover-header nav a, .cover-header nav button { font-size: 11px; }
+  .cover-header nav a, .cover-header nav button { font-size: 14px; }
 }
 
 /* Working room surfaces inherit the prototype's palette and typography. */
 label {
   display: block;
-  font-size: 13px;
+  font-size: 17px;
   margin: 16px 0 8px;
 }
 input,
 textarea,
 select {
   font: inherit;
+  font-size: 18px;
   color: var(--ink);
   background: var(--soft);
   border: 1px solid var(--edge);
@@ -1619,7 +1620,7 @@ pre {
   border-radius: 9px;
   max-height: 420px;
   overflow: auto;
-  font-size: 12px;
+  font-size: 15px;
 }
 details {
   margin: 18px 0;
@@ -1628,7 +1629,7 @@ summary {
   cursor: pointer;
   color: var(--muted);
   padding: 8px 0;
-  font-size: 13px;
+  font-size: 17px;
 }
 summary:hover {
   color: var(--ink);
@@ -1638,7 +1639,7 @@ h3 {
   overflow-wrap: anywhere;
 }
 h3 {
-  font-size: 16px;
+  font-size: 19px;
   font-weight: 500;
 }
 .entry-grid {
@@ -1658,7 +1659,7 @@ h3 {
   margin: 5px 0 25px;
 }
 .test-banner {
-  font-size: 12px;
+  font-size: 15px;
   color: var(--muted);
   margin: 0;
   padding: 13px 30px;
@@ -1679,19 +1680,19 @@ h3 {
   border-left: 2px solid var(--person-d);
   border-radius: 0 8px 8px 0;
   padding: 12px 16px;
-  font-size: 13px;
+  font-size: 17px;
 }
 .status-panel {
   padding: 20px 30px;
   border-bottom: 1px solid var(--line);
 }
 .status-panel h2 {
-  font-size: 17px;
+  font-size: 20px;
   font-weight: 500;
   margin: 0 0 8px;
 }
 .status-panel > p {
-  font-size: 13px;
+  font-size: 17px;
   color: var(--muted);
   margin: 8px 0;
 }
@@ -1745,7 +1746,7 @@ h3 {
   white-space: pre-wrap;
 }
 .my-stance h3 {
-  font-size: 16px;
+  font-size: 19px;
 }
 .my-stance button {
   width: 100%;
@@ -1757,7 +1758,7 @@ h3 {
 }
 .source small {
   display: block;
-  font-size: 11px;
+  font-size: 14px;
   margin-top: 12px;
 }
 .source p {
@@ -1766,7 +1767,7 @@ h3 {
 }
 .source h3 {
   margin: 0;
-  font-size: 13px;
+  font-size: 17px;
 }
 .sources-list {
   gap: 15px;
@@ -1781,12 +1782,12 @@ h3 {
   font-size: 42px;
 }
 #private > label {
-  font-size: 17px;
+  font-size: 20px;
   line-height: 1.6;
   margin: 20px 0 12px;
 }
 #private textarea {
-  font-size: 16px;
+  font-size: 19px;
   line-height: 1.65;
 }
 .other-view > aside p {
@@ -1814,7 +1815,7 @@ h3 {
   padding-top: 10px;
 }
 .tag {
-  font-size: 11px;
+  font-size: 14px;
   color: var(--muted);
 }
 .brief-view {
@@ -1910,7 +1911,7 @@ html[lang="zh-CN"] .entry-grid h2 {
     gap: 18px;
   }
   .status-panel h2 {
-    font-size: 16px;
+    font-size: 19px;
   }
   .direction h2 {
     font-size: 38px;
@@ -1919,12 +1920,12 @@ html[lang="zh-CN"] .entry-grid h2 {
     font-size: 36px;
   }
   .primary-button {
-    font-size: 14px;
+    font-size: 18px;
   }
   input,
   textarea,
   select {
-    font-size: 16px;
+    font-size: 19px;
   }
   .direction-tabs {
     gap: 6px;
@@ -1933,7 +1934,7 @@ html[lang="zh-CN"] .entry-grid h2 {
     max-width: none;
   }
   .source p {
-    font-size: 14px;
+    font-size: 18px;
   }
   .hero h1 {
     font-size: 54px;
@@ -1944,17 +1945,17 @@ html[lang="zh-CN"] .entry-grid h2 {
 }
 
 /* Readable progress and access controls at desktop and phone widths. */
-.workflow-steps{display:flex;flex-wrap:wrap;gap:8px 18px;padding:0;list-style:none;font-size:12px;opacity:.75}
+.workflow-steps{display:flex;flex-wrap:wrap;gap:8px 18px;padding:0;list-style:none;font-size:15px;opacity:.75}
 .workflow-steps li{padding:6px 0;border-bottom:2px solid transparent}
 .workflow-steps [aria-current="step"]{border-color:currentColor;font-weight:600;opacity:1}
-.next-step{font-size:16px;max-width:72ch;line-height:1.6}
+.next-step{font-size:19px;max-width:72ch;line-height:1.6}
 #room-access,#create-access{max-width:640px}
 #room-access input,#create-access input,#create-access select{width:100%;box-sizing:border-box}
 .invite-row{display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin:12px 0}
 #credentials .quiet-button{margin:4px 8px 4px 0}
 #connection-status{margin:0 0 24px}
 #connection-status .quiet-button{margin-left:12px}
-@media(max-width:600px){.workflow-steps{font-size:11px;gap:6px 12px}.next-step{font-size:15px}}
+@media(max-width:600px){.workflow-steps{font-size:14px;gap:6px 12px}.next-step{font-size:18px}}
 
 /* Stage-led entry and readable conversation records. */
 .entry-grid { grid-template-columns: minmax(0, 720px); gap: 0; }
@@ -1971,7 +1972,7 @@ html[lang="zh-CN"] .entry-grid h2 {
 .conversation-message { border-left: 3px solid var(--person-a); padding: 12px 16px; background: var(--soft); border-radius: 0 10px 10px 0; }
 .conversation-message[data-role="user"] { border-color: var(--person-b); }
 .conversation-message p, .record-card p, .record-card li { white-space: pre-wrap; line-height: 1.65; }
-.conversation-message p { margin: 8px 0 0; font-size: 16px; }
+.conversation-message p { margin: 8px 0 0; font-size: 19px; }
 .record-list { padding-left: 24px; }
 .record-list li + li { margin-top: 8px; }
 .record-card small { display: block; margin-top: 8px; }
