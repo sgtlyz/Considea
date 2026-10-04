@@ -73,7 +73,7 @@ class Workflow:
                  "answers": {}, "answer_revisions": {}, "votes": {}, "vote_revisions": {},
                  "convergence_decision": None, "candidates": {}, "evaluations": {}, "reviews": {},
                  "review_revisions": {}, "candidate_history": [], "selected_candidate_ref": None,
-                 "calls_started": 0, "paused_reason": None, "created_at": now()}
+                 "calls_started": 0, "paused_reason": None, "created_at": now(), "agent_runtime": getattr(self.runner, "description", {})}
         invitations = {}
         with self.store.transaction() as db:
             db.execute("INSERT INTO rooms VALUES(?,?)", (room_id, encode(state)))
@@ -134,6 +134,8 @@ class Workflow:
         request = {"schema_version": "1.0", "request_id": uid("request"), "room_id": s["room_id"],
                    "operation": operation, "input_revision": s["serial"], "payload": copy.deepcopy(payload)}
         protocol.REQUEST.validate(request)
+        if operation.startswith("idea."):
+            s["idea_revision"] = s["serial"]
         deps = self._dependencies(s, operation, member_id, candidate_id)
         deps["candidate_id"] = candidate_id
         db.execute("""INSERT INTO tasks
@@ -156,6 +158,9 @@ class Workflow:
             member.update(revision=member["revision"] + 1, mode=mode, stage="queued_turn",
                           session_ref=ref(uid("session")), question_batch=None, draft=None,
                           batches_asked=0, interview_turn=1, followup_context=copy.deepcopy(followup))
+            if mode == "reopened":
+                history_reviews = s["candidate_history"][-1]["reviews"][followup["candidate"]["candidate_ref"]["id"]]
+                member["followup_context"]["review"] = copy.deepcopy(history_reviews[member_id])
             self._queue_interview(db, s, member_id)
         s["answers"], s["votes"] = {}, {}
         s["answer_revisions"], s["vote_revisions"] = {}, {}
@@ -163,7 +168,7 @@ class Workflow:
 
     def _queue_interview(self, db, s, member_id, summarize=False, stop_reason=None):
         m = s["members"][member_id]
-        payload = {**self._base_payload(s), "member_id": member_id, "mode": m["mode"],
+        payload = {**self._base_payload(s), "contract_version": "2.1", "member_id": member_id, "mode": m["mode"],
                    "messages": m["messages"], "current_profile": m["profile"],
                    "shared_context": s["round_shared_context"], "followup_context": m["followup_context"]}
         if summarize:
@@ -185,9 +190,22 @@ class Workflow:
             s["phase"] = "detecting_difference"
             self._enqueue(db, s, "negotiate.detect", {**self._base_payload(s), "shared_context": self._shared(s)})
 
-    def _followup(self, s, trigger, review=None):
+    def _followup(self, s, trigger, review=None, decision_result=None):
+        candidate = evaluation = None
+        if review:
+            cid = review["candidate_ref"]["id"]
+            candidate = copy.deepcopy(s["candidates"][cid])
+            evaluation = copy.deepcopy(s["evaluations"][cid])
+            evaluation["feasibility"] = {"verdict": "unknown", "rationale":
+                "The stored report has no explicit aggregate feasibility verdict; use its findings and human review."}
+        elif trigger == "difference_answers":
+            answer_refs = [a["answer_ref"] for a in s["answers"].values()]
+            decision_result = {"decision_ref": ref(uid("continue")), "discussion_round": s["discussion_round"],
+                "decision": "continue_interview", "conclusion": "Required human answers received; rounds 1-3 require further interview. Answers: " + encode(list(s["answers"].values())),
+                "source_ids": [x["source_id"] for x in s["sources"] if x["kind"] == "difference_answer" and x["object_ref"] in answer_refs]}
         return {"trigger": trigger, "difference": copy.deepcopy(s["difference"]),
-                "answers": list(copy.deepcopy(s["answers"]).values()), "review": review}
+                "answers": list(copy.deepcopy(s["answers"]).values()), "review": copy.deepcopy(review),
+                "decision_result": decision_result, "candidate": candidate, "evaluation": evaluation}
 
     def _event_revision(self, s, member_id, event):
         kind, p = event["type"], event["payload"]
@@ -309,8 +327,12 @@ class Workflow:
             s["votes"][member_id] = {"member_id": member_id, **p}
             s["vote_revisions"][member_id] = s["vote_revisions"].get(member_id, 0) + 1
             if p["decision"] == "diverge":
-                self._source(s, "convergence_decision", ref(uid("diverge")), encode(s["votes"]), member_id)
-                followup = self._followup(s, "human_diverge")
+                decision_ref = ref(uid("diverge"))
+                sid = self._source(s, "convergence_decision", decision_ref, encode(s["votes"]), member_id)
+                followup = self._followup(s, "human_diverge", decision_result={
+                    "decision_ref": decision_ref, "discussion_round": s["discussion_round"], "decision": "diverge",
+                    "conclusion": "A human selected diverge under the any-diverge policy. Recorded votes: " + encode(s["votes"]),
+                    "source_ids": [sid]})
                 self._begin_round(db, s, "followup", followup)
             elif set(s["votes"]) == set(s["members"]):
                 decision_ref = ref(uid("convergence"))
@@ -339,7 +361,7 @@ class Workflow:
         reviews[member_id] = review
         key = cid + ":" + member_id
         s["review_revisions"][key] = s["review_revisions"].get(key, 0) + 1
-        self._source(s, "human_review", review["review_ref"], encode(p), member_id)
+        self._source(s, "human_review", review["review_ref"], p["instructions"] or encode(p), member_id)
         if set(reviews) != set(s["members"]):
             return
         decisions = {r["decision"] for r in reviews.values()}
@@ -390,7 +412,7 @@ class Workflow:
                     lease_token=?,lease_until=? WHERE id=?""", (lease, time.time() + self.lease_seconds, row["id"]))
                 s["calls_started"] += 1
                 Store.save(db, s)
-                return {"task_id": row["id"], "lease_token": lease, "request": json.loads(row["request"])}
+                return {"task_id": row["id"], "lease_token": lease, "request": json.loads(row["request"]), "attempt": row["attempts"] + 1}
         return None
 
     def run_once(self, room_id=None):
@@ -398,13 +420,18 @@ class Workflow:
         if claim is None:
             return False
         try:
-            response = self.runner(copy.deepcopy(claim["request"]))
+            response = self.runner.run_task(copy.deepcopy(claim["request"]), claim) if hasattr(self.runner, "run_task") else self.runner(copy.deepcopy(claim["request"]))
             protocol.check_response(claim["request"], response)
-        except Exception:
+        except Exception as error:
+            safe_code = getattr(error, "code", "MODEL_ERROR")
+            if safe_code not in {"CONFIG_ERROR", "EVALUATOR_NOT_READY", "SPACETIME_CONFIG_ERROR", "SPACETIME_TIMEOUT",
+                                  "SPACETIME_DISCONNECTED", "SPACETIME_CONNECT_FAILED", "SPACETIME_SUBSCRIPTION_FAILED",
+                                  "BRIDGE_DISCONNECTED", "BRIDGE_TIMEOUT", "INTEGRATION_ERROR"}:
+                safe_code = "MODEL_ERROR"
             response = {**{k: claim["request"][k] for k in
                            ("schema_version", "request_id", "room_id", "operation", "input_revision")},
                         "status": "error", "data": {}, "warnings": [],
-                        "error": {"code": "MODEL_ERROR", "message": "Agent failed validation or execution",
+                        "error": {"code": "CONFIG_ERROR" if safe_code in {"CONFIG_ERROR", "EVALUATOR_NOT_READY", "SPACETIME_CONFIG_ERROR"} else "MODEL_ERROR", "message": "Agent failed: " + safe_code,
                                   "retryable": True}}
         self.finish(claim["task_id"], claim["lease_token"], response)
         return True
@@ -533,6 +560,7 @@ class Workflow:
             s = self._room(db, room_id)
             need(s["phase"] != "completed", "Completed output already recorded", "CONFLICT")
             s["phase"] = "ended"
+            s["idea_revision"] = s["serial"] + 1
             db.execute("UPDATE tasks SET status='cancelled',lease_token=NULL WHERE room_id=? AND status IN ('queued','running')",
                        (room_id,))
             Store.save(db, s)
@@ -550,6 +578,7 @@ class Workflow:
                 "paused_reason", "calls_started", "difference", "answers", "votes", "convergence_decision",
                 "candidates", "evaluations", "reviews", "candidate_history", "selected_candidate_ref",
             )}
+            public["agent_runtime"] = s.get("agent_runtime", {})
             public["shared_context"] = copy.deepcopy(self._shared(s))
             public["members"] = {mid: {"stage": m["stage"], "approved_round": m["approved_round"]}
                                  for mid, m in s["members"].items()}

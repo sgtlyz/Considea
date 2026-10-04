@@ -32,7 +32,7 @@ class MockRunner:
 
     def __call__(self, request):
         p, op = request["payload"], request["operation"]
-        data, status = {"contract_version": "2.0"}, "ok"
+        data, status = {"contract_version": p["contract_version"]}, "ok"
         shared = p.get("shared_context", {})
         source_ids = [s["source_id"] for s in shared.get("sources", [])]
         if op == "interview.turn":

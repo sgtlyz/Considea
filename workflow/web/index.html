@@ -37,6 +37,7 @@ details{margin:12px 0}summary{cursor:pointer;font-weight:600}section{min-width:0
 </div>
 <script>
 let auth=JSON.parse(sessionStorage.getItem('conclave-auth')||'null'), snapshot=null, dirty=false;
+let streamController=null,streamKey=null;
 const $=id=>document.getElementById(id);
 const labels={interviewing:'私人访谈',detecting_difference:'梳理分歧',awaiting_difference_answers:'等待分歧回答',awaiting_convergence_decision:'等待成员选择',idea_generating:'生成候选',evaluating:'评估候选',awaiting_review:'等待审阅',revising:'修改候选',completed:'已完成',ended:'已结束',queued_turn:'准备问题',awaiting_answers:'等待回答',queued_summary:'整理画像',awaiting_profile_approval:'等待批准共享',approved:'已确认',queued:'排队中',running:'进行中',failed:'失败',stale:'已过期',cancelled:'已取消'};
 document.addEventListener('input',e=>{if(e.target.closest('#app'))dirty=true});
@@ -49,7 +50,7 @@ async function api(path,body,token=auth?.token){
  const r=await fetch('/api'+path,{method:body===undefined?'GET':'POST',headers:{...(body===undefined?{}:{'Content-Type':'application/json'}),...(token?{'Authorization':'Bearer '+token}:{})},body:body===undefined?undefined:JSON.stringify(body)});
  const data=await r.json();if(!r.ok)throw Error((data.error?.code?data.error.code+'：':'')+(data.error?.message||'操作未完成'));return data;
 }
-function save(a){auth=a;snapshot=null;dirty=false;sessionStorage.setItem('conclave-auth',JSON.stringify(a))}
+function save(a){streamController?.abort();streamKey=null;auth=a;snapshot=null;dirty=false;sessionStorage.setItem('conclave-auth',JSON.stringify(a))}
 async function event(type,payload,revision){
  const result=await api('/rooms/'+auth.room_id+'/events',{contract_version:'2.0',event_id:crypto.randomUUID(),room_id:auth.room_id,expected_revision:revision,type,payload});
  if(result.status!=='accepted')throw Error(result.error.message);dirty=false;await refresh();
@@ -68,6 +69,7 @@ async function refresh(){
  if(!auth)return;
  const next=await api('/rooms/'+auth.room_id);$('error').textContent='';
  $('entry').hidden=true;$('app').hidden=false;
+ if(next.realtime?.enabled)startUpdates();
  if(!snapshot||JSON.stringify(snapshot)!==JSON.stringify(next)){snapshot=next;render(snapshot)}
 }
 function render(v){
@@ -76,6 +78,9 @@ function render(v){
  node('p','房间 '+v.room_id+' · '+(v.actor.member_id||'管理员'),status);
  detail('保存本人的恢复凭据（请私下保管）',{room_id:auth.room_id,token:auth.token},status);
  if(v.mode==='mock')node('p','离线演示模式：候选和评估为模拟数据，未调用真实 Agent 或搜索。',status).className='notice';
+ if(v.agent_runtime?.model==='fixture')node('p','整合测试：使用队友 Agent 代码，模型回答为模拟数据。',status).className='notice';
+ if(v.agent_runtime?.evaluator==='stub')node('p','Evaluator 尚未接入：评估报告为流程测试占位，不代表可行性或创新性结论。',status).className='notice';
+ if(v.realtime?.enabled)node('small',v.realtime.connected?'共享进度已连接实时同步':'共享同步待恢复；已保存的回答不会丢失',status);
  node('p','收敛：全员 converge 才生成；任何人 diverge 则继续。已调用 '+v.calls_started+' / '+v.config.max_agent_calls,status);
  if(v.paused_reason)node('p','已暂停：调用额度已用完，请管理员提高额度或结束房间。',status).className='notice';
  if(v.actor.role==='admin'){
@@ -142,7 +147,24 @@ function render(v){
   if(task.status==='failed')button('重试此任务',tasks,async()=>{await api('/rooms/'+auth.room_id+'/tasks/'+task.task_id+'/retry',{});await refresh()});
  }
 }
+function startUpdates(){
+ const key=auth.room_id+auth.token;if(streamKey===key)return;
+ streamController?.abort();streamController=new AbortController();const signal=streamController.signal;streamKey=key;
+ const saved={...auth};
+ (async()=>{while(!signal.aborted){try{
+   const response=await fetch('/api/rooms/'+saved.room_id+'/updates',{headers:{Authorization:'Bearer '+saved.token},signal});
+   if(!response.ok)throw Error('Realtime unavailable');
+   const reader=response.body.getReader(),decoder=new TextDecoder();let buffer='';
+   while(!signal.aborted){const {done,value}=await reader.read();if(done)break;buffer+=decoder.decode(value,{stream:true});
+     let boundary;while((boundary=buffer.indexOf('\n\n'))>=0){const frame=buffer.slice(0,boundary);buffer=buffer.slice(boundary+2);
+       if(frame.startsWith('data: ')&&!dirty&&!document.querySelector('input:focus,textarea:focus,select:focus'))await refresh();
+     }
+   }
+ }catch(e){if(signal.aborted)break;}
+ if(!signal.aborted)await new Promise(r=>setTimeout(r,1000));
+ }})();
+}
 if(auth)refresh().catch(e=>{$('error').textContent=e.message;$('entry').hidden=false});
-setInterval(()=>{if(auth&&!dirty&&!document.querySelector('input:focus,textarea:focus,select:focus'))refresh().catch(()=>{})},2500);
+setInterval(()=>{if(auth&&!dirty&&!document.querySelector('input:focus,textarea:focus,select:focus'))refresh().catch(()=>{})},10000);
 </script>
 </html>

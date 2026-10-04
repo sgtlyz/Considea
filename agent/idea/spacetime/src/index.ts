@@ -16,7 +16,11 @@ const job = table({ name: 'idea_job' }, {
   status: t.string(), responseJson: t.string(), claimant: t.option(t.identity()), attemptId: t.string(), leaseUntil: t.u64(),
 });
 
-const spacetimedb = schema({ owner, grant, room, job });
+// Authorized shared projection only. Never publish SQLite's raw rooms.state.
+const board = table({ name: 'workflow_board' }, {
+  roomId: t.string().primaryKey(), revision: t.u64(), snapshotJson: t.string(),
+});
+const spacetimedb = schema({ owner, grant, room, job, board });
 export default spacetimedb;
 type Ctx = ReducerCtx<InferSchema<typeof spacetimedb>>;
 type ReadCtx = ViewCtx<InferSchema<typeof spacetimedb>>;
@@ -176,4 +180,50 @@ export const myIdeaJobs = spacetimedb.view({ name: 'my_idea_jobs', public: true 
     }
   }
   return rows;
+});
+
+/** Idempotent, monotonic outbox target. Workflow remains the state-machine authority. */
+export const publishBoard = spacetimedb.reducer({ roomId: t.string(), revision: t.u64(),
+  ideaRevision: t.u64(), snapshotJson: t.string() }, (ctx, args) => {
+  requireRole(ctx, args.roomId, 'workflow');
+  const snapshot = parseObject(args.snapshotJson);
+  const allowed = ['room_id','revision','discussion_round','phase','mode','agent_runtime','room_context','config',
+    'paused_reason','calls_started','difference','answers','votes','convergence_decision','candidates','evaluations',
+    'reviews','candidate_history','selected_candidate_ref','shared_context','members'];
+  if (Object.keys(snapshot).some(k => !allowed.includes(k)) || snapshot.room_id !== args.roomId
+      || snapshot.revision !== Number(args.revision)) reject('INVALID_BOARD');
+  const previous = ctx.db.board.roomId.find(args.roomId);
+  const snapshotJson = canonical(snapshot);
+  if (previous && previous.revision > args.revision) return;
+  if (previous?.revision === args.revision) {
+    if (previous.snapshotJson !== snapshotJson) reject('CONFLICT');
+    return;
+  }
+  const row = { roomId: args.roomId, revision: args.revision, snapshotJson };
+  if (previous) ctx.db.board.roomId.update(row); else ctx.db.board.insert(row);
+  const current = ctx.db.room.roomId.find(args.roomId);
+  if (!current || current.inputRevision < args.ideaRevision) {
+    const revision = { roomId: args.roomId, inputRevision: args.ideaRevision, authorizationRevision: current?.authorizationRevision ?? 0n };
+    if (current) ctx.db.room.roomId.update(revision); else ctx.db.room.insert(revision);
+  }
+});
+
+export const myWorkflowBoards = spacetimedb.view({ name: 'my_workflow_boards', public: true }, t.array(board.rowType), ctx => {
+  const rows = [];
+  for (const access of ctx.db.grant.identity.filter(ctx.sender)) {
+    if (access.role !== 'workflow') continue;
+    const row = ctx.db.board.roomId.find(access.roomId);
+    if (row) rows.push(row);
+  }
+  return rows;
+});
+
+/** Only an explicit Workflow retry may clear a failed remote outcome. */
+export const retryIdea = spacetimedb.reducer({ roomId: t.string(), requestId: t.string() }, (ctx, args) => {
+  requireRole(ctx, args.roomId, 'workflow');
+  const row = ctx.db.job.key.find(pair(args.roomId, args.requestId));
+  if (!row) return reject('NOT_FOUND');
+  currentRoom(ctx, row.roomId, row.inputRevision, row.authorizationRevision);
+  if (row.status !== 'completed' || parseObject(row.responseJson).status !== 'error') return;
+  ctx.db.job.key.update({ ...row, status: 'queued', responseJson: '', claimant: undefined, attemptId: '', leaseUntil: 0n });
 });

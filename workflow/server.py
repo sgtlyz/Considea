@@ -11,6 +11,7 @@ from jsonschema import ValidationError
 from .agents import MockRunner, PiRunner
 from .engine import Workflow, WorkflowError
 from .store import Store
+from .integration import IntegratedRunner, SharedSync
 
 
 def make_server(workflow, host="127.0.0.1", port=8765):
@@ -70,7 +71,36 @@ def make_server(workflow, host="127.0.0.1", port=8765):
                         return self._send(200, workflow.join(rid, body["invitation"]))
                     token = self._token()
                     if len(parts) == 3 and method == "GET":
-                        return self._send(200, workflow.view(token, rid))
+                        view = workflow.view(token, rid)
+                        sync = getattr(workflow, "sync", None)
+                        view["realtime"] = sync.status(rid) if sync else {"enabled": False}
+                        return self._send(200, view)
+                    if parts[3:] == ["updates"] and method == "GET":
+                        workflow.view(token, rid)  # Authenticate before sending any event headers.
+                        sync = getattr(workflow, "sync", None)
+                        if not sync:
+                            raise WorkflowError("NOT_FOUND", "Realtime sync is not enabled", 404)
+                        self.send_response(200)
+                        self.send_header("Content-Type", "text/event-stream; charset=utf-8")
+                        self.send_header("Cache-Control", "no-store")
+                        self.send_header("Connection", "close")
+                        self.end_headers()
+                        seen = None
+                        try:
+                            # Short renewable stream avoids holding an unauthenticated long-term session.
+                            import time
+                            end = time.monotonic() + 25
+                            while time.monotonic() < end:
+                                revision = sync.bridge.boards.get(rid, -1)
+                                data = "data: " + json.dumps({"revision": revision}) + "\n\n" if revision != seen else ": heartbeat\n\n"
+                                self.wfile.write(data.encode()); self.wfile.flush()
+                                seen = revision
+                                with sync.bridge.changed:
+                                    sync.bridge.changed.wait(timeout=2)
+                        except (BrokenPipeError, ConnectionResetError, OSError):
+                            pass
+                        self.close_connection = True
+                        return
                     if method == "POST":
                         body = self._body()
                         if parts[3:] == ["events"]:
@@ -108,12 +138,20 @@ def main():
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8765)
     parser.add_argument("--db", default="workflow/data/conclave.sqlite3")
-    parser.add_argument("--mode", choices=["mock", "pi"], default="mock")
+    parser.add_argument("--mode", choices=["mock", "pi", "integrated"], default="mock")
+    parser.add_argument("--model", choices=["offline", "live"], default="offline")
+    parser.add_argument("--evaluator", choices=["stub", "blocked"], default="stub")
+    parser.add_argument("--spacetime-config", help="Private server-side JSON config path; never sent to browsers")
     parser.add_argument("--workers", type=int, default=4)
     args = parser.parse_args()
     if not 1 <= args.workers <= 16:
         parser.error("--workers must be between 1 and 16")
-    if args.mode == "pi":
+    if args.spacetime_config and args.mode != "integrated":
+        parser.error("--spacetime-config requires --mode integrated")
+    if args.mode == "integrated":
+        runner = IntegratedRunner(offline=args.model == "offline", evaluator=args.evaluator,
+                                  spacetime_config=args.spacetime_config)
+    elif args.mode == "pi":
         root = Path(__file__).resolve().parents[1]
         modules = {role: Path(os.environ.get("CONCLAVE_" + role.upper() + "_MODULE",
                                              str(root / "agent" / role / "definition.mjs")))
@@ -121,7 +159,10 @@ def main():
         runner = PiRunner(modules)
     else:
         runner = MockRunner()
-    workflow = Workflow(Store(args.db), runner)
+    workflow = Workflow(Store(args.db), runner, lease_seconds=480 if args.spacetime_config else 120)
+    workflow.sync = SharedSync(workflow.store, runner.bridge) if args.spacetime_config else None
+    if workflow.sync:
+        workflow.sync.start()
     stop = threading.Event()
 
     def work():
@@ -145,6 +186,8 @@ def main():
     finally:
         stop.set()
         server.server_close()
+        if workflow.sync: workflow.sync.close()
+        if hasattr(runner, "close"): runner.close()
 
 
 if __name__ == "__main__":

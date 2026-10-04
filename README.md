@@ -2,15 +2,15 @@
 
 面向 Hackathon 团队：先分别理解成员，通过访谈、分歧识别和真实人工回答逐步澄清方向；由成员决定何时收敛，再生成候选、评估并审阅。
 
-> **当前状态：Workflow 已实现，可离线联调。** Python 状态机、SQLite 持久化、HTTP 接口和本地工作台位于 [workflow/](workflow/README.md)。默认使用明确标记的 mock Agent；四个业务 Agent 由队友按 v2.0 契约接入，真实模型与检索效果尚未验收。
+> **当前状态：三个 Agent 与 Workflow、SpacetimeDB 已在整合分支接通。** Interview、Negotiator、Idea 使用队友实现；Evaluator 暂用明确标记的测试占位，Mem0 暂不启用。已通过离线与本地真实数据库整合测试，真实模型质量尚未验收。完整安装、运行和测试见 [整合说明](workflow/INTEGRATION.md)。
 
 ## 本地运行
 
-在仓库根目录执行：
+先按 [整合说明](workflow/INTEGRATION.md) 安装 Node 依赖，然后在仓库根目录执行：
 
 ```powershell
 python -m pip install -r workflow/requirements.txt
-python -m workflow
+python -m workflow --mode integrated --model offline --evaluator stub --db workflow/data/integrated.sqlite3
 ```
 
 打开 http://127.0.0.1:8765 ，创建房间、保存管理员令牌，将每个成员的邀请码分别交给本人。每个成员在独立浏览器标签页加入并完成私人访谈。启动参数、HTTP 输入输出、Agent 接入和恢复规则见 [Workflow 开发说明](workflow/README.md)。
@@ -93,9 +93,9 @@ Evaluator 检查官方技术文档、API、数据、设备、开发时间约束�
 
 目标界面包括 Room、Private Interview、Team Workbench 和 Final Idea。工作台展示获准共享的偏好、当前分歧、人工问题、历史与真实进度；结果页展示候选、评估和三种审阅动作。
 
-[Workflow](workflow/README.md) 已实现房间、成员邀请、私人访谈、共享批准、分歧回答、收敛、生成与评估调度、审阅及两条回路，并提供本地工作台。现有 [Pi Base](agent/pi-base/README.md) 负责单次模型调用；`--mode pi` 通过 Python bridge 调用队友的角色 definition。旧 roles.mjs 仍是旧三角色示例，不作为本工作流的业务 Agent。
+[Workflow](workflow/README.md) 已实现房间、成员邀请、私人访谈、共享批准、分歧回答、收敛、生成与评估调度、审阅及两条回路，并提供本地工作台。现有 [Pi Base](agent/pi-base/README.md) 负责单次模型调用；`--mode integrated` 通过专用桥接调用队友 service 和原生 Python Negotiator。旧 roles.mjs 仍是旧三角色示例，不作为本工作流的业务 Agent。
 
-实现以 [workflow_updated.md](workflow_updated.md) 为流程依据，以 [接口契约 v2.0](agent/contracts.md) 和 [JSON Schema](agent/interfaces/protocol.schema.json) 为接线基准。六个 Agent operation 已明确，配套 [离线样例](agent/interfaces/fixtures) 可供 Workflow 与 Agent 并行开发。当前 Pi Base 示例仍是旧业务格式，接入新 Agent 时使用契约指定的 definition。
+实现以 [workflow_updated.md](workflow_updated.md) 为流程依据，以 [接口契约 v2.0](agent/contracts.md) 为基础；Interview 使用其明确的 v2.1 跟进扩展，其他角色和人工事件仍为 v2.0，详见 [整合说明](workflow/INTEGRATION.md)。六个 Agent operation 已明确，配套 [离线样例](agent/interfaces/fixtures) 可供 Workflow 与 Agent 并行开发。当前 Pi Base 示例仍是旧业务格式，接入新 Agent 时使用契约指定的 definition。
 
 ## 验收重点
 

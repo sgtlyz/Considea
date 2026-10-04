@@ -264,3 +264,7 @@ Node Workflow 可直接调用 runAgent；Python Workflow 可调用现有 python_
 字段/枚举/操作名改动需同时更新 contracts、schema、fixtures 和对应角色说明。新增展示信息先扩 schema，不随意塞进 data。
 
 已冻结接口不替团队决定：多人汇总政策、精确轮次递增事务、每轮访谈对象、运行预算、候选选择与界面交互仍由 Workflow 配置或另行确认。Agent 接收显式参数，不能自行填补这些规则。
+
+## 整合分支补充
+
+人工事件及 Negotiator / Idea / Evaluator 仍沿用本文 v2.0。新 Interview 调用采用其 [v2.1 跟进扩展](interview/followup-integration.md)，显式携带人类决定、候选和对应报告。具体入口与存储边界见 [整合说明](../workflow/INTEGRATION.md)。

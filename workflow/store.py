@@ -42,6 +42,10 @@ class Store:
                     status TEXT NOT NULL, attempts INTEGER NOT NULL DEFAULT 0,
                     lease_token TEXT, lease_until REAL, result TEXT, error TEXT,
                     created_at TEXT NOT NULL);
+                CREATE TABLE IF NOT EXISTS shared_outbox (
+                    room_id TEXT PRIMARY KEY, revision INTEGER NOT NULL,
+                    idea_revision INTEGER NOT NULL, snapshot TEXT NOT NULL,
+                    delivered_revision INTEGER NOT NULL DEFAULT -1);
                 CREATE INDEX IF NOT EXISTS task_status ON tasks(status,created_at);
             """)
 
@@ -69,3 +73,18 @@ class Store:
     def save(db, state):
         state["revision"] += 1
         db.execute("UPDATE rooms SET state=? WHERE id=?", (encode(state), state["room_id"]))
+
+        # Updated in the same transaction as state; a crash cannot lose the sync intent.
+        shared = {key: state[key] for key in (
+            "room_id", "revision", "discussion_round", "phase", "mode", "room_context", "config",
+            "paused_reason", "calls_started", "difference", "answers", "votes", "convergence_decision",
+            "candidates", "evaluations", "reviews", "candidate_history", "selected_candidate_ref")}
+        shared["agent_runtime"] = state.get("agent_runtime", {})
+        shared["shared_context"] = {"profiles": [m["profile"] for m in state["members"].values() if m["profile"]],
+                                    "sources": state["sources"], "discussion_history": state["discussion_history"]}
+        shared["members"] = {mid: {"stage": m["stage"], "approved_round": m["approved_round"]}
+                             for mid, m in state["members"].items()}
+        db.execute("""INSERT INTO shared_outbox(room_id,revision,idea_revision,snapshot) VALUES(?,?,?,?)
+            ON CONFLICT(room_id) DO UPDATE SET revision=excluded.revision,
+            idea_revision=excluded.idea_revision,snapshot=excluded.snapshot""",
+            (state["room_id"], state["revision"], state.get("idea_revision", 0), encode(shared)))

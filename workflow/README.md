@@ -2,6 +2,8 @@
 
 实现位置：`workflow/engine.py`（状态机）、`store.py`（SQLite）、`agents.py`（mock / Pi 适配）、`server.py`（HTTP）、`web/index.html`（工作台）。
 
+整合入口见 [INTEGRATION.md](INTEGRATION.md)：已接 Interview、Python Negotiator、Idea 与 SpacetimeDB；Evaluator 暂用占位。以下说明保留基础 mock / 自定义 Pi 模块模式，团队联调用 `--mode integrated`。
+
 Workflow 已实现四角色的调度与人工节点。业务 Agent 的 prompt、工具和实际输出由队友实现；默认 mock 仅用于验证流程，页面会明确标记，不能把演示候选或报告当成真实研究结果。
 
 ## 启动与验证
@@ -29,7 +31,10 @@ python agent/interfaces/validate_contracts.py
 | --host | 127.0.0.1 | 本机监听 |
 | --port | 8765 | HTTP 端口 |
 | --db | workflow/data/conclave.sqlite3 | SQLite 文件 |
-| --mode | mock | mock 或 pi |
+| --mode | mock | mock、旧 pi、自带队友接线的 integrated |
+| --model | offline | integrated 的 offline / live 模型 |
+| --evaluator | stub | integrated 的 stub / blocked |
+| --spacetime-config | 无 | 私有数据库连接 JSON 文件 |
 | --workers | 4 | 后台任务并发数，1–16 |
 
 数据目录已被 Git 忽略，数据库包含私人访谈，不能作为联调样例提交到仓库。重启同一路径会恢复状态；mock 房间仅由 mock worker 处理，pi 房间仅由 pi worker 处理。切换模式时创建相应模式的新房间。
@@ -158,12 +163,12 @@ RoomContext 字段由 [JSON Schema](../agent/interfaces/protocol.schema.json) �
 
 ## 队友如何接 Agent
 
-六个 operation、请求与返回保持 [接口契约 v2.0](../agent/contracts.md)，没有增加隐藏的 Agent 输出字段。
+基础契约为 v2.0；新 Interview 请求和输出使用其显式 v2.1 扩展，其他 operation 与人工事件保持 v2.0。详见 [整合接口](INTEGRATION.md#接线与记忆)。
 
 | operation | 默认模块 |
 | --- | --- |
 | interview.turn、interview.summarize | agent/interview/definition.mjs |
-| negotiate.detect | agent/negotiate/definition.mjs |
+| negotiate.detect | 集成模式：agent/negotiate/definition.py；旧 pi 模式仅支持自定义 JS 模块 |
 | idea.generate、idea.revise | agent/idea/definition.mjs |
 | evaluator.evaluate | agent/evaluator/definition.mjs |
 
@@ -193,7 +198,7 @@ Evaluator 的搜索工具由队友提供并遵守 search_policy；Workflow 校�
 
 - SQLite 短事务管理状态、事件去重、排队和任务提交；模型调用在事务外执行。
 - 独立成员 Interview 可并行。输入快照及依赖包含轮次、阶段、对应成员 revision 或 candidate_ref；旧结果不能覆盖新状态。
-- 任务领取使用 120 秒租约；进程中断后过期任务可重领。旧持有者不能再提交。一次远程模型请求在崩溃后可能重复执行或计费，但结果只提交一次。
+- 基础任务领取使用 120 秒租约；SpacetimeDB 整合派发使用 480 秒，远端 Idea 使用 300 秒；进程中断后过期任务可重领。旧持有者不能再提交。一次远程模型请求在崩溃后可能重复执行或计费，但结果只提交一次。
 - 失败任务需显式 retry，保留原 request_id 和输入快照，仅在依赖仍有效时重试。公共任务可由成员重试，私人任务只允许本人或管理员。
 - 每次实际派发或重领计入 max_agent_calls。达到额度只暂停派发；管理员提高额度后恢复，或 stop 结束。已经开始的调用不因额度用尽自动取消。
 - stop 取消排队和运行任务并拒绝迟到结果；已完成房间不能被 stop 覆盖。

@@ -1,6 +1,6 @@
 # Interview Agent：并行开发交付说明
 
-负责人实现 `interview.turn` 和 `interview.summarize`。交付模块约定为 `agent/interview/definition.mjs`，default-export 的 name 为 `interview`。模块尚未实现。
+负责人实现 `interview.turn` 和 `interview.summarize`。交付模块约定为 `agent/interview/definition.mjs`，default-export 的 name 为 `interview`。模块已交付并接入整合分支，运行入口为 service.mjs/runInterview。
 
 输入/输出精确定义以 [contracts.md](contracts.md) 第 4 节和 [schema](interfaces/protocol.schema.json) 的 InterviewTurnInput/Data、InterviewSummarizeInput/Data 为准。
 

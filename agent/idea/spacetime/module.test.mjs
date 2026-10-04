@@ -41,7 +41,7 @@ function table(primaryKey, indexKeys = []) {
 }
 
 function fixture() {
-  const db = { owner: table('key'), grant: table('key', ['identity']), room: table('roomId'), job: table('key', ['roomId']) };
+  const db = { owner: table('key'), grant: table('key', ['identity']), room: table('roomId'), job: table('key', ['roomId']), board: table('roomId') };
   let now = 1_000_000n;
   const ctx = (sender) => ({ db, sender, timestamp: { microsSinceUnixEpoch: now } });
   const request = {
@@ -151,4 +151,26 @@ test('error outcomes are stored for audit without advancing product workflow', (
   assert.equal(JSON.parse(f.row().responseJson).status, 'error');
   assert.deepEqual(f.db.room.roomId.find('room-1'), { roomId: 'room-1', inputRevision: 7n, authorizationRevision: 3n });
   assert.equal([...f.db.job.iter()].length, 1);
+});
+
+test('board projection is workflow-only, monotonic, rejects private fields and invalidates stopped work', () => {
+  const f=fixture();
+  const publish=(revision, extra={})=>mod.publishBoard(f.ctx(workflow), {roomId:'room-1', revision:BigInt(revision),
+    ideaRevision:9n, snapshotJson:JSON.stringify({room_id:'room-1',revision,phase:'ended',...extra})});
+  assert.throws(()=>publish(10,{private:{messages:['secret']}}),/INVALID_BOARD/);
+  publish(10); publish(9); publish(10);
+  assert.equal(mod.myWorkflowBoards(f.ctx(workflow))[0].revision,10n);
+  assert.deepEqual(mod.myWorkflowBoards(f.ctx(workerA)),[]);
+  assert.deepEqual(mod.myWorkflowBoards(f.ctx(outsider)),[]);
+  assert.throws(()=>publish(10,{phase:'interviewing'}),/CONFLICT/);
+  assert.throws(()=>f.claim(),/STALE_INPUT/);
+  assert.equal(f.db.room.roomId.find('room-1').authorizationRevision,3n);
+});
+test('only workflow retries error outcomes and cannot clear successful results',()=>{
+  const f=fixture();f.claim();f.commit({result:f.response('error')});
+  const args={roomId:'room-1',requestId:'request-1'};
+  assert.throws(()=>mod.retryIdea(f.ctx(workerA),args),/UNAUTHORIZED/);
+  mod.retryIdea(f.ctx(workflow),args);assert.equal(f.row().status,'queued');
+  f.claim();f.commit();mod.retryIdea(f.ctx(workflow),args);
+  assert.equal(f.row().status,'completed');assert.equal(JSON.parse(f.row().responseJson).status,'ok');
 });
