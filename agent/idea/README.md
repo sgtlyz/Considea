@@ -87,7 +87,7 @@ Mem0 synchronization is a trusted background operation, not an Agent tool. It st
 
 ## Live execution
 
-Copy `.env.example` to a local `.env` or configure the server environment. Set an explicit supported `DEEPSEEK_MODEL`; the CLI does not select one for you. Real keys stay server-side. Search needs `TAVILY_API_KEY`; optional memory needs `MEM0_API_KEY`.
+Copy `.env.example` to a local `.env` or configure the server environment. The CLI uses `createIdeaRuntime`: choose `PI_PROVIDER=deepseek` (default) with `DEEPSEEK_API_KEY` / `DEEPSEEK_MODEL`, or `PI_PROVIDER=openai` with `OPENAI_API_KEY` / `OPENAI_MODEL` (or `PI_MODEL`). Model choice is explicit. Existing `createDeepSeekRuntime` callers remain supported. Real keys stay server-side. Search still uses `TAVILY_API_KEY` for either model provider; optional memory needs `MEM0_API_KEY`.
 
 ```powershell
 node --env-file=agent/idea/.env agent/idea/cli.mjs --live --input authorized-request.json --max-model-requests 6 --max-output-tokens 4096

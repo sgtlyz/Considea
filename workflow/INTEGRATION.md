@@ -20,7 +20,7 @@ python -m workflow --mode integrated --model offline --evaluator agent
 
 Offline mode exercises real services and validators with simulated model/retrieval responses. It does not call paid APIs. Negotiation uses the Python rules in both modes.
 
-For live mode, create a root `.env` from `.env.example`, fill DeepSeek and Tavily keys, and set a demo access code. Generate `CONCLAVE_SECRET_KEY` once using the command in the template; retain it across deployments. Run:
+For live mode, create a root `.env` from `.env.example`, choose `PI_PROVIDER=deepseek` or `PI_PROVIDER=openai`, and configure the selected model key/model plus Tavily. DeepSeek uses `DEEPSEEK_API_KEY` / `DEEPSEEK_MODEL`; OpenAI uses `OPENAI_API_KEY` / `OPENAI_MODEL` (or `PI_MODEL`). Evaluator follows `PI_PROVIDER` unless `EVALUATOR_PROVIDER` is set; `EVALUATOR_MODEL` is an optional model override. When switching an existing `.env`, clear or update old evaluator overrides, including a DeepSeek-specific `EVALUATOR_BASE_URL`. Set a demo access code for shared-key access. Generate `CONCLAVE_SECRET_KEY` once using the command in the template; retain it across deployments. Run:
 
 ```sh
 python -m workflow --mode integrated --model live --evaluator agent

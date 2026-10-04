@@ -77,6 +77,9 @@ def make_server(workflow, host="127.0.0.1", port=8765):
                 if method == "GET" and parts == ["api", "capabilities"]:
                     return self._send(200, {"live":security.live,"own_keys_supported":bool(security.cipher),
                         "team_access_required":security.live,"storage":workflow.store.backend,
+                        "model_providers":["deepseek", "openai"],
+                        "openai_model":security.env.get("OPENAI_MODEL") or
+                            (security.env.get("PI_MODEL", "") if security.env.get("PI_PROVIDER") == "openai" else ""),
                         "shared_demo_available":bool(security.access_code)})
                 if method == "POST":
                     # The global limit remains effective even when clients spoof forwarded addresses.

@@ -73,6 +73,84 @@ class SecurityTests(unittest.TestCase):
         with self.assertRaises(WorkflowError): self.security.credentials_for(rid)
         self.security.set_keys(room["admin_token"],rid,{"deepseek_api_key":"test-replacement-private"})
         self.assertIsNotNone(self.workflow.claim(rid))
+    def test_openai_room_keys_switch_all_agents_without_leaking_or_using_shared_keys(self):
+        keys = {"provider": "openai", "openai_api_key": "sk-test-private-openai", "model": "gpt-4.1-mini",
+                "tavily_api_key": "test-private-tavily"}
+        room = self.room(keys)
+        rid = room["room_id"]
+        env = self.security.credentials_for(rid)
+        self.assertEqual(env["PI_PROVIDER"], "openai")
+        self.assertEqual(env["EVALUATOR_PROVIDER"], "openai")
+        self.assertEqual(env["OPENAI_API_KEY"], keys["openai_api_key"])
+        self.assertEqual(env["OPENAI_MODEL"], "gpt-4.1-mini")
+        self.assertEqual(env["EVALUATOR_MODEL"], "gpt-4.1-mini")
+        self.assertEqual(env["DEEPSEEK_API_KEY"], "")
+        self.assertEqual(env["TAVILY_API_KEY"], keys["tavily_api_key"])
+        with self.workflow.store.transaction() as db:
+            for table in ("rooms", "tasks", "shared_outbox", "room_keys"):
+                self.assertNotIn(keys["openai_api_key"], str([dict(r) for r in db.execute("SELECT * FROM " + table)]))
+        self.assertNotIn(keys["openai_api_key"], json.dumps(self.workflow.view(room["admin_token"], rid)))
+        self.security.set_keys(room["admin_token"], rid, {"deepseek_api_key": "test-private-deepseek"})
+        env = self.security.credentials_for(rid)
+        self.assertEqual(env["PI_PROVIDER"], "deepseek")
+        self.assertEqual(env["OPENAI_API_KEY"], "")
+        self.assertEqual(env["TAVILY_API_KEY"], "")
+
+    def test_openai_model_can_come_from_server_config_but_not_deepseek_config(self):
+        keys = {"provider": "openai", "openai_api_key": "sk-test-private-openai"}
+        with self.assertRaises(WorkflowError):
+            self.security.prepare(keys, "")
+        security = RoomSecurity(self.workflow, {**self.env, "OPENAI_MODEL": "gpt-4.1-mini"})
+        self.assertEqual(security.prepare(keys, "")["keys"]["model"], "gpt-4.1-mini")
+        for invalid in ({**keys, "model": "https://untrusted.example"}, {**keys, "model": "invalid model"},
+                        {**keys, "provider": "unknown", "model": "gpt-4.1-mini"},
+                        {"provider": "openai", "deepseek_api_key": "test-private-deepseek", "model": "gpt-4.1-mini"}):
+            with self.assertRaises(WorkflowError):
+                security.prepare(invalid, "")
+
+    def test_legacy_encrypted_deepseek_keys_still_work_after_openai_is_added(self):
+        room = self.room()
+        rid = room["room_id"]
+        old_keys = {"deepseek_api_key": "test-legacy-private-key", "tavily_api_key": "test-legacy-tavily-key"}
+        encrypted = self.security.cipher.encrypt(json.dumps({"room_id": rid, "keys": old_keys}).encode()).decode()
+        with self.workflow.store.transaction() as db:
+            db.execute("UPDATE room_keys SET funding='own', encrypted=? WHERE room_id=?", (encrypted, rid))
+        env = self.security.credentials_for(rid)
+        self.assertEqual(env["PI_PROVIDER"], "deepseek")
+        self.assertEqual(env["DEEPSEEK_API_KEY"], "test-legacy-private-key")
+        self.assertEqual(env["TAVILY_API_KEY"], "test-legacy-tavily-key")
+        self.assertEqual(env["OPENAI_API_KEY"], "")
+
+    def test_existing_deepseek_evaluator_overrides_are_preserved_without_inheriting_openai_overrides(self):
+        room = self.room({"deepseek_api_key": "test-private-deepseek"})
+        configured = {**self.env, "PI_PROVIDER": "deepseek", "DEEPSEEK_MODEL": "deepseek-flash",
+                      "EVALUATOR_PROVIDER": "deepseek", "EVALUATOR_MODEL": "deepseek-chat",
+                      "EVALUATOR_BASE_URL": "https://api.deepseek.com/v1"}
+        security = RoomSecurity(self.workflow, configured)
+        env = security.credentials_for(room["room_id"])
+        self.assertEqual(env["DEEPSEEK_MODEL"], "deepseek-flash")
+        self.assertEqual(env["EVALUATOR_MODEL"], "deepseek-chat")
+        self.assertEqual(env["EVALUATOR_BASE_URL"], "https://api.deepseek.com/v1")
+        security = RoomSecurity(self.workflow, {**configured, "PI_PROVIDER": "openai",
+                                               "EVALUATOR_PROVIDER": "openai", "EVALUATOR_MODEL": "gpt-4.1-mini"})
+        self.assertEqual(security.credentials_for(room["room_id"])["EVALUATOR_MODEL"], "deepseek-flash")
+        self.assertEqual(security.credentials_for(room["room_id"])["EVALUATOR_BASE_URL"], "")
+
+    def test_openai_key_replacement_preserves_tavily_requirement_and_admin_only_access(self):
+        room = self.room({"deepseek_api_key": "test-private-deepseek", "tavily_api_key": "test-private-tavily"})
+        rid = room["room_id"]
+        joined = self.workflow.join(rid, room["invitations"]["alice"])
+        keys = {"provider": "openai", "openai_api_key": "sk-test-private-openai", "model": "gpt-4.1-mini"}
+        with self.assertRaises(WorkflowError):
+            self.security.set_keys(joined["token"], rid, keys)
+        with self.workflow.store.transaction() as db:
+            state = self.workflow._room(db, rid)
+            state["config"]["search_enabled"] = True
+            Store.save(db, state)
+        with self.assertRaises(WorkflowError):
+            self.security.set_keys(room["admin_token"], rid, keys)
+        self.security.set_keys(room["admin_token"], rid, {**keys, "tavily_api_key": "test-private-tavily"})
+        self.assertEqual(self.security.credentials_for(rid)["TAVILY_API_KEY"], "test-private-tavily")
     def test_access_gate_and_key_validation(self):
         for code in ("", "wrong", None):
             with self.assertRaises(WorkflowError): self.security.prepare(None,code)

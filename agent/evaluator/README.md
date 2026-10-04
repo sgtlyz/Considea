@@ -31,7 +31,7 @@ Searches with no results do not prove global originality. Official documentation
 
 The model submits via `submit_report`; the server checks candidate identity and source IDs against a request-scoped retrieval ledger. The server constructs the envelope, source records and derived verdicts. Invalid submissions share one bounded correction opportunity; repeated invalid output returns `INVALID_OUTPUT`, not a failed novelty judgment.
 
-DeepSeek uses tool calls for retrieval and final submission. Other configured models also have a validated text-JSON compatibility path. Only returned/read evidence can support claims. Non-official sources remain `public_web`; they are not upgraded into official or tested evidence.
+DeepSeek and OpenAI use tool calls for retrieval and final submission, with actual retrieval required on the first turn when research is enabled. Other configured models also have a validated text-JSON compatibility path. Only returned/read evidence can support claims. Non-official sources remain `public_web`; they are not upgraded into official or tested evidence.
 
 Individual investigations separate capability outcome (`available`, `blocked`, `unknown`) from evidence basis. An official source can document that a capability is unavailable; source authority alone does not imply a pass.
 
@@ -39,9 +39,9 @@ Individual investigations separate capability outcome (`available`, `blocked`, `
 
 | Variable | Purpose |
 | --- | --- |
-| EVALUATOR_PROVIDER | deepseek or gemini |
-| EVALUATOR_MODEL | Explicit model; integrated DeepSeek defaults to DEEPSEEK_MODEL |
-| DEEPSEEK_API_KEY / GEMINI_API_KEY | Server-side provider key |
+| EVALUATOR_PROVIDER | deepseek, openai or gemini; defaults to PI_PROVIDER, then deepseek |
+| EVALUATOR_MODEL | Explicit override; OpenAI otherwise uses OPENAI_MODEL / PI_MODEL; integrated DeepSeek uses DEEPSEEK_MODEL |
+| DEEPSEEK_API_KEY / OPENAI_API_KEY / GEMINI_API_KEY | Selected server-side provider key |
 | EVALUATOR_RETRIEVAL | api for Tavily HTTP, or the supported standalone CLI adapter |
 | TAVILY_API_KEY | Required by the HTTP retrieval adapter |
 | EVALUATOR_OFFICIAL_DOMAINS | Comma-separated verified official documentation domains |

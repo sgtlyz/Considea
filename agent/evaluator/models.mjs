@@ -1,5 +1,6 @@
 import { builtinModels } from '@earendil-works/pi-ai/providers/all';
 import { error } from './contracts.mjs';
+import { createOpenAIRuntime } from '../pi-base/openai.mjs';
 
 // DeepSeek's documented strict subset omits string/array length keywords.
 // This only adapts the remote schema; Pi and the ledger retain the original validators.
@@ -17,19 +18,25 @@ function strictSchema(schema) {
   return value;
 }
 
-export function createModelRuntime(env = process.env) {
-  const selected = env.EVALUATOR_PROVIDER ?? 'deepseek';
-  if (!['deepseek', 'gemini'].includes(selected)) throw error('CONFIG_ERROR', 'EVALUATOR_PROVIDER must be deepseek or gemini');
+export function createModelRuntime(env = process.env, options = {}) {
+  const selected = env.EVALUATOR_PROVIDER ?? env.PI_PROVIDER ?? 'deepseek';
+  if (!['deepseek', 'openai', 'gemini'].includes(selected)) throw error('CONFIG_ERROR', 'EVALUATOR_PROVIDER must be deepseek, openai or gemini');
   const provider = selected === 'gemini' ? 'google' : 'deepseek';
   if (env.EVALUATOR_STRICT_TOOLS !== undefined && !['0', '1'].includes(env.EVALUATOR_STRICT_TOOLS))
     throw error('CONFIG_ERROR', 'EVALUATOR_STRICT_TOOLS must be 0 or 1');
   const strictTools = selected === 'deepseek' && (env.EVALUATOR_STRICT_TOOLS === '1' ||
     (env.EVALUATOR_STRICT_TOOLS !== '0' && !env.EVALUATOR_BASE_URL));
-  const apiKey = env[selected === 'gemini' ? 'GEMINI_API_KEY' : 'DEEPSEEK_API_KEY'];
-  if (typeof apiKey !== 'string' || !apiKey.trim()) throw error('CONFIG_ERROR', `${selected === 'gemini' ? 'GEMINI_API_KEY' : 'DEEPSEEK_API_KEY'} is required`);
+  const keyName = selected === 'gemini' ? 'GEMINI_API_KEY' : selected === 'openai' ? 'OPENAI_API_KEY' : 'DEEPSEEK_API_KEY';
+  const apiKey = env[keyName];
+  if (typeof apiKey !== 'string' || !apiKey.trim()) throw error('CONFIG_ERROR', `${keyName} is required`);
   const maxTokens = Number(env.EVALUATOR_MAX_TOKENS ?? 4096);
   if (!Number.isSafeInteger(maxTokens) || maxTokens < 256 || maxTokens > 16384)
     throw error('CONFIG_ERROR', 'EVALUATOR_MAX_TOKENS must be an integer from 256 to 16384');
+  if (selected === 'openai') {
+    if (env.EVALUATOR_BASE_URL) throw error('CONFIG_ERROR', 'OpenAI uses the official Responses endpoint');
+    return createOpenAIRuntime({ env: { ...env, OPENAI_MODEL: env.EVALUATOR_MODEL ?? env.OPENAI_MODEL ?? env.PI_MODEL },
+      maxTokens, maxModelRequests: 32, fetch: options.fetch ?? globalThis.fetch });
+  }
   const models = builtinModels(); const id = env.EVALUATOR_MODEL ?? (selected === 'gemini' ? 'gemini-2.5-flash' : 'deepseek-flash');
   if (typeof id !== 'string' || !id.trim()) throw error('CONFIG_ERROR', 'EVALUATOR_MODEL cannot be empty');
   let model = models.getModel(provider, id);

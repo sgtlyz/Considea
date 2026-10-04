@@ -34,14 +34,15 @@ export async function runEvaluator({ request, model, streamFn, retrieval, offici
     session = createSession(normalized.payload, { retrieval, officialDomains });
     let firstModelCall = true;
     const researchStream = (m, context, options) => {
-      // DeepSeek's auto mode sometimes answers from memory even with tools available.
-      // Require retrieval rather than allowing an early submit_report on the first turn.
-      const requireResearch = firstModelCall && m.provider === 'deepseek' &&
+      // Both selectable providers must start with actual retrieval when research is enabled.
+      const modelTools = ['deepseek', 'openai'].includes(m.provider);
+      const requireResearch = firstModelCall && modelTools &&
         (normalized.payload.tool_budget.max_searches > 0 || normalized.payload.tool_budget.max_reads > 0);
       firstModelCall = false;
       const initialTool = normalized.payload.tool_budget.max_searches > 0 ? 'search' : 'read_source';
-      return streamFn(m, context, { ...options, ...(m.provider === 'deepseek' ? {
-        toolChoice: requireResearch ? { type: 'function', function: { name: initialTool } } : 'required',
+      return streamFn(m, context, { ...options, ...(modelTools ? {
+        toolChoice: requireResearch ? (m.provider === 'openai'
+          ? { type: 'function', name: initialTool } : { type: 'function', function: { name: initialTool } }) : 'required',
       } : {}) });
     };
     const result = await runAgent({ request: normalized, model, streamFn: researchStream, onProgress,

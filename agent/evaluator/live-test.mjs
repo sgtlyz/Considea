@@ -12,7 +12,7 @@ const requested = process.argv.slice(2);
 const scenario = requested[0] ?? 'all';
 const allowed = ['all', 'services', 'preflight', 'feasible', 'duplicate', 'blocker', 'investigate'];
 if (requested.length > 1 || !allowed.includes(scenario)) throw Error(`Usage: node live-test.mjs [${allowed.join('|')}]`);
-const secrets = ['DEEPSEEK_API_KEY', 'GEMINI_API_KEY', 'TAVILY_API_KEY'].map(k => process.env[k]).filter(Boolean);
+const secrets = ['DEEPSEEK_API_KEY', 'OPENAI_API_KEY', 'GEMINI_API_KEY', 'TAVILY_API_KEY'].map(k => process.env[k]).filter(Boolean);
 const safe = value => {
   let content = JSON.stringify(value, null, 2);
   for (const key of secrets) content = content.split(key).join('[REDACTED]');

@@ -4,6 +4,8 @@ A room has one administrator and one private identity per invited participant. T
 
 ## Creation and recovery
 
+Both DeepSeek and OpenAI room credentials are supported. Use `credentials: {provider: "deepseek", deepseek_api_key, tavily_api_key}` or `credentials: {provider: "openai", openai_api_key, model, tavily_api_key}`. Omitting `provider` preserves the legacy DeepSeek format. OpenAI requires an explicit model, supplied in the room form or inherited from the server's `OPENAI_MODEL` (`PI_MODEL` also works when the server uses OpenAI). The pinned Pi model catalog must support it. `/api/capabilities` includes `model_providers` and the configured `openai_model`, without keys.
+
 `GET /api/capabilities` describes live/offline mode, storage, and supported key entry. `POST /api/rooms` accepts the existing room context/config plus either `access_code` for the shared demo or `credentials: {deepseek_api_key, tavily_api_key}` for the creator's keys. Live shared access is closed when `CONCLAVE_DEMO_ACCESS_CODE` is absent. Keys are checked for shape here, not verified with the provider.
 
 Creation returns an administrator token, administrator recovery code, and one-use invitations. Joining returns a member token and private recovery code. Save recovery codes privately. Never post invitation URLs or recovery cards publicly.
@@ -23,7 +25,7 @@ Leaving a tab does not remove a participant's required approval. An away partici
 
 `CONCLAVE_SECRET_KEY` is a persistent Fernet key on the server. Room keys are encrypted at rest and bound to a room ID. They do not enter workflow snapshots, task payloads, shared projections, or browser responses. Each model call receives a separate environment object; no process-wide key replacement occurs. Back up the encryption key separately from the database. Losing it requires users to enter their keys again.
 
-Removing room keys pauses further work and never falls back to shared keys. A call already in progress may finish. DeepSeek is currently the supported user-supplied model provider. Tavily is required when web research is enabled. The room administrator pays for everyone in that room using the configured keys.
+Removing room keys pauses further work and never falls back to shared keys. A call already in progress may finish. Saving credentials chooses the same model provider for Interview, Idea and Evaluator. Only the selected model key is retained, and per-call overrides prevent inheriting shared model credentials. Existing encrypted DeepSeek rooms remain compatible. Tavily is required when web research is enabled for either provider. The room administrator pays for everyone in that room using the configured keys.
 
 ## Limits
 

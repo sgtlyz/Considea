@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { runDemo } from './demo.mjs';
 import { runIdea } from './service.mjs';
-import { createDeepSeekRuntime } from './runtime.mjs';
+import { createIdeaRuntime } from './runtime.mjs';
 import { createTavilyProvider } from './search.mjs';
 import { createMem0Client } from './memory.mjs';
 
@@ -25,7 +25,7 @@ try {
     if (Buffer.byteLength(raw) > 200_000) throw new Error('Request exceeds input size limit');
     const parsed = JSON.parse(raw);
     const request = parsed.request ?? parsed;
-    const runtime = createDeepSeekRuntime({ maxModelRequests: Number(value('--max-model-requests')), maxTokens: Number(value('--max-output-tokens')) });
+    const runtime = createIdeaRuntime({ maxModelRequests: Number(value('--max-model-requests')), maxTokens: Number(value('--max-output-tokens')) });
     result = await runIdea({ request, runtime,
       searchProvider: process.env.TAVILY_API_KEY ? createTavilyProvider({ apiKey: process.env.TAVILY_API_KEY }) : undefined,
       memoryClient: process.env.MEM0_API_KEY ? createMem0Client({ apiKey: process.env.MEM0_API_KEY }) : undefined });
