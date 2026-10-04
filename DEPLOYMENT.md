@@ -1,6 +1,6 @@
 # Deploy Considea
 
-The release under review is on `dev`. New work is not merged into `master` or promoted to the production website automatically.
+The accepted development release was merged into `master` on October 4, 2026. Production now uses the verified live backend, preserving its database, encryption key and saved rooms.
 
 ```text
 Browser -> Vercel static workspace -> /api/* -> Render workflow + workers
@@ -9,22 +9,22 @@ Browser -> Vercel static workspace -> /api/* -> Render workflow + workers
                                              -> optional SpacetimeDB shared projection
 ```
 
-The Render service also serves the same workspace directly. This gives the dev release a public test URL even when Vercel preview protection requires a team login.
+The Render service also serves the same workspace directly. Its existing `considea-dev-api` hostname is retained after promotion; that hostname now serves production data.
 
 ## Current environments
 
 | Environment | Frontend | Backend | Data / model mode |
 | --- | --- | --- | --- |
-| Existing production, master | https://considea.vercel.app | https://considea-api.onrender.com | Disposable SQLite, labelled mock |
-| Development, dev | https://considea-git-dev-yingzeng.vercel.app (Vercel login required) | https://considea-dev-api.onrender.com (public workspace) | PostgreSQL, live DeepSeek and Tavily |
+| Production, master | https://considea.vercel.app | https://considea-dev-api.onrender.com | PostgreSQL, live DeepSeek and Tavily |
+| Development previews | https://considea-git-dev-yingzeng.vercel.app (Vercel login required) | https://considea-api.onrender.com | Disposable SQLite, labelled mock |
 
-The free development PostgreSQL instance expires **2026-11-03**. It is persistent across web-service restarts, but is a temporary database, not permanent hosting. Render's free tier does not include database backups. Keep accepted-brief exports and arrange a database migration or paid plan before expiry. See [Render free-service limits](https://render.com/docs/free).
+The free PostgreSQL instance expires **2026-11-03**. It is persistent across web-service restarts, but is a temporary database, not permanent hosting. Render's free tier does not include database backups. Keep accepted-brief exports and arrange a database migration or paid plan before expiry. See [Render free-service limits](https://render.com/docs/free).
 
 ## Backend configuration
 
 Build the root `Dockerfile` with repository root as context. It runs Python 3.12 and Node 24, installs locked agent dependencies, and starts `python -m deploy.start` as an unprivileged user. Listen on `0.0.0.0:$PORT`; health check is `/api/health`.
 
-| Variable | Development value |
+| Variable | Live value |
 | --- | --- |
 | CONCLAVE_MODE / CONCLAVE_MODEL / CONCLAVE_EVALUATOR | integrated / live / agent |
 | DATABASE_URL | Render PostgreSQL internal connection string |
@@ -43,15 +43,15 @@ Keep secrets in the hosting environment. `.env`, workflow data and private conne
 
 `DATABASE_URL` takes precedence over `CONCLAVE_DB`. Without it, SQLite is stored at the configured local path. SQLite on a free ephemeral web-service filesystem does not survive service replacement or spin-down. Optional SpacetimeDB does not replace the private workflow database.
 
-The dev web service is free and has autodeploy disabled for controlled acceptance. Deploy it explicitly after merging a verified feature into `dev`. Production retains its own branch and autodeploy settings. Do not trigger a second manual deployment immediately after a push to an autodeploy-enabled service.
+Both Render services follow `master` with controlled manual deployments. The prior mock service did not receive an automatic deployment after the merge, so manual deployment is explicit in both configurations. After CI passes, deploy the live service and verify `/api/capabilities` and an authenticated model call. Vercel deploys the frontend automatically on pushes. Do not assume a frontend deployment updates the backend.
 
-The root `render.yaml` remains the original mock production blueprint. Do not sync it over the live dev service. `render.dev.yaml` describes the separate dev setup; reusing an existing database avoids creating a duplicate instance.
+The root `render.yaml` describes the mock preview backend. `render.live.yaml` describes the promoted live backend on `master`, reusing the existing PostgreSQL instance. Do not apply the mock blueprint to the live service. No duplicate database or API-key copy is needed for promotion.
 
 ## Frontend configuration
 
 Vercel publishes only `workflow/web`, copied into `dist`. `BACKEND_URL` must be an HTTPS origin with no path, query or credentials. `vercel.ts` forwards `/api/:path*` to the backend while retaining `/api`, and disables authenticated response caching.
 
-The preview variable scoped to branch `dev` points at the dev backend. The production variable still points at the production backend. Redeploy after changing this value because it is used at build time. Vercel preview protection may require login; the public Render dev URL is available for invited judges.
+The production-only `BACKEND_URL` points at the live backend. Preview values, including the branch-specific `dev` override, point at the mock backend. Redeploy after changing this value because it is used at build time. Vercel preview protection may require login; the production website and direct live backend are public, while real room creation still requires a demo code or user-supplied keys.
 
 The static frontend never contains model keys or database credentials. Invite secrets use the URL fragment and are removed from the address bar when read. Recovery and room-key actions still require the proper room credentials.
 
@@ -61,7 +61,7 @@ Check `/api/capabilities` for `live:true`, `storage:"postgres"` and supported en
 
 Use two independent browser sessions. Complete four rounds of private answers, approved shared summaries and difference answers. Confirm generation waits for both convergence votes. Review actual retrieval evidence, request a revision, verify a new report, and accept the same version from both members. Export the result.
 
-Restart or redeploy the dev service, then restore the same identities and compare the accepted result. Also check invalid credentials, used invitations, old tokens after recovery, key removal and spending limits. Use synthetic data for recorded demos. [DEV-ACCEPTANCE.md](docs/DEV-ACCEPTANCE.md) records what was actually verified.
+Restart or redeploy the live service, then restore the same identities and compare the accepted result. Also check invalid credentials, used invitations, old tokens after recovery, key removal and spending limits. Use synthetic data for recorded demos. [DEV-ACCEPTANCE.md](docs/DEV-ACCEPTANCE.md) records what was actually verified.
 
 ## Backup and operational limits
 

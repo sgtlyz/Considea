@@ -1,4 +1,5 @@
-# Free, disposable demo. SQLite is lost on restart/redeploy/spin-down.
+# Mock backend for development previews. Production uses render.live.yaml.
+# SQLite is lost on restart/redeploy/spin-down.
 # See DEPLOYMENT.md before using real team data or enabling integrated live mode.
 services:
   - type: web
@@ -10,7 +11,7 @@ services:
     dockerfilePath: ./Dockerfile
     dockerContext: .
     healthCheckPath: /api/health
-    autoDeployTrigger: commit
+    autoDeployTrigger: "off"
     envVars:
       - key: CONCLAVE_MODE
         value: mock

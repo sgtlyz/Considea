@@ -1,16 +1,16 @@
-# Separate dev service. Reuse the existing database via DATABASE_URL.
-# Do not apply the root mock blueprint to this live service.
+# Promoted live backend. The existing service URL is retained for saved rooms.
+# Reuse PostgreSQL and secrets; do not apply the root mock blueprint here.
 services:
   - type: web
     name: considea-dev-api
-    branch: dev
+    branch: master
     runtime: docker
     plan: free
     region: ohio
     dockerfilePath: ./Dockerfile
     dockerContext: .
     healthCheckPath: /api/health
-    autoDeployTrigger: off
+    autoDeployTrigger: "off"
     envVars:
       - key: DATABASE_URL
         sync: false
