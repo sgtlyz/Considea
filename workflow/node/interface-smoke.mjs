@@ -330,7 +330,7 @@ try {
   assert.equal(await a.locator("#sources img").count(), 0);
   assert.equal(await a.locator("#app pre").count(),0);
   await a.locator('#candidates details').first().locator('summary').click();
-  assert.ok((await a.locator('#candidates details').first().innerText()).includes("How it works"));
+  await a.locator('#candidates details').first().getByRole("heading",{name:"How it works",exact:true}).waitFor({state:"visible"});
   assert.equal(
     await admin
       .getByRole("button", { name: "Accept this version", exact: true })
