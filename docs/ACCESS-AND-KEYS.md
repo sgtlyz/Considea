@@ -29,8 +29,8 @@ Removing room keys pauses further work and never falls back to shared keys. A ca
 
 ## Limits
 
-Shared live access requires the demo code. Persistent limits apply globally (40 new rooms/day, 1200 writes/minute), per client (6 rooms/hour, 180 writes/minute, 12 recovery attempts/hour), per room (default 80 agent tasks), and to the shared-key daily task allowance (default 120). Failed or retried claims count conservatively. Provider calls inside a task have separate bounded retries; task counts are not a dollar spending cap. Configure a provider-side spending limit as well.
+Shared live access requires the demo code. There are no cumulative per-room or daily request limits, including translation and Agentverse chat. Agent task counts and shared-key daily usage remain available for accounting. Stored rooms paused by the former room or daily quota resume automatically, preserving answers, votes, task attempts and counts. Legacy `CONCLAVE_SHARED_DAILY_CALLS`, `CONCLAVE_ROOM_CALL_LIMIT` and `config.max_agent_calls` values no longer enforce quotas.
 
-Limits survive app restarts. Daily limits reset at UTC midnight. Per-client limits rely on a trusted deployment proxy; the global bounds apply even if client headers are forged. `CONCLAVE_TRUST_PROXY=1` trusts only the final forwarded address. A room cannot raise its call allowance above the deployment cap through the public API.
+Short-window protections remain: 1200 writes/minute globally; 6 new rooms/hour, 180 writes/minute and 12 recovery attempts/hour per client. Agentverse retains its per-sender and concurrent-request protections. These limits survive restarts. Per-client limits rely on a trusted deployment proxy; the global write bound applies even if client headers are forged. `CONCLAVE_TRUST_PROXY=1` trusts only the final forwarded address. Individual tasks retain their timeouts, bounded model/tool calls, bounded retries and duplicate protection. Removing room keys still pauses work until replacement credentials are supplied.
 
 Tests: `python -m unittest workflow.tests.test_security -v`.

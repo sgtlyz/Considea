@@ -173,13 +173,16 @@ class SecurityTests(unittest.TestCase):
             restarted.limit("different-client",1,60)
             with restarted.workflow.store.transaction() as db:
                 self.assertEqual(db.execute("SELECT COUNT(*) FROM usage_limits WHERE scope='shared-test'").fetchone()[0],0)
-    def test_shared_budget_holds_pending_tasks(self):
+    def test_deprecated_daily_limit_does_not_hold_pending_tasks(self):
         room=self.room(); rid=room["room_id"]
         self.assertIsNotNone(self.workflow.claim(rid))
         self.assertIsNotNone(self.workflow.claim(rid))
         another=self.room()
-        self.assertIsNone(self.workflow.claim(another["room_id"]))
-        self.assertEqual(self.workflow.view(another["admin_token"],another["room_id"])["paused_reason"],"daily_limit")
+        self.assertIsNotNone(self.workflow.claim(another["room_id"]))
+        view = self.workflow.view(another["admin_token"], another["room_id"])
+        self.assertIsNone(view["paused_reason"])
+        self.assertIsNone(view["access"]["shared_calls_limit"])
+        self.assertEqual(view["access"]["shared_calls_used"], 3)
     def test_away_member_remains_required(self):
         room=self.room(); rid=room["room_id"]
         joined=self.workflow.join(rid,room["invitations"]["alice"])
@@ -191,23 +194,44 @@ class SecurityTests(unittest.TestCase):
         self.assertIn("alice",after["members"])
         self.assertEqual(after["votes"],{})
 
-    def test_allowance_increase_resumes_saved_tasks_without_resetting_usage(self):
-        first = self.room()
-        self.workflow.claim(first["room_id"])
-        self.workflow.claim(first["room_id"])
+    def test_legacy_daily_pause_resumes_without_resetting_usage_or_human_decisions(self):
         waiting = self.room()
         rid = waiting["room_id"]
-        self.assertIsNone(self.workflow.claim(rid))
-        self.assertEqual(self.workflow.view(waiting["admin_token"], rid)["paused_reason"], "daily_limit")
-        # Simulate a deployment with a larger finite allowance and the same DB.
-        self.workflow.security = RoomSecurity(self.workflow, {**self.env, "CONCLAVE_SHARED_DAILY_CALLS": "3"})
+        with self.workflow.store.transaction() as db:
+            self.security.consume(db, "shared-agent-calls", None, 86400)
+            db.execute("UPDATE usage_limits SET used=100001 WHERE scope='shared-agent-calls'")
+            state = Store.load(db, rid)
+            state["config"]["max_agent_calls"] = 80
+            state["calls_started"] = 80
+            state["paused_reason"] = "daily_limit"
+            state["quota_reset_at"] = 9999999999
+            before = {key: state[key] for key in ("phase", "discussion_round", "answers", "votes", "convergence_decision")}
+            Store.save(db, state)
         claim = self.workflow.claim(rid)
         self.assertIsNotNone(claim)
         self.assertEqual(claim["attempt"], 1)
         view = self.workflow.view(waiting["admin_token"], rid)
         self.assertIsNone(view["paused_reason"])
-        self.assertEqual(view["access"]["shared_calls_remaining"], 0)
+        self.assertEqual(view["access"]["shared_calls_used"], 100002)
+        self.assertEqual(view["calls_started"], 81)
+        self.assertIsNone(view["config"]["max_agent_calls"])
+        self.assertEqual({key: view[key] for key in before}, before)
+        self.assertIsNotNone(self.workflow.claim(rid))
+
+    def test_quota_migration_and_legacy_budget_endpoint_preserve_credential_pause(self):
+        room = self.room({"deepseek_api_key": "test-private-deepseek"})
+        rid = room["room_id"]
+        joined = self.workflow.join(rid, room["invitations"]["alice"])
+        self.security.set_keys(room["admin_token"], rid, None)
+        with self.workflow.store.transaction() as db:
+            state = Store.load(db, rid)
+            state["config"]["max_agent_calls"] = 80
+            state["paused_reason"] = "credentials"
+            Store.save(db, state)
+        with self.assertRaises(WorkflowError):
+            self.workflow.increase_budget(joined["token"], rid, None)
+        self.assertEqual(self.workflow.increase_budget(room["admin_token"], rid, 100001), {"max_agent_calls": None})
         self.assertIsNone(self.workflow.claim(rid))
-        self.assertEqual(self.workflow.view(waiting["admin_token"], rid)["paused_reason"], "daily_limit")
+        self.assertEqual(self.workflow.view(room["admin_token"], rid)["paused_reason"], "credentials")
 
 if __name__ == "__main__": unittest.main()

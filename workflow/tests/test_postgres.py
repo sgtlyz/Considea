@@ -39,6 +39,9 @@ class PostgresTests(unittest.TestCase):
     def test_concurrent_claims(self):
         self.exercise("test_concurrent_workers_claim_each_initial_task_once")
 
+    def test_legacy_quota_pause_recovers(self):
+        self.exercise("test_legacy_budget_pause_resumes_without_becoming_consensus")
+
     def test_restart_and_rollback(self):
         from workflow.engine import Workflow
         from workflow.agents import MockRunner

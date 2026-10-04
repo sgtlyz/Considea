@@ -89,8 +89,9 @@ class Localization:
                 if security:
                     with self.workflow.store.transaction() as db:
                         state = Store.load(db, room_id)
-                        if not security.consume(db, "translation:"+room_id, 160, 86400) or not security.reserve(db, state):
-                            raise WorkflowError("BUDGET_LIMIT", "Translation allowance is unavailable", 429)
+                        if not security.reserve(db, state):
+                            raise WorkflowError("ROOM_KEYS_REQUIRED", "Add room API keys before translating", 409)
+                        security.consume(db, "translation:"+room_id, None, 86400)
                 try:
                     runner = self.workflow.runner
                     if hasattr(runner, "translate"):

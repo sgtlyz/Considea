@@ -314,17 +314,18 @@ class WorkflowTests(unittest.TestCase):
     def store_transaction(self):
         return self.engine.store.transaction()
 
-    def test_budget_pause_is_not_consensus(self):
+    def test_legacy_budget_pause_resumes_without_becoming_consensus(self):
         with self.store_transaction() as db:
             s = Store.load(db, self.room)
             s["config"]["max_agent_calls"] = 1
+            s["calls_started"] = 10001
+            s["paused_reason"] = "agent_budget"
             Store.save(db, s)
         self.drain()
-        self.assertEqual(self.view()["paused_reason"], "agent_budget")
         self.assertIsNone(self.view()["final_output"])
-        self.engine.increase_budget(self.created["admin_token"], self.room, 20)
-        self.drain()
         self.assertIsNone(self.view()["paused_reason"])
+        self.assertIsNone(self.view()["config"]["max_agent_calls"])
+        self.assertEqual(self.view()["calls_started"], 10003)
         self.assertEqual(self.view("bob")["private"]["stage"], "awaiting_answers")
 
     def test_late_result_cannot_revive_stopped_room(self):

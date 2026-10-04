@@ -38,9 +38,5 @@ services:
         value: deepseek-flash
       - key: EVALUATOR_RETRIEVAL
         value: api
-      - key: CONCLAVE_SHARED_DAILY_CALLS
-        value: "120"
-      - key: CONCLAVE_ROOM_CALL_LIMIT
-        value: "80"
       - key: CONCLAVE_TRUST_PROXY
         value: "1"

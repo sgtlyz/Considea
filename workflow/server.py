@@ -84,7 +84,7 @@ def make_server(workflow, host="127.0.0.1", port=8765):
                         "model_providers":["deepseek", "openai"],
                         "openai_model":security.env.get("OPENAI_MODEL") or
                             (security.env.get("PI_MODEL", "") if security.env.get("PI_PROVIDER") == "openai" else ""),
-                        "shared_demo_available":bool(security.access_code)})
+                        "shared_demo_available":bool(security.access_code), "cumulative_request_limits":False})
                 if method == "POST":
                     # The global limit remains effective even when clients spoof forwarded addresses.
                     security.limit("writes-global", 1200, 60)
@@ -102,11 +102,9 @@ def make_server(workflow, host="127.0.0.1", port=8765):
                 if parts == ["api", "rooms"] and method == "POST":
                     body = self._body()
                     security.limit("create:"+client, 6, 3600)
-                    security.limit("create-global", 40, 86400)
                     prepared = security.prepare(body.get("credentials"),body.get("access_code"))
                     config = dict(body.get("config") or {})
                     if security.live:
-                        config["max_agent_calls"] = min(config.get("max_agent_calls",security.room_limit),security.room_limit)
                         config["max_search_queries"] = min(config.get("max_search_queries",2),2)
                     if prepared["keys"] and config.get("search_enabled") and not prepared["keys"]["tavily_api_key"]:
                         raise WorkflowError("INVALID_INPUT", "Web research requires a Tavily key", 400)
@@ -172,8 +170,6 @@ def make_server(workflow, host="127.0.0.1", port=8765):
                         if parts[3:] == ["project-time-limit"]:
                             return self._send(200, workflow.set_project_time_limit(token, rid, body["time_limit"]))
                         if parts[3:] == ["budget"]:
-                            if security.live and body["max_agent_calls"] > security.room_limit:
-                                raise WorkflowError("BUDGET_LIMIT", "This deployment has a fixed per-room call limit", 400)
                             return self._send(200, workflow.increase_budget(token, rid, body["max_agent_calls"]))
                         if parts[3:] == ["stop"]:
                             return self._send(200, workflow.stop(token, rid))

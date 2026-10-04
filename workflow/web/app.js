@@ -693,7 +693,7 @@
     if (v.actor.role === "admin") {
       $("key-status").textContent = v.access?.funding === "own"
         ? (v.access.keys_configured ? tr("Using your room keys · encrypted","正在使用房间密钥，已加密保存") : tr("Room keys removed · add keys to continue","房间密钥已删除，请补充后继续"))
-        : tr("Team demo · ","团队演示 · 今日剩余额度 ") + (v.access?.shared_calls_remaining ?? "—") + tr(" shared tasks remaining today"," 次");
+        : tr("Team demo · no cumulative request limit", "团队演示 · 无累计请求次数上限");
       const invites=$("invite-members");invites.replaceChildren();
       for (const [id,m] of Object.entries(v.members)) {
         const row=el("div",undefined,invites,"invite-row");el("span",id + (m.joined ? tr(" · Joined"," · 已加入") : tr(" · Not joined"," · 尚未加入")),row);
@@ -1055,28 +1055,12 @@
     }
     if (v.paused_reason) note(v.paused_reason === "credentials"
       ? tr("AI work is paused. The administrator can add replacement keys under Access, invitations & API keys.","智能助手已暂停，请管理员在“访问、邀请与服务密钥”中补充密钥。")
-      : v.paused_reason === "daily_limit" ? tr("The shared demo allowance is used for today. Wait until UTC midnight or let the administrator add room keys.","今天的共享演示额度已用完。可等待协调世界时零点重置，或由管理员添加房间密钥。")
-      : tr("This room reached its AI task allowance. Saved answers and results are still available.","房间已达到调用额度，已保存的回答和结果仍可查看。"),out);
+      : tr("AI work is paused. Saved answers and results are still available.","智能助手已暂停，已保存的回答和结果仍可查看。"),out);
     if (v.actor.role === "admin") {
       const d = el("details", undefined, out);
       d.dataset.detail = "admin-controls";
       el("summary", tr("Room controls", "房间管理"), d);
-      const budget = field(
-        "input",
-        tr("Agent call limit", "智能助手调用上限"),
-        d,
-        "budget",
-        Math.min(v.config.max_agent_calls + 10, v.access?.room_call_limit || 10000),
-        "number",
-      );
-      budget.min = v.config.max_agent_calls + 1;
-      budget.max = v.access?.room_call_limit || 10000;
-      action(tr("Increase call limit", "提高调用额度"), d, async () => {
-        await api("/rooms/" + auth.room_id + "/budget", {
-          max_agent_calls: Number(budget.value),
-        });
-        await refresh(true);
-      });
+      el("p", tr("No cumulative request limit.", "无累计请求次数上限。"), d, "muted");
       action(
         tr("End room", "结束房间"),
         d,
@@ -1855,10 +1839,8 @@
     const out = $("tasks");
     el(
       "p",
-      tr("Agent calls: ", "智能助手调用次数：") +
-        v.calls_started +
-        " / " +
-        v.config.max_agent_calls,
+      tr("Agent calls: ", "智能助手调用次数：") + v.calls_started +
+        tr(" · No cumulative limit", " · 无累计上限"),
       out,
     );
     const tasks = v.tasks.filter((t) => t.status !== "done");

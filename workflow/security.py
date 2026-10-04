@@ -1,4 +1,4 @@
-"""Room-scoped credentials and durable public-demo limits.
+"""Room-scoped credentials, request accounting and burst-rate protection.
 
 Raw keys live only in the encrypted row and the private per-call transport.
 Neither room snapshots, task payloads, logs nor browser responses contain them.
@@ -26,10 +26,6 @@ class RoomSecurity:
             from cryptography.fernet import Fernet
             self.cipher = Fernet(key.encode())
         self.access_code = self.env.get("CONCLAVE_DEMO_ACCESS_CODE", "")
-        self.daily_limit = int(self.env.get("CONCLAVE_SHARED_DAILY_CALLS", "120"))
-        self.room_limit = int(self.env.get("CONCLAVE_ROOM_CALL_LIMIT", "80"))
-        if not 1 <= self.daily_limit <= 10000 or not 1 <= self.room_limit <= 10000:
-            raise ValueError("Call limits must be between 1 and 10000")
 
     def limit(self, scope, maximum, seconds):
         if maximum < 1:
@@ -42,7 +38,7 @@ class RoomSecurity:
     def consume(db, scope, maximum, seconds):
         period = int(time.time()) // seconds
         row = db.execute("SELECT used FROM usage_limits WHERE scope=? AND period=?", (scope, period)).fetchone()
-        if row and row["used"] >= maximum:
+        if maximum is not None and row and row["used"] >= maximum:
             return False
         db.execute("INSERT INTO usage_limits(scope,period,used,expires_at) VALUES(?,?,1,?) ON CONFLICT(scope,period) DO UPDATE SET used=usage_limits.used+1", (scope, period, (period+2)*seconds))
         # Keep this finite even after repeated anonymous requests over many days.
@@ -140,10 +136,10 @@ class RoomSecurity:
                 "DEEPSEEK_API_KEY":keys.get("deepseek_api_key", "") if provider == "deepseek" else "",
                 "EVALUATOR_BASE_URL":evaluator_base_url, "TAVILY_API_KEY":keys.get("tavily_api_key", "")}
 
-    def shared_calls_remaining(self, db):
+    def shared_calls_used(self, db):
         row = db.execute("SELECT used FROM usage_limits WHERE scope='shared-agent-calls' AND period=?",
                          (int(time.time()) // 86400,)).fetchone()
-        return max(0, self.daily_limit - (row["used"] if row else 0))
+        return row["used"] if row else 0
 
     def reserve(self, db, state):
         if not self.live:
@@ -154,19 +150,16 @@ class RoomSecurity:
                 state["paused_reason"] = "credentials"
                 return False
             return True
-        if not self.consume(db,"shared-agent-calls",self.daily_limit,86400):
-            state["paused_reason"] = "daily_limit"
-            state["quota_reset_at"] = (int(time.time())//86400+1)*86400
-            return False
+        self.consume(db, "shared-agent-calls", None, 86400)
         return True
 
     def status(self, db, room_id, admin):
         row = db.execute("SELECT funding,encrypted FROM room_keys WHERE room_id=?",(room_id,)).fetchone()
         result = {"funding":row["funding"] if row else "team", "keys_configured":bool(row and row["encrypted"]),
-                  "can_manage_keys":admin, "own_keys_supported":bool(self.cipher), "room_call_limit":self.room_limit if self.live else 10000}
+                  "can_manage_keys":admin, "own_keys_supported":bool(self.cipher), "room_call_limit":None}
         if admin and result["funding"] == "team":
-            result.update(shared_calls_remaining=self.shared_calls_remaining(db),
-                          shared_calls_limit=self.daily_limit)
+            result.update(shared_calls_remaining=None, shared_calls_limit=None,
+                          shared_calls_used=self.shared_calls_used(db))
         return result
 
     @staticmethod

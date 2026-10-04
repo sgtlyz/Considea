@@ -126,7 +126,7 @@ class RecoveryTests(unittest.TestCase):
                     db.execute("UPDATE tasks SET status='failed' WHERE room_id=?", (self.room,))
                 self.engine.retry(self.token, self.room, self.row()["id"])
 
-    def test_retry_wait_does_not_block_other_room_and_budget_still_applies(self):
+    def test_retry_wait_does_not_block_other_room_or_reinstate_legacy_quota(self):
         c = self.engine.claim(self.room)
         with patch("workflow.engine.time.time", return_value=1000):
             self.engine.finish(c["task_id"], c["lease_token"], failure(c["request"]))
@@ -136,11 +136,9 @@ class RecoveryTests(unittest.TestCase):
             self.assertEqual(self.engine.view(other["admin_token"], other["room_id"])["members"]["bob"]["stage"], "awaiting_answers")
         with self.engine.store.transaction() as db:
             s = Store.load(db, self.room); s["config"]["max_agent_calls"] = 1; Store.save(db, s)
-        self.assertIsNone(self.engine.claim(self.room))
-        self.assertEqual(self.view()["paused_reason"], "agent_budget")
         self.assertIsNone(self.view()["final_output"])
-        self.engine.increase_budget(self.created["admin_token"], self.room, 2)
         self.assertTrue(self.engine.run_once(self.room))
+        self.assertIsNone(self.view()["paused_reason"])
         self.assertEqual(self.view()["calls_started"], 2)
 
     def test_expired_lease_cannot_commit_or_renew_even_before_takeover(self):

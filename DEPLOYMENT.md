@@ -36,8 +36,6 @@ Build the root `Dockerfile` with repository root as context. It runs Python 3.12
 | EVALUATOR_RETRIEVAL | api |
 | CONCLAVE_SECRET_KEY | Persistent Fernet encryption key |
 | CONCLAVE_DEMO_ACCESS_CODE | Private team/judge demo access code |
-| CONCLAVE_SHARED_DAILY_CALLS | 120 |
-| CONCLAVE_ROOM_CALL_LIMIT | 80 |
 | CONCLAVE_TRUST_PROXY | 1 only behind the trusted deployment proxy |
 
 Keep secrets in the hosting environment. `.env`, workflow data and private connection files are excluded from Git and Docker. Preserve the encryption key independently from database backups. Losing it means stored user keys must be entered again.

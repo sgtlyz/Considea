@@ -112,6 +112,10 @@ try {
     .getByRole("button", { name: "Open administrator view", exact: true })
     .click();
   await admin.locator("#app").waitFor({ state: "visible" });
+  await until(async () => (await admin.locator("#key-status").textContent()).includes("no cumulative request limit"));
+  assert.match(await admin.locator("#key-status").textContent(), /no cumulative request limit/);
+  assert.equal(await admin.getByRole("button", { name: "Increase call limit", exact: true }).count(), 0);
+  assert.match(await admin.locator("#tasks").textContent(), /No cumulative limit/);
   const pages = {},
     tokens = {};
   async function api(path, body, token) {

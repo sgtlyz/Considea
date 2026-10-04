@@ -99,6 +99,20 @@ class LocalizationTests(unittest.TestCase):
         with self.assertRaises(WorkflowError):
             self.localization.translate(self.tokens["alice"], self.room, [self.text], "fr")
 
+    def test_translation_continues_beyond_legacy_daily_allowances(self):
+        from workflow.security import RoomSecurity
+        self.prepare()
+        self.runner.mode = "integrated"
+        self.engine.security = RoomSecurity(self.engine, {"CONCLAVE_SHARED_DAILY_CALLS": "1"})
+        with self.engine.store.transaction() as db:
+            for scope in ("shared-agent-calls", "translation:" + self.room):
+                self.engine.security.consume(db, scope, None, 86400)
+                db.execute("UPDATE usage_limits SET used=100001 WHERE scope=?", (scope,))
+        self.runner.translate = lambda room, batch: [{"key": t["key"], "text": "中文内容 24"} for t in batch]
+        result = self.localization.translate(self.tokens["alice"], self.room, [self.text])
+        self.assertIn("24", result["translations"][0]["text"])
+        self.assertIsNone(self.view()["paused_reason"])
+
     def test_english_rejects_untranslated_chinese_and_does_not_cache(self):
         self.prepare()
         self.runner.translate = lambda room, batch, language: [{"key": t["key"], "text": "仍然是中文"} for t in batch]

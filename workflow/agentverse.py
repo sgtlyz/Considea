@@ -81,7 +81,6 @@ class Agentverse:
             raise WorkflowError("INVALID_INPUT", "Send a recent chat message with 1–16000 text characters") from None
         key = digest([env.sender, str(env.session)])
         self.security.limit("agentverse:sender:" + digest(env.sender), 60, 60)
-        self.security.limit("agentverse:messages-global", 2000, 86400)
         if not self.slots.acquire(blocking=False):
             raise WorkflowError("RATE_LIMITED", "Agent is busy; retry this message later", 429)
         try:

@@ -51,19 +51,31 @@ class Workflow:
         state = Store.load(db, room_id)
         if state is None:
             raise WorkflowError("NOT_FOUND", "Room not found", 404)
+        # Retire stored cumulative quotas without discarding answers, votes or tasks.
+        if state["config"].get("max_agent_calls") is not None or state["paused_reason"] in ("agent_budget", "daily_limit"):
+            state["config"]["max_agent_calls"] = None
+            if state["paused_reason"] in ("agent_budget", "daily_limit"):
+                state["paused_reason"] = None
+            state.pop("quota_reset_at", None)
+            Store.save(db, state)
         return state
 
     def create_room(self, room_context, config=None, *, provision=None):
         protocol.ROOM_CONTEXT.validate(room_context)
         need(len(room_context["member_ids"]) <= 12, "At most 12 members")
         settings = {"question_batches_per_round": 3, "max_questions": 3, "candidate_count": 3,
-                    "max_agent_calls": 200, "search_enabled": False, "max_search_queries": 0,
+                    "max_agent_calls": None, "search_enabled": False, "max_search_queries": 0,
                     "decision_policy": "unanimous", "max_task_retries": 2, "project_time_limit": None}
         config = {} if config is None else config
         need(isinstance(config, dict) and set(config) <= set(settings), "Unknown room configuration")
         settings.update(config)
+        # Accept older clients' quota field, but cumulative request limits are retired.
+        need(settings["max_agent_calls"] is None or
+             (type(settings["max_agent_calls"]) is int and settings["max_agent_calls"] > 0),
+             "Legacy max_agent_calls must be null or a positive integer")
+        settings["max_agent_calls"] = None
         for key, low, high in (("question_batches_per_round", 1, 7), ("max_questions", 1, 3),
-                               ("candidate_count", 1, 5), ("max_agent_calls", 1, 10000),
+                               ("candidate_count", 1, 5),
                                ("max_search_queries", 0, 50), ("max_task_retries", 0, 3)):
             need(type(settings[key]) is int and low <= settings[key] <= high, "Invalid " + key)
         need(type(settings["search_enabled"]) is bool, "search_enabled must be boolean")
@@ -509,17 +521,7 @@ class Workflow:
                 if not self._matches(s, row):
                     self._stale_task(db, row)
                     continue
-                if s["paused_reason"] == "daily_limit":
-                    security = getattr(self, "security", None)
-                    # An operator can increase the allowance during the day. Recheck
-                    # persisted usage without charging twice; reserve below stays atomic.
-                    if (security and security.shared_calls_remaining(db) > 0) or timestamp >= s.get("quota_reset_at", float("inf")):
-                        s["paused_reason"] = None
                 if s["mode"] != self.runner.mode or s["paused_reason"]:
-                    continue
-                if s["calls_started"] >= s["config"]["max_agent_calls"]:
-                    s["paused_reason"] = "agent_budget"
-                    Store.save(db, s)
                     continue
                 if getattr(self, "security", None) and not self.security.reserve(db, s):
                     Store.save(db, s)
@@ -765,15 +767,13 @@ class Workflow:
             return {"task_id": task_id, "status": "queued"}
 
     def increase_budget(self, token, room_id, max_agent_calls):
-        need(type(max_agent_calls) is int, "Budget must be integer")
+        # Compatibility for an older administrator page; no quota is reintroduced.
+        need(max_agent_calls is None or (type(max_agent_calls) is int and max_agent_calls > 0),
+             "Legacy budget must be null or a positive integer")
         with self.store.transaction() as db:
             self._auth(db, token, room_id, admin=True)
-            s = self._room(db, room_id)
-            need(s["config"]["max_agent_calls"] < max_agent_calls <= 10000, "Budget must increase, at most 10000")
-            s["config"]["max_agent_calls"] = max_agent_calls
-            s["paused_reason"] = None
-            Store.save(db, s)
-            return {"max_agent_calls": max_agent_calls}
+            self._room(db, room_id)
+            return {"max_agent_calls": None}
 
     def stop(self, token, room_id):
         with self.store.transaction() as db:

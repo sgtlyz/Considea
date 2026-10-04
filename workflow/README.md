@@ -40,9 +40,9 @@ Only the respondent's interview Agent receives the personal clarification and an
 
 The entry screen starts with room creation; existing members open **Join your team** or follow their personal invitation. The header shows progress after joining. Transitions between private interviews, shared discussion and the accepted brief appear only when the current workflow requires them. Room and recovery cards are readable in the browser, with optional copy and plain-text export. Discussion history and reports use labeled sections rather than raw JSON.
 
-Chinese mode translates interface copy and authorized room prose, including previously saved English questions, summaries, differences, directions and evaluations. Translation uses the room's model credentials and shared daily allowance when applicable. Results are cached by room and source hash in `display_translations` in SQLite/PostgreSQL. It does not rewrite agent memory, evidence or previous answers; a member may explicitly edit and approve translated summary text. Typed drafts are retained when switching languages.
+Chinese mode translates interface copy and authorized room prose, including previously saved English questions, summaries, differences, directions and evaluations. Translation uses the room's model credentials and has no cumulative daily allowance. Results are cached by room and source hash in `display_translations` in SQLite/PostgreSQL. It does not rewrite agent memory, evidence or previous answers; a member may explicitly edit and approve translated summary text. Typed drafts are retained when switching languages.
 
-Translation reads only the caller's current RoomView, rechecks access before returning even cached results, and never publishes private translations to the shared outbox. Requests are limited to 16 visible strings, 24,000 characters total, and 160 model batches per room per day. Model batches preserve quantities and use bounded output repair. Failed translations show a Chinese retry message and keep the related action disabled until its content is readable. Mock/offline mode uses labeled Chinese fixtures. The public walkthrough includes an authored simulation in English and Chinese, with explicit example assessments and a final build brief; the concept video remains separate.
+Translation reads only the caller's current RoomView, rechecks access before returning even cached results, and never publishes private translations to the shared outbox. Each request is limited to 16 visible strings and 24,000 characters total. Model batches preserve quantities and use bounded output repair. Failed translations show a Chinese retry message and keep the related action disabled until its content is readable. Mock/offline mode uses labeled Chinese fixtures. The public walkthrough includes an authored simulation in English and Chinese, with explicit example assessments and a final build brief; the concept video remains separate.
 
 ## Creation options
 
@@ -51,7 +51,7 @@ Translation reads only the caller's current RoomView, rechecks access before ret
 | question_batches_per_round | 3 | Integer 1–7; maximum private interview batches per member in each discussion round |
 | max_questions | 3 | 1–3 |
 | candidate_count | 3 | 1–5 |
-| max_agent_calls | 200 | 1–10000; public live API caps at deployment limit, default 80 |
+| max_agent_calls | null | Deprecated; legacy positive integers are accepted and ignored. No cumulative room quota. |
 | max_task_retries | 2 | 0–3 automatic retries within an attempt cycle |
 | search_enabled | false | Boolean; the web form enables it by default |
 | max_search_queries | 0 | Engine 0–50; public live API caps at 2 |
@@ -77,7 +77,7 @@ Send JSON with `Content-Type: application/json`; maximum body size is 1 MiB. Pro
 | POST /api/rooms/{id}/events | ClientEvent v2.0 | Accepted event or rejected business result |
 | POST /api/rooms/{id}/tasks/{task}/retry | `{}` | Requeued task if permitted |
 | POST /api/rooms/{id}/project-time-limit | `{time_limit}`; administrator | Initial time configuration, idempotent for the same value |
-| POST /api/rooms/{id}/budget | `{max_agent_calls}`; administrator | Higher allowance within the deployment cap |
+| POST /api/rooms/{id}/budget | `{max_agent_calls}`; administrator | Legacy compatibility; returns `null` and never adds a quota |
 | POST /api/rooms/{id}/stop | `{}`; administrator | Ended room, pending work stopped |
 | GET /api/rooms/{id}/updates | None; authenticated | Optional SpacetimeDB-backed SSE progress |
 
@@ -103,7 +103,7 @@ Non-event failures return `{error:{code,message}}` with a 4xx/5xx status. Provid
 | candidate_history | Earlier candidates, reports and reviews |
 | tasks | Permitted task status and safe error codes; no raw request or response |
 | access | Funding/key status and permitted controls; never raw keys |
-| calls_started, paused_reason | Attempts and budget/credential/daily-limit pauses |
+| calls_started, paused_reason | Task attempts (accounting only) and credential pauses; former quota pauses recover automatically |
 | selected_candidate_ref, final_output | Null until the team accepts a candidate |
 
 Objects use `{id,version}` references. Match both fields; titles and list positions are not identities. Private interview tasks expose status only to their member and the administrator. The administrator cannot read private content.

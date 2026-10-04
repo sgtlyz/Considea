@@ -123,10 +123,9 @@ class ChatWorkflow:
                     return "Provide a project context and a positive time limit."
                 prepared = self.security.prepare(None, code)
                 self.security.limit("agentverse:create:" + key, 2, 3600)
-                self.security.limit("agentverse:create-global", 10, 86400)
                 created = self.workflow.create_room({"member_ids": names, "hackathon_context": context,
                     "deadline_at": None, "constraints": []}, {
-                    "max_agent_calls": self.security.room_limit, "max_task_retries": 0,
+                    "max_task_retries": 0,
                     "search_enabled": bool(self.security.env.get("TAVILY_API_KEY")),
                     "max_search_queries": 2 if self.security.env.get("TAVILY_API_KEY") else 0,
                     "project_time_limit": {"kind": "duration", "hours": hours},
