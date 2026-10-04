@@ -67,6 +67,7 @@ export async function runAgent({ request, definition, model, streamFn,
     let result;
     try { result = JSON.parse(last.content.filter(b => b.type === 'text').map(b => b.text).join('')); }
     catch { throw fail('INVALID_OUTPUT', 'Expected a JSON object from the model'); }
+    if (spec.normalizeOutput) result = spec.normalizeOutput(result, request.payload);
     if (!isObject(result) || !['ok', 'needs_input', 'partial'].includes(result.status) ||
         !isObject(result.data) || !Array.isArray(result.warnings) ||
         !result.warnings.every(w => typeof w === 'string') || !spec.validateOutput(result.data, request.payload)) {

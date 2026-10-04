@@ -120,7 +120,10 @@ test('output rejects invented approvals, foreign evidence and invalid question/s
     d => { d.contract_version = '2.0'; },
   ]) { const d = structuredClone(x.response.data); change(d); assert.equal(validateTurnOutput(d, p), false); }
   const runtime = createOfflineRuntime(() => ({ status: 'ok', data: x.response.data, warnings: [] }));
-  assert.equal((await runInterview({ request: x.request, runtime })).error.code, 'INVALID_OUTPUT');
+  const normalized = await runInterview({ request: x.request, runtime });
+  assert.equal(normalized.status, 'needs_input');
+  assert.deepEqual(normalized.data, x.response.data);
+  assert.match(normalized.warnings.join(' '), /MODEL_FORMAT_NORMALIZED/);
   const s = pair('interview-summary-v2');
   for (const id of ['other-member-answer', s.request.payload.messages.find(m => m.role === 'assistant').message_id]) {
     const d = structuredClone(s.response.data); d.profile_draft.items[0].private_message_ids = [id];

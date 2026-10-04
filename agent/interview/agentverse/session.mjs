@@ -144,6 +144,7 @@ export class InterviewSession {
     } catch (error) {
       const result = { ok: false, text: error?.code === 'MODEL_BUDGET_EXHAUSTED'
         ? '测试模型额度已用完，访谈暂时停止。此前档案仍保留，可用 /profile 查看；已保存的档案仍可审核、编辑和导出。请联系运营者增加授权额度。此次操作未应用，没有自动重试。'
+        : error?.code === 'INVALID_OUTPUT' ? '模型返回的档案或问题未通过格式或来源校验，本轮未保存；不是你的操作错误。此前档案仍保留，可用 /profile 查看。没有自动重试或共享。'
         : '此次操作未应用。请检查命令或先前版本；若命令正确，请联系运营者检查服务。/profile 可查看仍保存的内容。没有自动重试或共享。', end_session: false };
       stored.events[msg_id] = { fingerprint, status: 'failed', error_code: error?.code ?? 'WORKFLOW_ERROR', result }; this.store.write(key, stored); return result;
     }
