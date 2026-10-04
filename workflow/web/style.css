@@ -151,17 +151,17 @@ button {
   gap: 28px;
   margin-left: 68px;
 }
-.primary-nav button {
+.primary-nav [data-view] {
   padding: 10px 0;
   font-size: 14px;
   color: var(--muted);
   position: relative;
   white-space: nowrap;
 }
-.primary-nav button[aria-current="page"] {
+.primary-nav [data-view][aria-current="page"] {
   color: var(--ink);
 }
-.primary-nav button[aria-current="page"]:after {
+.primary-nav [data-view][aria-current="page"]:after {
   content: "";
   height: 1px;
   background: var(--ink);
@@ -1012,7 +1012,7 @@ html[lang="zh-CN"] .direction h2 {
     justify-content: flex-start;
     overflow: visible;
   }
-  .primary-nav button {
+  .primary-nav [data-view] {
     font-size: 12px;
   }
   .hero {
@@ -1252,7 +1252,7 @@ html[lang="zh-CN"] .source-type {
   .focus-mode .desk {
     margin-top: 20px;
   }
-  .primary-nav button {
+  .primary-nav [data-view] {
     min-height: 44px;
   }
   .preferences .preference button {
@@ -1897,3 +1897,31 @@ html[lang="zh-CN"] .entry-grid h2 {
 #connection-status{margin:0 0 24px}
 #connection-status .quiet-button{margin-left:12px}
 @media(max-width:600px){.workflow-steps{font-size:11px;gap:6px 12px}.next-step{font-size:15px}}
+
+/* Stage-led entry and readable conversation records. */
+.entry-grid { grid-template-columns: minmax(0, 720px); gap: 0; }
+.entry-grid > section { width: 100%; }
+.entry-switch { display: block; margin: 18px 0; text-align: left; }
+.primary-nav [data-view] { cursor: default; }
+.access-card, .record-card { border: 1px solid var(--line); border-radius: 12px; padding: 18px; margin: 16px 0; background: var(--soft); min-width: 0; }
+.access-card h3, .record-card h3 { margin: 0 0 12px; }
+.access-card dl { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px 16px; }
+.access-card dt { color: var(--muted); }
+.access-card dd { margin: 0; overflow-wrap: anywhere; white-space: pre-wrap; }
+.access-card .card-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+.conversation-history { display: grid; gap: 14px; margin-top: 16px; }
+.conversation-message { border-left: 3px solid var(--person-a); padding: 12px 16px; background: var(--soft); border-radius: 0 10px 10px 0; }
+.conversation-message[data-role="user"] { border-color: var(--person-b); }
+.conversation-message p, .record-card p, .record-card li { white-space: pre-wrap; line-height: 1.65; }
+.conversation-message p { margin: 8px 0 0; font-size: 16px; }
+.record-list { padding-left: 24px; }
+.record-list li + li { margin-top: 8px; }
+.record-card small { display: block; margin-top: 8px; }
+.cover-language { margin-left: 18px; }
+@media (max-width: 640px) {
+  .entry-grid > section + section { border: 0; padding: 0; margin: 0; }
+  .access-card dl { grid-template-columns: minmax(0, 1fr); gap: 5px; }
+  .access-card dd { margin-bottom: 12px; }
+  .cover-header { flex-wrap: wrap; gap: 14px; }
+  .cover-language { margin-left: auto; }
+}

@@ -19,6 +19,10 @@ async function handle(message) {
   const { id, action, request, offline_response, attempt } = message;
   try {
     const env = { ...process.env, ...(message.credentials ?? {}) };
+    if (action === 'translate') {
+      const { translate } = await import('./localize.mjs');
+      return send({ id, result: await translate(message, {env}) });
+    }
     if (action === 'connect') { await space.open(); return send({ id, result: { connected: true } }); }
     if (action === 'publish') {
       if (!space) throw Object.assign(new Error(), { code: 'SPACETIME_CONFIG_ERROR' });
