@@ -177,8 +177,8 @@ class SharedSync:
             result = self.bridge.call({"action": "publish", "room_id": row["room_id"], "revision": row["revision"],
                 "idea_revision": row["idea_revision"], "snapshot": json.loads(row["snapshot"])}, timeout=65)
             with self.store.transaction() as db:
-                db.execute("UPDATE shared_outbox SET delivered_revision=MAX(delivered_revision,?) WHERE room_id=?",
-                           (result["revision"], row["room_id"]))
+                db.execute("UPDATE shared_outbox SET delivered_revision=CASE WHEN delivered_revision < ? THEN ? ELSE delivered_revision END WHERE room_id=?",
+                           (result["revision"], result["revision"], row["room_id"]))
             self.connected, self.last_error = True, None
             return True
         except IntegrationError as error:

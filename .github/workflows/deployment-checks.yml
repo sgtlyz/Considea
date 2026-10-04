@@ -2,7 +2,7 @@ name: Deployment checks
 
 on:
   push:
-    branches: [master, feat/integration-spacetimedb, deploy/vercel-render]
+    branches: [master, dev, "feat/**", deploy/vercel-render]
   pull_request:
     paths:
       - '.github/workflows/deployment-checks.yml'
@@ -67,3 +67,27 @@ jobs:
         env:
           PLAYWRIGHT_MODULE: ${{ runner.temp }}/interface-browser/node_modules/playwright
         run: node workflow/node/interface-smoke.mjs
+
+  postgres:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: local-ci-only
+          POSTGRES_DB: considea_test
+        ports: [5432:5432]
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: python -m pip install -r workflow/requirements.txt
+      - name: Test PostgreSQL transactions, concurrent workers and restart recovery
+        env:
+          CONCLAVE_TEST_POSTGRES_URL: postgresql://postgres:local-ci-only@127.0.0.1:5432/considea_test
+        run: python -m unittest workflow.tests.test_postgres -v

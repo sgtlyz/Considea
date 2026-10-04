@@ -451,7 +451,7 @@ class Workflow:
             timestamp = time.time()
             rows = db.execute("""SELECT * FROM tasks
                 WHERE ((status='queued' AND next_attempt_at <= ?) OR (status='running' AND lease_until <= ?))
-                AND (? IS NULL OR room_id=?) ORDER BY created_at,id""", (timestamp, timestamp, room_id, room_id)).fetchall()
+                AND (CAST(? AS TEXT) IS NULL OR room_id=?) ORDER BY created_at,id""", (timestamp, timestamp, room_id, room_id)).fetchall()
             for row in rows:
                 s = self._room(db, row["room_id"])
                 if not self._matches(s, row):

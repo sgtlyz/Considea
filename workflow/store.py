@@ -1,7 +1,9 @@
-"""SQLite storage. Each mutation is a short transaction; model calls run outside it."""
+"""Transactional storage; model calls always run outside the database transaction."""
 import contextlib
 import hashlib
 import json
+import os
+import re
 import sqlite3
 from pathlib import Path
 
@@ -19,9 +21,21 @@ def token_hash(value):
 
 
 class Store:
+    backend = "sqlite"
+
+    @staticmethod
+    def columns(db, table):
+        return {row["name"] for row in db.execute(f"PRAGMA table_info({table})")}
+
+    def close(self):
+        pass
+
     def __init__(self, path):
         self.path = str(path)
         Path(path).parent.mkdir(parents=True, exist_ok=True)
+        self.initialize()
+
+    def initialize(self):
         with self.transaction() as db:
             schema = """
                 CREATE TABLE IF NOT EXISTS rooms (id TEXT PRIMARY KEY, state TEXT NOT NULL);
@@ -56,16 +70,16 @@ class Store:
             # Keep schema creation and additive migrations in the same write lock.
             for statement in schema.split(";"):
                 if statement.strip():
-                    db.execute(statement)
-            columns = {row["name"] for row in db.execute("PRAGMA table_info(tasks)")}
+                    db.execute(statement.replace("REAL", "DOUBLE PRECISION") if self.backend == "postgres" else statement)
+            columns = self.columns(db, "tasks")
             for name, declaration in (("auto_retries", "INTEGER NOT NULL DEFAULT 0"),
                                       ("next_attempt_at", "REAL NOT NULL DEFAULT 0"),
                                       ("context", "TEXT")):
                 if name not in columns:
-                    db.execute(f"ALTER TABLE tasks ADD COLUMN {name} {declaration}")
+                    db.execute(f"ALTER TABLE tasks ADD COLUMN {name} {declaration.replace('REAL', 'DOUBLE PRECISION') if self.backend == 'postgres' else declaration}")
             # Preserve pre-migration failure results before a future manual retry clears tasks.result.
-            db.execute("""INSERT OR IGNORE INTO task_attempts(task_id,attempt,outcome,started_at,error,result)
-                SELECT id,attempts,status,created_at,error,result FROM tasks WHERE attempts > 0""")
+            db.execute("""INSERT INTO task_attempts(task_id,attempt,outcome,started_at,error,result)
+                SELECT id,attempts,status,created_at,error,result FROM tasks WHERE attempts > 0 ON CONFLICT DO NOTHING""")
 
     @contextlib.contextmanager
     def transaction(self):
@@ -107,3 +121,68 @@ class Store:
             ON CONFLICT(room_id) DO UPDATE SET revision=excluded.revision,
             idea_revision=excluded.idea_revision,snapshot=excluded.snapshot""",
             (state["room_id"], state["revision"], state.get("idea_revision", 0), encode(shared)))
+
+
+class Record(dict):
+    """Named fields plus positional reads, matching sqlite3.Row for existing callers."""
+    def __getitem__(self, key):
+        return list(self.values())[key] if isinstance(key, int) else super().__getitem__(key)
+
+
+class PostgresConnection:
+    def __init__(self, connection):
+        self.connection = connection
+
+    def execute(self, sql, parameters=()):
+        # Queries are application-owned SQL; values are still passed separately to psycopg.
+        return self.connection.execute(sql.replace("?", "%s"), parameters)
+
+
+class PostgresStore(Store):
+    backend = "postgres"
+
+    def __init__(self, url, schema="public"):
+        from psycopg_pool import ConnectionPool
+        if not re.fullmatch(r"[a-z][a-z0-9_]{0,62}", schema):
+            raise ValueError("Invalid database schema")
+        self.schema = schema
+        self.path = "postgres"  # Never retain a connection URL in public diagnostics.
+        def row_factory(cursor):
+            names = [column.name for column in cursor.description] if cursor.description else []
+            return lambda values: Record(zip(names, values))
+        self.pool = ConnectionPool(url, min_size=1, max_size=6, timeout=15,
+                                   kwargs={"connect_timeout": 10, "row_factory": row_factory}, open=True)
+        try:
+            self.pool.wait(timeout=20)
+            self.initialize()
+        except BaseException:
+            self.pool.close()
+            raise
+
+    def columns(self, db, table):
+        return {r["name"] for r in db.execute(
+            "SELECT column_name AS name FROM information_schema.columns WHERE table_schema=? AND table_name=?",
+            (self.schema, table))}
+
+    @contextlib.contextmanager
+    def transaction(self):
+        with self.pool.connection() as connection:
+            with connection.transaction():
+                connection.execute("SET LOCAL statement_timeout = '15s'")
+                connection.execute("SET LOCAL lock_timeout = '15s'")
+                # Match SQLite's writer serialization across workers AND service restarts.
+                # No model calls hold this lock. Scale by room before adding many replicas.
+                connection.execute("SELECT pg_advisory_xact_lock(726194830)")
+                connection.execute(f'CREATE SCHEMA IF NOT EXISTS "{self.schema}"')
+                connection.execute(f'SET LOCAL search_path TO "{self.schema}"')
+                yield PostgresConnection(connection)
+
+    def close(self):
+        self.pool.close()
+
+
+def configured_store(sqlite_path):
+    url = os.environ.get("DATABASE_URL", "").strip()
+    if url:
+        return PostgresStore(url, os.environ.get("CONCLAVE_DB_SCHEMA", "public"))
+    return Store(sqlite_path)

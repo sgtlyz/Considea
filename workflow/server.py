@@ -10,7 +10,7 @@ from urllib.parse import urlsplit
 from jsonschema import ValidationError
 from .agents import MockRunner, PiRunner
 from .engine import Workflow, WorkflowError
-from .store import Store
+from .store import configured_store
 from .integration import IntegratedRunner, SharedSync
 from .environment import load_environment
 
@@ -170,7 +170,7 @@ def main():
         runner = PiRunner(modules)
     else:
         runner = MockRunner()
-    workflow = Workflow(Store(args.db), runner, lease_seconds=480 if args.spacetime_config else 120)
+    workflow = Workflow(configured_store(args.db), runner, lease_seconds=480 if args.spacetime_config else 120)
     workflow.sync = SharedSync(workflow.store, runner.bridge) if args.spacetime_config else None
     if workflow.sync:
         workflow.sync.start()
@@ -199,6 +199,7 @@ def main():
         server.server_close()
         if workflow.sync: workflow.sync.close()
         if hasattr(runner, "close"): runner.close()
+        workflow.store.close()
 
 
 if __name__ == "__main__":
